@@ -34,7 +34,7 @@ The GUI must not directly mutate solver internals. CLI and GUI must produce equi
 
 ## Work Packages
 
-### P3.1 Stable application API
+### P3-WP01 Stable application API
 - Add typed run, pause, step, checkpoint, resume, inspect, and export interfaces.
 - Define immutable snapshots for GUI consumption.
 
@@ -43,7 +43,7 @@ Acceptance:
 - API tests run headlessly.
 - Same seed/config yields equivalent CLI and GUI results.
 
-### P3.2 Desktop shell
+### P3-WP02 Desktop shell
 - Add main window, menus, dockable panels, status bar, recent projects, and error console.
 - Store UI preferences separately from scientific parameters.
 
@@ -52,7 +52,7 @@ Acceptance:
 - Missing/invalid files fail clearly.
 - UI state never changes simulation science.
 
-### P3.3 Simulation viewer
+### P3-WP03 Simulation viewer
 - Render cells and scalar-field heatmaps.
 - Add zoom, pan, fit, layer opacity, legends, and frame-rate limiting.
 - Render from snapshots, never live mutable arrays.
@@ -62,7 +62,7 @@ Acceptance:
 - Hidden layers consume minimal render work.
 - Visual values match exported arrays within tolerance.
 
-### P3.4 Experiment editor
+### P3-WP04 Experiment editor
 - Generate controls from validated parameter schemas.
 - Show units, source, uncertainty, and validation errors.
 - Support templates and read-only audited presets.
@@ -72,7 +72,7 @@ Acceptance:
 - Invalid values cannot start a run.
 - Audited presets cannot be silently overwritten.
 
-### P3.5 Controls, checkpoints, and inspection
+### P3-WP05 Controls, checkpoints, and inspection
 - Add run/pause/step/stop, speed target, checkpoint, resume, and cell click inspection.
 - Display cell lineage, strain, biomass, state, local solutes, QS activity, and EPS rate.
 
@@ -81,7 +81,7 @@ Acceptance:
 - Checkpoint resume matches uninterrupted execution.
 - Inspector values match engine state.
 
-### P3.6 Analytics and export
+### P3-WP06 Analytics and export
 - Add live population, biomass, strain ratio, EPS, QS-active fraction, thickness, roughness, and penetration-depth plots.
 - Export plots, tables, fields, and manifests.
 

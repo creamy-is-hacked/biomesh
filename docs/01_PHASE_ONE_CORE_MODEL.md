@@ -77,7 +77,7 @@ biomesh/
 
 ## Work Packages
 
-### P1.1 Repository and configuration
+### P1-WP01 Repository and configuration
 - Create package, tests, linting, typing, and CLI entry point.
 - Use the Python version currently resolved under `STANDARDS.md` policy, plus NumPy, SciPy, Numba, Pydantic, PyArrow, Matplotlib, and Pytest.
 - Add YAML or TOML parameter files.
@@ -88,7 +88,7 @@ Acceptance:
 - `python -m biomesh --help` works.
 - Invalid parameters fail with clear errors.
 
-### P1.2 Solute fields
+### P1-WP02 Solute fields
 - Implement carbon and oxygen grids.
 - Use finite differences with explicit stability checks or an implicit sparse solver.
 - Boundary conditions: constant bulk concentration at top, no-flux at bottom, periodic sides.
@@ -99,7 +99,7 @@ Acceptance:
 - No negative concentration beyond numerical tolerance.
 - Grid refinement produces convergent results.
 
-### P1.3 Cell model
+### P1-WP03 Cell model
 - Represent cells as 2D capsules.
 - Store position, orientation, length, radius, dry biomass, age, state, strain, and parent ID.
 - Grow length from biomass.
@@ -111,7 +111,7 @@ Acceptance:
 - Fixed seeds reproduce identical lineages.
 - Cell geometry remains valid after division.
 
-### P1.4 Metabolism
+### P1-WP04 Metabolism
 - Implement dual-substrate Monod kinetics.
 - Apply explicit biomass yields and maintenance/death terms.
 - Couple local uptake to solute fields.
@@ -121,7 +121,7 @@ Acceptance:
 - Closed-system mass balance passes.
 - Growth halts when either required substrate is absent.
 
-### P1.5 Mechanics and attachment
+### P1-WP05 Mechanics and attachment
 - Prevent persistent cell overlap.
 - Attach initial cells to the bottom surface.
 - Relax positions after growth and division.
@@ -132,7 +132,7 @@ Acceptance:
 - Mechanical solver converges or fails explicitly.
 - Cells do not cross the solid boundary.
 
-### P1.6 Outputs
+### P1-WP06 Outputs
 Save:
 - Cell snapshots.
 - Solute fields.

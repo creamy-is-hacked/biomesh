@@ -59,7 +59,7 @@ All state transitions must use explicit thresholds, delays, and units.
 
 ## Work Packages
 
-### P2.1 Quorum signal
+### P2-WP01 Quorum signal
 - Add production, diffusion, decay, and cell-local sensing.
 - Support basal and induced production.
 - Record signal exposure and activation history.
@@ -69,7 +69,7 @@ Acceptance:
 - Uniform concentration reproduces the Hill curve.
 - Activation changes with geometry and transport, not cell count alone.
 
-### P2.2 EPS model
+### P2-WP02 EPS model
 - Add EPS density field or explicit local matrix representation.
 - Couple EPS production to quorum state.
 - Charge producers a configurable growth cost.
@@ -80,7 +80,7 @@ Acceptance:
 - Higher allocation reduces producer growth in isolation.
 - Adhesion changes monotonically with EPS in controlled tests.
 
-### P2.3 Competition
+### P2-WP03 Competition
 - Add producer and nonproducer strains sharing resources.
 - Allow nonproducers to benefit from nearby matrix without paying production cost.
 - Track frequencies, spatial segregation, lineage, and local fitness.
@@ -90,7 +90,7 @@ Acceptance:
 - A configured production cost is measurable in well-mixed controls.
 - Mixed outcomes reproduce from fixed seeds.
 
-### P2.4 Physiological states
+### P2-WP04 Physiological states
 - Add active, slow, dormant, dead, and detached states.
 - Base transitions on recent nutrient/oxygen history and configurable delay.
 - Let dead biomass persist or recycle according to an explicit rule.
@@ -100,7 +100,7 @@ Acceptance:
 - Dormant cells consume less than active cells.
 - State totals reconcile with the population ledger.
 
-### P2.5 Waste and shear
+### P2-WP05 Waste and shear
 - Add a diffusing waste field with production and decay/removal.
 - Add simplified surface-parallel shear.
 - Detachment probability or force must depend on exposure, attachment, and EPS.
@@ -110,7 +110,7 @@ Acceptance:
 - Increasing shear increases detachment in controlled tests.
 - Stronger EPS lowers detachment under otherwise identical conditions.
 
-### P2.6 Experiments
+### P2-WP06 Experiments
 Required experiments:
 - Producer monoculture.
 - Nonproducer monoculture.

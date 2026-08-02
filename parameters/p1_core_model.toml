@@ -1,0 +1,46 @@
+schema_version = 1
+
+[[biological_parameters]]
+name = "maximum_specific_growth_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 dual-substrate Monod growth law; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "carbon_half_saturation_constant"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 dual-substrate Monod growth law; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "oxygen_half_saturation_constant"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 dual-substrate Monod growth law; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "death_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 biomass balance; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "biomass_yield_on_carbon"
+value = "CALIBRATION_REQUIRED"
+unit = "kg kg^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 carbon uptake balance; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

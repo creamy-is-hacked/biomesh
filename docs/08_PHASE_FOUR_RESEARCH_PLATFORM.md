@@ -27,7 +27,7 @@ Do not implement:
 
 ## Work Packages
 
-### P4.1 Project and campaign model
+### P4-WP01 Project and campaign model
 - Define project, experiment, campaign, run, artifact, and audit records.
 - Support replicate counts, seed policies, and sweep matrices.
 
@@ -36,7 +36,7 @@ Acceptance:
 - Runs remain immutable after completion.
 - Partial failures are explicit and retryable.
 
-### P4.2 Comparison and reports
+### P4-WP02 Comparison and reports
 - Compare conditions, replicates, distributions, effect sizes, and uncertainty.
 - Generate HTML/PDF-ready report data without embedding scientific conclusions in UI code.
 
@@ -45,7 +45,7 @@ Acceptance:
 - Single-seed claims are flagged.
 - Missing runs are visible, not silently dropped.
 
-### P4.3 Plugin API
+### P4-WP03 Plugin API
 - Version interfaces for model components and metadata.
 - Run plugins in a controlled loading path with compatibility validation.
 - Provide one example species/kinetics plugin.
@@ -55,7 +55,7 @@ Acceptance:
 - Incompatible plugins fail before simulation.
 - Plugin provenance appears in manifests.
 
-### P4.4 Model and parameter registry
+### P4-WP04 Model and parameter registry
 - Store named, versioned models and parameter sets.
 - Distinguish measured, literature-derived, fitted, assumed, and calibration-required values.
 
@@ -64,7 +64,7 @@ Acceptance:
 - Compatibility and unit checks run before launch.
 - Citations and uncertainty survive export/import.
 
-### P4.5 Local run queue
+### P4-WP05 Local run queue
 - Add queued campaigns, priorities, resource limits, progress, cancellation, and restart recovery.
 - Keep execution local.
 
@@ -73,7 +73,7 @@ Acceptance:
 - Failed runs do not corrupt completed runs.
 - CPU and memory limits are respected.
 
-### P4.6 Portable projects and packaging
+### P4-WP06 Portable projects and packaging
 - Export a self-describing project archive containing configs, manifests, compact results, and checksums.
 - Package for Linux using a documented build path.
 
@@ -82,7 +82,7 @@ Acceptance:
 - Checksums detect corruption.
 - Installer does not bundle generated research data.
 
-### P4.7 Experimental acceleration boundary
+### P4-WP07 Experimental acceleration boundary
 - Define benchmark interfaces for later 3D/GPU work.
 - Optional prototype must reproduce a CPU reference within tolerance.
 
