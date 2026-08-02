@@ -16,7 +16,7 @@ def test_parameter_file_loads_required_provenance_records() -> None:
     parameters = load_parameter_file(PARAMETER_FILE)
 
     assert parameters.schema_version == 1
-    assert len(parameters.biological_parameters) == 13
+    assert len(parameters.biological_parameters) == 14
     assert {
         parameter.name for parameter in parameters.biological_parameters
     }.issuperset(
@@ -27,6 +27,7 @@ def test_parameter_file_loads_required_provenance_records() -> None:
             "death_rate",
             "biomass_yield_on_carbon",
             "biomass_yield_on_oxygen",
+            "maximum_permitted_cell_overlap",
         }
     )
     assert {

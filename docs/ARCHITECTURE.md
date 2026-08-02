@@ -31,9 +31,9 @@ P1 caller -> biomesh.solutes
 cell exchange record -> source-rate mapping -> carbon and oxygen fields
 ```
 
-Mechanics, simulation orchestration, and scientific outputs remain
-unimplemented planned P1 components. They must avoid coupling presentation or
-output layers back into scientific calculations.
+Simulation orchestration and scientific outputs remain unimplemented planned
+P1 components. They must avoid coupling presentation or output layers back
+into scientific calculations.
 
 ## P1-WP04 metabolism
 
@@ -51,3 +51,26 @@ biomesh.metabolism -> updated cells + conservative solute exchanges
 
 Mechanics and future simulation/output layers may consume this interface, but
 metabolism does not import them.
+
+## P1-WP05 mechanics and attachment
+
+`biomesh.mechanics` consumes and returns the immutable `Cell` records from
+`biomesh.cells`; there is no mechanics-specific cell representation. Capsules
+interact when the periodic-image distance between their centreline segments is
+less than the sum of their radii. The deterministic, translation-only solver
+applies pair corrections, maps horizontal centres through the periodic domain,
+and enforces the solid bottom at `y = 0 m` after each iteration.
+
+Initial surface behavior is an explicit `bottom` or `none` configuration.
+Bottom-attached cells remain tangent to the surface while retaining horizontal
+mobility. Unattached cells cannot cross the bottom. The solver returns the
+maximum unresolved overlap in metres on success and includes that metric in a
+typed error when its caller-supplied iteration limit is exhausted.
+
+```text
+existing cells + mechanics parameters -> attachment/relaxation
+attachment/relaxation -> existing cells + maximum-overlap metric
+```
+
+No rotational torque, adhesion force law, friction law, shear detachment, or
+future-phase behavior is introduced by P1-WP05.

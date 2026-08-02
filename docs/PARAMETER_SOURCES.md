@@ -1,15 +1,19 @@
 # Parameter Sources
 
-P1-WP01 defines a versioned TOML parameter-file contract. P1-WP04 uses the
-starter file, `parameters/p1_core_model.toml`, for the maximum growth rate,
-carbon and oxygen half-saturation constants, the first-order maintenance/death
-rate, and independent carbon and oxygen biomass yields. Both yields use
-`kg mol^-1`, consistent with cell dry biomass in kilograms and solute exchange
-in moles. The oxygen yield was added by P1-WP04; its value and provenance are
-unknown. The file contains only quantities required by implemented P1
-equations and marks every value, source, and uncertainty as
-`CALIBRATION_REQUIRED`. It supplies no biological constants, citations, or
-calibration results.
+P1-WP01 defines a versioned TOML parameter-file contract. The starter file,
+`parameters/p1_core_model.toml`, contains the quantities required by completed
+P1 work packages. P1-WP05 adds `maximum_permitted_cell_overlap` in metres as
+the acceptance threshold corresponding to `MechanicsParameters.maximum_overlap_m`.
+No scientific threshold has been approved, so its value, source, uncertainty,
+and status remain `CALIBRATION_REQUIRED`. The file supplies no invented
+constants, citations, or calibration results.
+
+The other P1-WP05 controls are explicit runtime configuration rather than
+biological constants: domain width is an experiment-specific SI length;
+maximum iterations and displacement fraction are numerical convergence
+controls; and attachment mode is the categorical model choice `bottom` or
+`none`. None has a module default. Scientific runs must record the selected
+controls and the source and uncertainty of experiment-specific geometry.
 
 ## Required parameter record
 

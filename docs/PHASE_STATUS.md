@@ -36,7 +36,7 @@ Source: `docs/01_PHASE_ONE_CORE_MODEL.md`.
 | P1-WP02 | Solute fields | COMPLETE |
 | P1-WP03 | Cell model | COMPLETE |
 | P1-WP04 | Metabolism | COMPLETE |
-| P1-WP05 | Mechanics and attachment | INCOMPLETE |
+| P1-WP05 | Mechanics and attachment | COMPLETE |
 | P1-WP06 | Outputs | INCOMPLETE |
 | P1A | Phase 1 Audit | INCOMPLETE |
 
@@ -88,6 +88,14 @@ P1-WP04 validation evidence:
 - `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
   passed in the repository environment (39 tests); `git diff --check` passed.
 
+P1-WP05 validation evidence:
+
+- Existing `Cell` capsules are relaxed deterministically against capsule
+  contacts, periodic sides, and the solid bottom without a duplicate cell type.
+- Initial bottom attachment is configurable; the SI overlap threshold remains
+  `CALIBRATION_REQUIRED`, and convergence failure reports the residual metric.
+- All required checks passed in Python 3.14.4 (56 tests).
+
 ## P2 – Phase 2 – Colony System
 
 Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
@@ -133,11 +141,9 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P1-WP05 – Mechanics and attachment` is the first incomplete work package. Do
-not begin it until separately requested.
+`P1-WP06 – Outputs` is the first incomplete work package; begin it only when requested.
 
 ## Remaining Issues
 
-- The P1 solute-field, cell-model, and metabolism foundations are complete.
-  Mechanics, simulation orchestration, and output implementation have not
-  begun.
+- P1 mechanics is complete; simulation orchestration and output implementation
+  have not begun.

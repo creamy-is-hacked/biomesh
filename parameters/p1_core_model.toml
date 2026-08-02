@@ -116,3 +116,12 @@ source = "CALIBRATION_REQUIRED"
 uncertainty = "CALIBRATION_REQUIRED"
 notes = "Required by P1-WP03 to bound seeded daughter biomass asymmetry; no value is approved."
 calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "maximum_permitted_cell_overlap"
+value = "CALIBRATION_REQUIRED"
+unit = "m"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP05 as the maximum unresolved capsule-overlap acceptance threshold; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

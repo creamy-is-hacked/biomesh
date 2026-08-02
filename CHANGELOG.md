@@ -23,3 +23,6 @@ All notable repository changes are documented here.
   ODE integration, explicit carbon and oxygen yields, maintenance/death loss
   accounting, conservative local solute coupling, and closed-system balance
   verification.
+- P1-WP05 – Deterministic 2D capsule collision relaxation with periodic sides,
+  solid-bottom enforcement, configurable initial surface attachment, explicit
+  convergence failure, and a residual-overlap error metric.
