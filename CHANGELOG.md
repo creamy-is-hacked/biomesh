@@ -26,3 +26,7 @@ All notable repository changes are documented here.
 - P1-WP05 – Deterministic 2D capsule collision relaxation with periodic sides,
   solid-bottom enforcement, configurable initial surface attachment, explicit
   convergence failure, and a residual-overlap error metric.
+- P1-WP06 – Deterministic, write-only exports of existing cell and solute
+  state: SI-labelled Parquet snapshots and summaries, division and
+  unit-aware mass-balance tables, compressed NumPy fields, and canonical run
+  provenance metadata.

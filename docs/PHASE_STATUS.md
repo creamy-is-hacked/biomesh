@@ -37,7 +37,7 @@ Source: `docs/01_PHASE_ONE_CORE_MODEL.md`.
 | P1-WP03 | Cell model | COMPLETE |
 | P1-WP04 | Metabolism | COMPLETE |
 | P1-WP05 | Mechanics and attachment | COMPLETE |
-| P1-WP06 | Outputs | INCOMPLETE |
+| P1-WP06 | Outputs | COMPLETE |
 | P1A | Phase 1 Audit | INCOMPLETE |
 
 P1-WP01 validation evidence:
@@ -96,6 +96,18 @@ P1-WP05 validation evidence:
   `CALIBRATION_REQUIRED`, and convergence failure reports the residual metric.
 - All required checks passed in Python 3.14.4 (56 tests).
 
+P1-WP06 validation evidence:
+
+- Deterministic, write-only exports serialize existing cell and solute state
+  without modifying simulation behavior: SI-labelled Parquet cell snapshots,
+  summary metrics, division events, unit-aware mass-balance entries, metadata,
+  and compressed NumPy field archives.
+- Focused tests verify complete artifacts and provenance, state immutability,
+  geometric height/roughness metrics, mass-balance residuals, explicit writer
+  validation, and byte-identical exports for identical inputs.
+- `python -m biomesh --help`, `ruff check .`, `mypy src`, `pytest -q`, and
+  `git diff --check` passed in the repository environment (59 tests).
+
 ## P2 – Phase 2 – Colony System
 
 Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
@@ -141,9 +153,9 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P1-WP06 – Outputs` is the first incomplete work package; begin it only when requested.
+`P1A – Phase 1 Audit` is the first incomplete work package; begin it only when requested.
 
 ## Remaining Issues
 
-- P1 mechanics is complete; simulation orchestration and output implementation
-  have not begun.
+- P1-WP06 exports are complete. No simulation orchestration is implemented;
+  P1A – Phase 1 Audit has not begun.

@@ -31,9 +31,9 @@ P1 caller -> biomesh.solutes
 cell exchange record -> source-rate mapping -> carbon and oxygen fields
 ```
 
-Simulation orchestration and scientific outputs remain unimplemented planned
-P1 components. They must avoid coupling presentation or output layers back
-into scientific calculations.
+Simulation orchestration remains an unimplemented planned P1 component. It
+must avoid coupling presentation or output layers back into scientific
+calculations.
 
 ## P1-WP04 metabolism
 
@@ -74,3 +74,22 @@ attachment/relaxation -> existing cells + maximum-overlap metric
 
 No rotational torque, adhesion force law, friction law, shear detachment, or
 future-phase behavior is introduced by P1-WP05.
+
+## P1-WP06 outputs
+
+`biomesh.outputs` is a write-only consumer of the completed `Cell` and
+`SoluteFields` interfaces. It emits canonical Parquet cell, summary, division,
+and mass-balance tables plus deterministic compressed NumPy field archives.
+The caller supplies the seed, exact parameter mapping, package version, commit
+hash, and unit-aware mass-balance terms; the output layer does not infer model
+inputs or scientific fluxes. Height is the maximum capsule-top elevation and
+roughness is the population standard deviation of capsule-top elevations, both
+in metres.
+
+```text
+cells + solute fields + run provenance -> biomesh.outputs
+biomesh.outputs -> Parquet tables + compressed NumPy fields + metadata JSON
+```
+
+Output serialization does not mutate simulation state or feed data back into
+the model.
