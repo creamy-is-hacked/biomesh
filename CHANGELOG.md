@@ -16,3 +16,6 @@ All notable repository changes are documented here.
 - P1-WP02 – Configurable carbon and oxygen finite-volume diffusion fields with
   explicit stability validation, prescribed transport boundaries, and
   conservative cell exchange mapping.
+- P1-WP03 – Configurable, deterministic 2D capsule-cell state with dry
+  biomass-driven elongation, lineage-preserving division, and explicit
+  validation of geometry and inputs.

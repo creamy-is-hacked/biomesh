@@ -34,7 +34,7 @@ Source: `docs/01_PHASE_ONE_CORE_MODEL.md`.
 | --- | --- | --- |
 | P1-WP01 | Repository and configuration | COMPLETE |
 | P1-WP02 | Solute fields | COMPLETE |
-| P1-WP03 | Cell model | INCOMPLETE |
+| P1-WP03 | Cell model | COMPLETE |
 | P1-WP04 | Metabolism | INCOMPLETE |
 | P1-WP05 | Mechanics and attachment | INCOMPLETE |
 | P1-WP06 | Outputs | INCOMPLETE |
@@ -62,6 +62,18 @@ P1-WP02 validation evidence:
   manufactured pure-diffusion benchmark, grid-refinement convergence,
   nonnegative-concentration behavior, explicit stability rejection, and
   conservative cell-to-grid source/sink mapping.
+
+P1-WP03 validation evidence:
+
+- Cells are validated 2D capsules with SI position, geometry, dry biomass,
+  and age fields. The dry-biomass-per-length mapping, division threshold, and
+  maximum daughter-asymmetry fraction are configurable parameter records, all
+  explicitly marked `CALIBRATION_REQUIRED`; no biological values were added.
+- Focused tests verify biomass conservation, deterministic seeded lineage
+  replay, lineage-parent persistence, strict threshold behaviour, and valid
+  tangent daughter capsule geometry.
+- `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
+  passed in the repository environment (21 tests); `git diff --check` passed.
 
 ## P2 – Phase 2 – Colony System
 
@@ -108,11 +120,11 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P1-WP03 – Cell model` is the first incomplete work package. Do not begin it
+`P1-WP04 – Metabolism` is the first incomplete work package. Do not begin it
 until separately requested.
 
 ## Remaining Issues
 
-- The P1 solute-field transport foundation is complete. Cell model,
-  metabolism, mechanics, simulation orchestration, and output implementation
+- The P1 solute-field transport and cell-model foundations are complete.
+  Metabolism, mechanics, simulation orchestration, and output implementation
   have not begun.

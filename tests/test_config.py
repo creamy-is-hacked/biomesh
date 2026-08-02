@@ -16,7 +16,7 @@ def test_parameter_file_loads_required_provenance_records() -> None:
     parameters = load_parameter_file(PARAMETER_FILE)
 
     assert parameters.schema_version == 1
-    assert len(parameters.biological_parameters) == 9
+    assert len(parameters.biological_parameters) == 12
     assert {
         parameter.value for parameter in parameters.biological_parameters
     } == {"CALIBRATION_REQUIRED"}

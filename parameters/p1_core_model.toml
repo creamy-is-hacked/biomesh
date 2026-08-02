@@ -80,3 +80,30 @@ source = "CALIBRATION_REQUIRED"
 uncertainty = "CALIBRATION_REQUIRED"
 notes = "Required top-boundary condition for P1-WP02 oxygen transport; no experiment value is approved."
 calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "dry_biomass_per_unit_length"
+value = "CALIBRATION_REQUIRED"
+unit = "kg m^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 to derive capsule centreline length from dry biomass; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "division_length"
+value = "CALIBRATION_REQUIRED"
+unit = "m"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 as the strict capsule centreline-length division threshold; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "maximum_daughter_asymmetry_fraction"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 to bound seeded daughter biomass asymmetry; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
