@@ -1,10 +1,10 @@
-# BioMesh Phase 3 — Desktop Scientific Workbench
+# BioMesh P3 – Phase 3 – Desktop GUI
 
 ## Goal
-Turn the audited Phase 2 engine into a usable Linux desktop application without coupling scientific logic to the GUI.
+Turn the audited P2 – Phase 2 – Colony System engine into a usable Linux desktop application without coupling scientific logic to the GUI.
 
 ## Completion Gate
-Phase 3 is complete when users can configure, run, pause, inspect, save, reload, and export validated simulations through the GUI, and the Phase 3 audit passes.
+P3 – Phase 3 – Desktop GUI is complete when users can configure, run, pause, inspect, save, reload, and export validated simulations through the GUI, and P3A – Phase 3 Audit passes.
 
 ## Scope
 Implement:
@@ -58,7 +58,7 @@ Acceptance:
 - Render from snapshots, never live mutable arrays.
 
 Acceptance:
-- Viewer remains responsive at the Phase 2 reference scale.
+- Viewer remains responsive at the P2 – Phase 2 – Colony System reference scale.
 - Hidden layers consume minimal render work.
 - Visual values match exported arrays within tolerance.
 
@@ -103,12 +103,12 @@ Acceptance:
 
 ## Codex Execution Prompt
 ```text
-Implement BioMesh Phase 3 only. Read AGENTS.md, this plan, the Phase 2
+Implement BioMesh P3 – Phase 3 – Desktop GUI only. Read `STANDARDS.md`, then AGENTS.md, this plan, the P2 – Phase 2 – Colony System
 release API, and the relevant files. Preserve scientific behavior.
 Work one package at a time; add tests before UI polish. Keep the GUI
 thin, schema-driven, and snapshot-based. Run targeted tests, then the
 full suite. Update PHASE_STATUS.md and LIMITATIONS.md in under 150 lines.
-Do not add Phase 4 features.
+Do not add P4 – Phase 4 – Research Platform features.
 ```
 
 ## Token-Efficient Workflow
@@ -116,12 +116,12 @@ Do not add Phase 4 features.
 - Reference parameter schemas instead of restating fields.
 - Use screenshots only for visual defects.
 - Request changed-file summaries under 200 words.
-- Keep UI test fixtures small and reuse Phase 2 reference runs.
+- Keep UI test fixtures small and reuse P2 – Phase 2 – Colony System reference runs.
 
 ## End-of-Phase Update
 1. Run unit, integration, headless GUI, and CLI/GUI equivalence tests.
 2. Produce one reproducible demo experiment and screenshots.
 3. Update README, user guide, changelog, and limitations.
-4. Push `phase/3-desktop-gui`.
+4. Push `phase-3-desktop-gui`.
 5. Execute `07_PHASE_THREE_AUDIT.md`.
 6. Merge and tag only after audit pass.

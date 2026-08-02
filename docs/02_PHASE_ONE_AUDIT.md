@@ -1,7 +1,7 @@
-# BioMesh Phase 1 Audit
+# BioMesh P1A – Phase 1 Audit
 
 ## Purpose
-Verify that the core model is numerically correct, reproducible, traceable, and ready for Phase 2.
+Verify that P1 – Phase 1 – Core Model is numerically correct, reproducible, traceable, and ready for P2 – Phase 2 – Colony System.
 
 ## Audit Result
 Choose one:
@@ -9,7 +9,7 @@ Choose one:
 - `PASS WITH RECORDED LIMITATIONS`
 - `FAIL`
 
-A failed critical item blocks Phase 2.
+A failed critical item blocks P2 – Phase 2 – Colony System.
 
 ## Critical Checks
 
@@ -110,14 +110,14 @@ Evidence paths:
 
 ## Audit Fix Cycle
 1. Create issue for each failed item.
-2. Fix on the Phase 1 branch.
+2. Fix on the P1 – Phase 1 – Core Model branch, `phase-1-core-model`.
 3. Add or strengthen a regression test.
 4. Re-run only affected checks, then the full suite.
 5. Update the audit report.
 6. Repeat until no critical failures remain.
 
 ## Phase Gate
-Phase 2 may start only when:
+P2 – Phase 2 – Colony System may start only when:
 - Audit result is `PASS` or `PASS WITH RECORDED LIMITATIONS`.
 - All critical checks pass.
 - Limitations are documented in `LIMITATIONS.md`.
@@ -126,6 +126,6 @@ Phase 2 may start only when:
 ## Tag
 Recommended tag:
 ```bash
-git tag -a v0.1.0-phase1 -m "BioMesh Phase 1 audited core model"
-git push origin v0.1.0-phase1
+git tag -a v0.1.1-audit -m "P1A: Phase 1 Audit"
+git push origin v0.1.1-audit
 ```

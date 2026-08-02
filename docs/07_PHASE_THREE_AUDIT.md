@@ -1,4 +1,4 @@
-# BioMesh Phase 3 Audit
+# BioMesh P3A – Phase 3 Audit
 
 ## Purpose
 Verify that the desktop workbench is reliable, responsive, scientifically faithful, and reproducible.
@@ -12,7 +12,7 @@ Verify that the desktop workbench is reliable, responsive, scientifically faithf
 - [ ] GUI does not implement biological equations.
 - [ ] CLI and GUI match for identical config and seed.
 - [ ] UI preferences cannot alter scientific defaults.
-- [ ] Phase 1–2 tests still pass.
+- [ ] P1 – Phase 1 – Core Model and P2 – Phase 2 – Colony System tests still pass.
 
 ### B. Run control
 - [ ] Run, pause, step, stop, checkpoint, and resume work.
@@ -83,6 +83,6 @@ Evidence paths:
 
 ## Tag
 ```bash
-git tag -a v0.3.0 -m "BioMesh audited desktop scientific workbench"
-git push origin v0.3.0
+git tag -a v0.3.1-audit -m "P3A: Phase 3 Audit"
+git push origin v0.3.1-audit
 ```

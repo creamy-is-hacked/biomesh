@@ -1,10 +1,10 @@
-# BioMesh Phase 1 — Core Scientific Model
+# BioMesh P1 – Phase 1 – Core Model
 
 ## Goal
 Build the smallest reproducible 2D biofilm simulator that is numerically verified before adding quorum sensing, EPS, or multi-strain competition.
 
 ## Completion Gate
-Phase 1 is complete only when all required tests pass, mass-balance error is within the configured tolerance, results reproduce from a fixed seed, and the Phase 1 audit passes.
+P1 – Phase 1 – Core Model is complete only when all required tests pass, mass-balance error is within the configured tolerance, results reproduce from a fixed seed, and P1A – Phase 1 Audit passes.
 
 ## Scope
 Implement:
@@ -79,7 +79,7 @@ biomesh/
 
 ### P1.1 Repository and configuration
 - Create package, tests, linting, typing, and CLI entry point.
-- Use Python 3.12, NumPy, SciPy, Numba, Pydantic, PyArrow, Matplotlib, and Pytest.
+- Use the Python version currently resolved under `STANDARDS.md` policy, plus NumPy, SciPy, Numba, Pydantic, PyArrow, Matplotlib, and Pytest.
 - Add YAML or TOML parameter files.
 - Require units, source, uncertainty, and notes for each biological parameter.
 
@@ -158,9 +158,10 @@ Use Parquet for tables and compressed NumPy or Zarr-compatible arrays for fields
 
 ## Codex Execution Prompt
 ```text
-Implement BioMesh Phase 1 only. Read this file and AGENTS.md first.
+Implement BioMesh P1 – Phase 1 – Core Model only. Read `STANDARDS.md`, then
+AGENTS.md and this file first.
 Work in small commits. Before coding each package, state equations,
-units, assumptions, and tests. Do not add Phase 2 features.
+units, assumptions, and tests. Do not add P2 – Phase 2 – Colony System features.
 
 Priorities:
 1. Correctness and reproducibility.
@@ -170,7 +171,7 @@ Priorities:
 5. No invented biological constants.
 
 After each work package, run tests, summarize failures, and update
-CHANGELOG.md and docs/PHASE_STATUS.md. Stop when the Phase 1 audit
+CHANGELOG.md and docs/PHASE_STATUS.md. Stop when P1A – Phase 1 Audit
 checklist can be executed.
 ```
 

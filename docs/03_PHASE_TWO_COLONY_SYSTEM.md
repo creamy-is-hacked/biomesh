@@ -1,10 +1,10 @@
-# BioMesh Phase 2 — Communication, Matrix, and Competition
+# BioMesh P2 – Phase 2 – Colony System
 
 ## Goal
-Extend the audited Phase 1 model with quorum sensing, EPS-mediated biofilm behavior, resource competition, physiological states, and shear-driven detachment.
+Extend the audited P1 – Phase 1 – Core Model with quorum sensing, EPS-mediated biofilm behavior, resource competition, physiological states, and shear-driven detachment.
 
 ## Completion Gate
-Phase 2 is complete only when all new mechanisms are independently verified, competition experiments are reproducible across replicates, sensitivity analysis is complete, and the Phase 2 audit passes.
+P2 – Phase 2 – Colony System is complete only when all new mechanisms are independently verified, competition experiments are reproducible across replicates, sensitivity analysis is complete, and P2A – Phase 2 Audit passes.
 
 ## Scope
 Implement:
@@ -138,10 +138,10 @@ Run multiple seeds per condition. Save summary statistics and raw run manifests.
 
 ## Codex Execution Prompt
 ```text
-Implement BioMesh Phase 2 only after confirming the audited Phase 1 tag.
-Read AGENTS.md, this file, and the Phase 1 audit result first.
+Implement BioMesh P2 – Phase 2 – Colony System only after confirming the P1A – Phase 1 Audit tag.
+Read `STANDARDS.md`, then AGENTS.md, this file, and the P1A – Phase 1 Audit result first.
 Add one mechanism per work package with isolated tests and benchmark cases.
-Do not alter audited Phase 1 behavior without a regression test and a
+Do not alter audited P1 – Phase 1 – Core Model behavior without a regression test and a
 recorded reason.
 
 For every new mechanism:
@@ -152,14 +152,14 @@ For every new mechanism:
 5. Update CHANGELOG.md, LIMITATIONS.md, and PHASE_STATUS.md.
 
 Prefer compact diffs. Do not paste full logs unless a test fails.
-Stop when the Phase 2 audit can be executed.
+Stop when P2A – Phase 2 Audit can be executed.
 ```
 
 ## Token-Efficient Codex Workflow
 - Provide only this file, AGENTS.md, the audit result, and current work-package files.
 - Keep each request limited to one mechanism and its tests.
 - Ask Codex to inspect before editing.
-- Reuse shared numerical operators from Phase 1.
+- Reuse shared numerical operators from P1 – Phase 1 – Core Model.
 - Store experiment definitions as parameter files rather than long prompts.
 - Summarize changed files, test results, assumptions, and next action in under 250 words.
 

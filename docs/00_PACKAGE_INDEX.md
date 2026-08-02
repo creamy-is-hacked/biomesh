@@ -1,19 +1,24 @@
 # BioMesh Planning Package
 
 ## Start Here
-1. Run `00_START_HERE_PROMPT.md` with the recommended M0 model.
-2. Review and commit M0 manually using `05_GITHUB_LINUX_WORKFLOW.md`.
-3. Execute one work package at a time using the model-routing table in the start file.
-4. Run every audit in a fresh reviewer session. A failed audit blocks the next phase.
+1. Read `STANDARDS.md`, then `AGENTS.md`.
+2. Run `00_START_HERE_PROMPT.md` with the recommended M0 – Repository Bootstrap model.
+3. Review and commit M0 – Repository Bootstrap manually using `05_GITHUB_LINUX_WORKFLOW.md`.
+4. Execute one work package at a time using the model-routing table in the start file.
+5. Run every audit in a fresh reviewer session. A failed audit blocks the next phase.
 
 ## Intended End Product
 BioMesh progresses from a verified scientific engine to a Linux desktop research platform:
 
-1. **M0:** repository, tooling, documentation contracts, CLI shell, tests, and CI.
-2. **Phase 1:** reaction-diffusion and individual-cell core.
-3. **Phase 2:** quorum sensing, EPS, competition, physiological states, and detachment.
-4. **Phase 3:** desktop GUI for configuration, visualization, inspection, analytics, checkpoints, and exports.
-5. **Phase 4:** campaigns, comparisons, plugins, local queueing, portable projects, packaging, and an experimental acceleration boundary.
+1. **M0 – Repository Bootstrap:** repository, tooling, documentation contracts, CLI shell, tests, and CI.
+2. **P1 – Phase 1 – Core Model:** reaction-diffusion and individual-cell core.
+3. **P1A – Phase 1 Audit:** independent review of P1.
+4. **P2 – Phase 2 – Colony System:** quorum sensing, EPS, competition, physiological states, and detachment.
+5. **P2A – Phase 2 Audit:** independent review of P2.
+6. **P3 – Phase 3 – Desktop GUI:** configuration, visualization, inspection, analytics, checkpoints, and exports.
+7. **P3A – Phase 3 Audit:** independent review of P3.
+8. **P4 – Phase 4 – Research Platform:** campaigns, comparisons, plugins, local queueing, portable projects, packaging, and an experimental acceleration boundary.
+9. **P4A – Phase 4 Audit:** independent review of P4.
 
 Each phase has a blocking audit. Later phases may not weaken earlier validation.
 

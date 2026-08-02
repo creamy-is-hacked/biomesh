@@ -1,4 +1,4 @@
-# BioMesh Phase 2 Audit
+# BioMesh P2A – Phase 2 Audit
 
 ## Purpose
 Verify that communication, EPS, competition, physiological states, and detachment are correctly implemented and scientifically interpretable.
@@ -11,10 +11,10 @@ Choose one:
 
 ## Critical Checks
 
-### A. Phase 1 preservation
-- [ ] Phase 1 regression tests still pass.
+### A. P1 – Phase 1 – Core Model preservation
+- [ ] P1 – Phase 1 – Core Model regression tests still pass.
 - [ ] Audited equations and defaults changed only with documented justification.
-- [ ] Phase 1 reference runs remain reproducible.
+- [ ] P1 – Phase 1 – Core Model reference runs remain reproducible.
 
 ### B. Quorum sensing
 - [ ] Signal diffusion-decay benchmark passes.
@@ -87,7 +87,7 @@ Critical failure:
 - Signal activation uses global population count instead of local concentration.
 - Competition conclusions rely on a single run.
 - Detached or dead biomass disappears from accounting.
-- Phase 1 verification no longer passes.
+- P1 – Phase 1 – Core Model verification no longer passes.
 
 Noncritical limitation:
 - Simplified shear lacks full CFD.
@@ -134,6 +134,6 @@ Release only when:
 ## Tag
 Recommended tag:
 ```bash
-git tag -a v0.2.0 -m "BioMesh audited quorum, EPS, and competition model"
-git push origin v0.2.0
+git tag -a v0.2.1-audit -m "P2A: Phase 2 Audit"
+git push origin v0.2.1-audit
 ```

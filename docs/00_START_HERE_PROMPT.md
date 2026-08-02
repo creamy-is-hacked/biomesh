@@ -1,8 +1,8 @@
-# BioMesh Start Here — M0 Bootstrap Prompt and Model Routing
+# BioMesh Start Here — M0 – Repository Bootstrap Prompt and Model Routing
 
-Use this file first. Copy only the prompt below into a GPT or Codex coding session opened at the BioMesh repository root. The model must stop after M0; Phase 1 begins in `01_PHASE_ONE_CORE_MODEL.md` only after the scaffold is reviewed and committed manually.
+Use this file first. Copy only the prompt below into a GPT or Codex coding session opened at the BioMesh repository root. The model must stop after M0 – Repository Bootstrap; P1 – Phase 1 – Core Model begins in `01_PHASE_ONE_CORE_MODEL.md` only after the scaffold is reviewed and committed manually.
 
-## Recommended Model for M0
+## Recommended Model for M0 – Repository Bootstrap
 
 - **Default:** GPT-5.6 Terra, high effort. It balances code quality and token use.
 - **Escalate to:** GPT-5.6 Sol, high effort, only for architecture/tooling failures Terra cannot resolve.
@@ -14,21 +14,21 @@ Use this file first. Copy only the prompt below into a GPT or Codex coding sessi
 You are the implementation agent for BioMesh, a scientifically grounded 2D bacterial biofilm simulator that will later become a Linux desktop research platform.
 
 TASK
-Complete Milestone M0 only: establish a clean, tested, documented Python repository. Do not implement diffusion, metabolism, cells, mechanics, quorum sensing, EPS, competition, simulation rendering, or GUI features.
+Complete M0 – Repository Bootstrap only: establish a clean, tested, documented Python repository. Do not implement diffusion, metabolism, cells, mechanics, quorum sensing, EPS, competition, simulation rendering, or GUI features.
 
 CONTEXT TO READ
-1. Inspect the repository before editing.
-2. Read only:
+1. Read `docs/STANDARDS.md` first, then `AGENTS.md`.
+2. Inspect the repository before editing.
+3. Read only:
    - docs/00_PACKAGE_INDEX.md
    - docs/01_PHASE_ONE_CORE_MODEL.md: Goal, Scope, Repository Layout, and P1.1
    - docs/05_GITHUB_LINUX_WORKFLOW.md: setup and daily workflow sections
-   - AGENTS.md, if it already exists
-3. Open additional files only when directly needed for M0.
+4. Open additional files only when directly needed for M0.
 4. Do not restate these documents in your response.
 
 DELIVERABLES
 Create or minimally update:
-- `pyproject.toml` for Python 3.12 with package metadata, runtime dependencies named in Phase 1, and dev tools: pytest, ruff, and mypy.
+- `pyproject.toml` with package metadata, the policy-resolved newest stable Python version fully supported by all required runtime dependencies, runtime dependencies named in P1 – Phase 1 – Core Model, and dev tools: pytest, ruff, and mypy.
 - `src/biomesh/__init__.py`, `src/biomesh/__main__.py`, and a small typed CLI so `python -m biomesh --help` works.
 - `tests/` with focused import, version, and CLI-help tests.
 - `.github/workflows/ci.yml` running install, lint, type check, and tests on Linux.
@@ -63,7 +63,7 @@ TOKEN DISCIPLINE
 
 REQUIRED CHECKS
 Run from a clean environment when feasible:
-1. `python3.12 -m venv .venv`
+1. `python3.14 -m venv .venv`
 2. `source .venv/bin/activate`
 3. `python -m pip install --upgrade pip`
 4. `python -m pip install -e ".[dev]"`
@@ -72,7 +72,7 @@ Run from a clean environment when feasible:
 7. `mypy src`
 8. `pytest -q`
 
-If Python 3.12 is unavailable, do not silently use another version. Report the exact available version and complete only version-independent work.
+If the policy-resolved Python version is unavailable or unsupported by a required runtime dependency, stop, report the compatibility issue, and recommend the newest fully supported version. Do not silently change the version.
 
 ACCEPTANCE GATE
 M0 passes only when:
@@ -81,7 +81,7 @@ M0 passes only when:
 - lint, typing, and tests pass;
 - CI mirrors the local commands;
 - documentation distinguishes implemented work from planned work;
-- no Phase 1 scientific behavior has been added;
+- no P1 – Phase 1 – Core Model scientific behavior has been added;
 - `git diff` is reviewable and no GitHub write action occurred.
 
 Begin by inspecting the repository and reporting only material conflicts with this task. Then implement M0.
@@ -93,19 +93,19 @@ Use a fresh session per work package or audit. Prefer the lowest-cost model capa
 
 | Document / work | Recommended model | Effort | Notes |
 |---|---|---:|---|
-| M0 bootstrap above | GPT-5.6 Terra | High | Repository, tooling, docs, CLI, CI. |
-| Phase 1 P1.1 and P1.6 | GPT-5.6 Terra | High | Configuration and outputs are bounded engineering tasks. |
-| Phase 1 P1.2–P1.5 | GPT-5.6 Sol | High | Numerical methods, kinetics, geometry, and mechanics. Use max only for unresolved failures. |
-| Phase 1 audit | GPT-5.6 Sol | Max | Fresh reviewer session; do not reuse the builder's conclusions. |
-| Phase 2 P2.1–P2.5 | GPT-5.6 Sol | High | Coupled scientific behavior and state transitions. |
-| Phase 2 P2.6 | GPT-5.6 Terra | High | Experiment harnesses after scientific interfaces stabilize. |
-| Phase 2 audit | GPT-5.6 Sol | Max | Independent scientific and numerical audit. |
-| Phase 3 P3.1 and P3.5 | GPT-5.6 Sol | High | API boundaries, threading, checkpoints, and state integrity. |
-| Phase 3 P3.2–P3.4 and P3.6 | GPT-5.6 Terra | High | Desktop shell, viewer, editor, analytics, and exports. |
-| Phase 3 audit | GPT-5.6 Sol | High | Fresh session; verify GUI/CLI scientific equivalence. |
-| Phase 4 P4.1, P4.3, P4.5, P4.7 | GPT-5.6 Sol | High | Project schema, plugins, queue recovery, acceleration boundary. |
-| Phase 4 P4.2, P4.4, P4.6 | GPT-5.6 Terra | High | Reports, registry UI/data, portability, and packaging. |
-| Phase 4 audit | GPT-5.6 Sol | Max | Independent release and reproducibility audit. |
+| M0 – Repository Bootstrap | GPT-5.6 Terra | High | Repository, tooling, docs, CLI, CI. |
+| P1 – Phase 1 – Core Model (P1.1 and P1.6) | GPT-5.6 Terra | High | Configuration and outputs are bounded engineering tasks. |
+| P1 – Phase 1 – Core Model (P1.2–P1.5) | GPT-5.6 Sol | High | Numerical methods, kinetics, geometry, and mechanics. Use max only for unresolved failures. |
+| P1A – Phase 1 Audit | GPT-5.6 Sol | Max | Fresh reviewer session; do not reuse the builder's conclusions. |
+| P2 – Phase 2 – Colony System (P2.1–P2.5) | GPT-5.6 Sol | High | Coupled scientific behavior and state transitions. |
+| P2 – Phase 2 – Colony System (P2.6) | GPT-5.6 Terra | High | Experiment harnesses after scientific interfaces stabilize. |
+| P2A – Phase 2 Audit | GPT-5.6 Sol | Max | Independent scientific and numerical audit. |
+| P3 – Phase 3 – Desktop GUI (P3.1 and P3.5) | GPT-5.6 Sol | High | API boundaries, threading, checkpoints, and state integrity. |
+| P3 – Phase 3 – Desktop GUI (P3.2–P3.4 and P3.6) | GPT-5.6 Terra | High | Desktop shell, viewer, editor, analytics, and exports. |
+| P3A – Phase 3 Audit | GPT-5.6 Sol | High | Fresh reviewer session; verify GUI/CLI scientific equivalence. |
+| P4 – Phase 4 – Research Platform (P4.1, P4.3, P4.5, P4.7) | GPT-5.6 Sol | High | Project schema, plugins, queue recovery, acceleration boundary. |
+| P4 – Phase 4 – Research Platform (P4.2, P4.4, P4.6) | GPT-5.6 Terra | High | Reports, registry UI/data, portability, and packaging. |
+| P4A – Phase 4 Audit | GPT-5.6 Sol | Max | Independent release and reproducibility audit. |
 | Mechanical formatting or typo fixes | GPT-5.6 Luna | Low/Medium | Never use Luna for scientific design or audit sign-off. |
 
 ### Capability Fallback
@@ -117,11 +117,12 @@ When these exact models are unavailable:
 
 ## Per-Work-Package Invocation
 
-After M0 is committed manually, begin each package with this compact wrapper:
+After M0 – Repository Bootstrap is committed manually, begin each package with this compact wrapper:
 
 ```text
-Execute only [WORK PACKAGE ID] from [DOCUMENT]. Read AGENTS.md,
-docs/PHASE_STATUS.md, that package section, and directly affected code/tests.
+Execute only [WORK PACKAGE ID] from [DOCUMENT]. Read docs/STANDARDS.md,
+then AGENTS.md, docs/PHASE_STATUS.md, that package section, and directly
+affected code/tests.
 Obey its acceptance criteria. Patch existing work; do not expand scope.
 Run focused tests first, then required regression tests. Update PHASE_STATUS
 and CHANGELOG with evidence. Do not commit or push. Final report <=20 lines.

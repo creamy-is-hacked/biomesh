@@ -23,7 +23,7 @@ Choose GitHub.com, HTTPS, and browser authentication.
 ```bash
 mkdir -p ~/Projects/biomesh
 cd ~/Projects/biomesh
-git init -b main
+git init -b m0-repository-bootstrap
 ```
 
 Copy every Markdown file from the BioMesh planning package into `docs/`, then create the base structure:
@@ -65,13 +65,15 @@ Initial commit:
 ```bash
 git add README.md AGENTS.md CHANGELOG.md LIMITATIONS.md .gitignore docs src tests experiments parameters validation outputs/.gitkeep
 git status
-git commit -m "chore: initialize BioMesh repository"
-git push -u origin main
+git commit -m "M0: initialize BioMesh repository"
+git tag -a v0.0.0-m0 -m "M0: Repository Bootstrap"
+git push -u origin m0-repository-bootstrap
+git push origin v0.0.0-m0
 ```
 
-## 4. Phase 1 branch
+## 4. P1 – Phase 1 – Core Model branch
 ```bash
-git switch -c phase/1-core-model
+git switch -c phase-1-core-model
 ```
 
 Normal update cycle:
@@ -80,19 +82,14 @@ git status
 git diff
 git add <specific-files>
 git diff --staged
-git commit -m "feat: implement carbon and oxygen diffusion"
-git push -u origin phase/1-core-model
+git commit -m "P1: implement carbon and oxygen diffusion"
+git push -u origin phase-1-core-model
 ```
 
-Prefer small commits:
-- `feat:` new behavior.
-- `fix:` bug correction.
-- `test:` tests only.
-- `docs:` documentation.
-- `refactor:` behavior-preserving cleanup.
-- `chore:` tooling or maintenance.
+Prefix each commit with its current phase ID: `M0:`, `P1:`, `P1A:`, `P2:`,
+`P2A:`, `P3:`, `P3A:`, `P4:`, or `P4A:`.
 
-## 5. End of Phase 1
+## 5. P1 – Phase 1 – Core Model and P1A – Phase 1 Audit
 Run tests and audit:
 ```bash
 pytest -q
@@ -102,15 +99,15 @@ Update status documents, then commit:
 ```bash
 git add .
 git diff --staged
-git commit -m "docs: complete Phase 1 audit evidence"
+git commit -m "P1A: complete Phase 1 Audit evidence"
 git push
 ```
 
 Create pull request:
 ```bash
-gh pr create --base main --head phase/1-core-model \
-  --title "Phase 1: audited core biofilm model" \
-  --body "Implements and audits the Phase 1 reaction-diffusion and individual-cell foundation."
+gh pr create --base main --head phase-1-core-model \
+  --title "P1 – Phase 1 – Core Model" \
+  --body "Implements P1 – Phase 1 – Core Model; P1A – Phase 1 Audit follows independently."
 ```
 
 After the PR is reviewed and checks pass:
@@ -120,20 +117,20 @@ gh pr merge --squash --delete-branch
 git switch main
 git pull --ff-only
 
-git tag -a v0.1.0-phase1 -m "BioMesh Phase 1 audited core model"
-git push origin v0.1.0-phase1
+git tag -a v0.1.0 -m "P1: Phase 1 – Core Model"
+git push origin v0.1.0
 ```
 
 Create release:
 ```bash
-gh release create v0.1.0-phase1 --generate-notes --title "BioMesh Phase 1"
+gh release create v0.1.0 --generate-notes --title "P1 – Phase 1 – Core Model"
 ```
 
-## 6. Phase 2 branch
+## 6. P2 – Phase 2 – Colony System branch
 ```bash
 git switch main
 git pull --ff-only
-git switch -c phase/2-colony-system
+git switch -c phase-2-colony-system
 ```
 
 Use the same inspect, stage, commit, and push cycle:
@@ -142,21 +139,21 @@ git status
 git diff
 git add <specific-files>
 git diff --staged
-git commit -m "feat: add quorum signal diffusion and decay"
-git push -u origin phase/2-colony-system
+git commit -m "P2: add quorum signal diffusion and decay"
+git push -u origin phase-2-colony-system
 ```
 
-## 7. End of Phase 2
-Run full validation and the Phase 2 audit, then:
+## 7. P2 – Phase 2 – Colony System and P2A – Phase 2 Audit
+Run full validation and P2A – Phase 2 Audit, then:
 ```bash
 git add .
 git diff --staged
-git commit -m "docs: complete Phase 2 audit evidence"
+git commit -m "P2A: complete Phase 2 Audit evidence"
 git push
 
-gh pr create --base main --head phase/2-colony-system \
-  --title "Phase 2: quorum, EPS, and competition" \
-  --body "Adds and audits quorum sensing, EPS, competition, physiological states, and detachment."
+gh pr create --base main --head phase-2-colony-system \
+  --title "P2 – Phase 2 – Colony System" \
+  --body "Implements P2 – Phase 2 – Colony System; P2A – Phase 2 Audit follows independently."
 ```
 
 After checks and review:
@@ -166,10 +163,10 @@ gh pr merge --squash --delete-branch
 git switch main
 git pull --ff-only
 
-git tag -a v0.2.0 -m "BioMesh audited quorum, EPS, and competition model"
+git tag -a v0.2.0 -m "P2: Phase 2 – Colony System"
 git push origin v0.2.0
 
-gh release create v0.2.0 --generate-notes --title "BioMesh v0.2.0"
+gh release create v0.2.0 --generate-notes --title "P2 – Phase 2 – Colony System"
 ```
 
 ## 8. Safe daily commands
@@ -222,14 +219,14 @@ git merge --abort
 
 ## 10. Issues and milestones
 Create milestones in GitHub:
-- Phase 1 — Core Model.
-- Phase 1 Audit.
-- Phase 2 — Colony System.
-- Phase 2 Audit.
-- Phase 3 — Desktop GUI.
-- Phase 3 Audit.
-- Phase 4 — Research Platform.
-- Phase 4 Audit.
+- P1 – Phase 1 – Core Model.
+- P1A – Phase 1 Audit.
+- P2 – Phase 2 – Colony System.
+- P2A – Phase 2 Audit.
+- P3 – Phase 3 – Desktop GUI.
+- P3A – Phase 3 Audit.
+- P4 – Phase 4 – Research Platform.
+- P4A – Phase 4 Audit.
 
 Create one issue per work package or audit failure. From the terminal:
 ```bash
@@ -245,7 +242,7 @@ sudo apt install git-lfs
 git lfs install
 git lfs track "validation/data/*.parquet"
 git add .gitattributes
-git commit -m "chore: track validation datasets with Git LFS"
+git commit -m "P4: track validation datasets with Git LFS"
 ```
 
 ## 12. Token-efficient Codex and Git practice
@@ -257,57 +254,56 @@ git commit -m "chore: track validation datasets with Git LFS"
 - Use `git diff` as the source of truth for review.
 - Start new Codex sessions at phase or issue boundaries.
 
-## 12. Phase 3 branch and release
+## 13. P3 – Phase 3 – Desktop GUI branch and release
 ```bash
 git switch main
 git pull --ff-only
-git switch -c phase/3-desktop-gui
+git switch -c phase-3-desktop-gui
 # inspect, stage specific files, commit, and push regularly
-git push -u origin phase/3-desktop-gui
+git push -u origin phase-3-desktop-gui
 ```
 
 After `07_PHASE_THREE_AUDIT.md` passes:
 ```bash
 git add .
-git commit -m "docs: complete Phase 3 audit evidence"
+git commit -m "P3A: complete Phase 3 Audit evidence"
 git push
-gh pr create --base main --head phase/3-desktop-gui \
-  --title "Phase 3: desktop scientific workbench" \
-  --body "Adds and audits the Linux desktop GUI without changing model science."
+gh pr create --base main --head phase-3-desktop-gui \
+  --title "P3 – Phase 3 – Desktop GUI" \
+  --body "Implements P3 – Phase 3 – Desktop GUI; P3A – Phase 3 Audit follows independently."
 gh pr merge --squash --delete-branch
 git switch main && git pull --ff-only
-git tag -a v0.3.0 -m "BioMesh audited desktop scientific workbench"
+git tag -a v0.3.0 -m "P3: Phase 3 – Desktop GUI"
 git push origin v0.3.0
-gh release create v0.3.0 --generate-notes --title "BioMesh v0.3.0"
+gh release create v0.3.0 --generate-notes --title "P3 – Phase 3 – Desktop GUI"
 ```
 
-## 13. Phase 4 branch and release
+## 14. P4 – Phase 4 – Research Platform branch and release
 ```bash
 git switch main
 git pull --ff-only
-git switch -c phase/4-research-platform
-git push -u origin phase/4-research-platform
+git switch -c phase-4-research-platform
+git push -u origin phase-4-research-platform
 ```
 
 After `09_PHASE_FOUR_AUDIT.md` passes:
 ```bash
 git add .
-git commit -m "docs: complete Phase 4 audit evidence"
+git commit -m "P4A: complete Phase 4 Audit evidence"
 git push
-gh pr create --base main --head phase/4-research-platform \
-  --title "Phase 4: reproducible research platform" \
-  --body "Adds audited campaigns, plugins, local queueing, portable projects, and packaging."
+gh pr create --base main --head phase-4-research-platform \
+  --title "P4 – Phase 4 – Research Platform" \
+  --body "Implements P4 – Phase 4 – Research Platform; P4A – Phase 4 Audit follows independently."
 gh pr merge --squash --delete-branch
 git switch main && git pull --ff-only
-git tag -a v0.4.0 -m "BioMesh audited reproducible research platform"
+git tag -a v0.4.0 -m "P4: Phase 4 – Research Platform"
 git push origin v0.4.0
-gh release create v0.4.0 --generate-notes --title "BioMesh v0.4.0"
+gh release create v0.4.0 --generate-notes --title "P4 – Phase 4 – Research Platform"
 ```
 
 ## 14. Release order
 Do not skip audit gates:
 ```text
-v0.1.0-phase1 -> v0.2.0 -> v0.3.0 -> v0.4.0
-core science     colony    desktop    platform
+v0.0.0-m0 -> v0.1.0 -> v0.1.1-audit -> v0.2.0 -> v0.2.1-audit -> v0.3.0 -> v0.3.1-audit -> v0.4.0 -> v0.4.1-audit
+M0          P1        P1A             P2        P2A             P3        P3A             P4        P4A
 ```
-

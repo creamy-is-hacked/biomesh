@@ -1,4 +1,4 @@
-# BioMesh Phase 4 Audit
+# BioMesh P4A – Phase 4 Audit
 
 ## Purpose
 Verify that BioMesh functions as an extensible, reproducible local research platform without compromising audited science.
@@ -9,7 +9,7 @@ Verify that BioMesh functions as an extensible, reproducible local research plat
 ## Critical Checks
 
 ### A. Regression and provenance
-- [ ] Phase 1–3 audits remain valid.
+- [ ] P1A – Phase 1 Audit, P2A – Phase 2 Audit, and P3A – Phase 3 Audit remain valid.
 - [ ] Completed runs are immutable and fully identified.
 - [ ] Model, parameter, plugin, seed, commit, and environment versions are recorded.
 
@@ -89,6 +89,6 @@ Release recommendation:
 
 ## Tag
 ```bash
-git tag -a v0.4.0 -m "BioMesh audited reproducible research platform"
-git push origin v0.4.0
+git tag -a v0.4.1-audit -m "P4A: Phase 4 Audit"
+git push origin v0.4.1-audit
 ```

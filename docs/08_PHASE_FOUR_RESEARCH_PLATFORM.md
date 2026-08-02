@@ -1,10 +1,10 @@
-# BioMesh Phase 4 — Reproducible Research Platform
+# BioMesh P4 – Phase 4 – Research Platform
 
 ## Goal
 Evolve BioMesh from a single desktop simulator into an extensible microbial-experiment platform while preserving audited models and reproducibility.
 
 ## Completion Gate
-Phase 4 is complete when campaigns, plugins, comparison workflows, packaging, and a documented extension example work from a clean install and the Phase 4 audit passes.
+P4 – Phase 4 – Research Platform is complete when campaigns, plugins, comparison workflows, packaging, and a documented extension example work from a clean install and P4A – Phase 4 Audit passes.
 
 ## Scope
 Implement:
@@ -104,8 +104,8 @@ Acceptance:
 
 ## Codex Execution Prompt
 ```text
-Implement BioMesh Phase 4 only. Preserve the audited engine and GUI.
-Read AGENTS.md, this plan, and the Phase 3 public interfaces. Complete
+Implement BioMesh P4 – Phase 4 – Research Platform only. Preserve the audited engine and GUI.
+Read `STANDARDS.md`, then AGENTS.md, this plan, and the P3 – Phase 3 – Desktop GUI public interfaces. Complete
 one work package at a time with tests and migration notes. Prefer
 versioned schemas and narrow plugin contracts. Do not add cloud,
 clinical, or unaudited biological claims. Summaries stay under 250 words.
@@ -122,6 +122,6 @@ clinical, or unaudited biological claims. Summaries stay under 250 words.
 1. Run full regression, campaign, plugin, archive, and packaging tests.
 2. Reproduce a multi-condition campaign from a clean installation.
 3. Update architecture, extension guide, user guide, changelog, and limitations.
-4. Push `phase/4-research-platform`.
+4. Push `phase-4-research-platform`.
 5. Execute `09_PHASE_FOUR_AUDIT.md`.
 6. Merge and tag only after audit pass.
