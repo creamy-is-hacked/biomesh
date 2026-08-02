@@ -33,7 +33,7 @@ Source: `docs/01_PHASE_ONE_CORE_MODEL.md`.
 | ID | Work package | Status |
 | --- | --- | --- |
 | P1-WP01 | Repository and configuration | COMPLETE |
-| P1-WP02 | Solute fields | INCOMPLETE |
+| P1-WP02 | Solute fields | COMPLETE |
 | P1-WP03 | Cell model | INCOMPLETE |
 | P1-WP04 | Metabolism | INCOMPLETE |
 | P1-WP05 | Mechanics and attachment | INCOMPLETE |
@@ -46,10 +46,22 @@ P1-WP01 validation evidence:
   `.[dev]` successfully and `python -m biomesh --help` passed.
 - `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
   passed in the repository environment (6 tests).
-- `parameters/p1_core_model.toml` passed strict TOML/Pydantic validation.
-  Its five P1 biological quantities use SI units and explicitly record value,
-  source, and uncertainty as `CALIBRATION_REQUIRED`; no constants or
-  citations were added.
+- At the P1-WP01 handoff, `parameters/p1_core_model.toml` passed strict
+  TOML/Pydantic validation with five P1 biological quantities. Each used SI
+  units and explicitly recorded value, source, and uncertainty as
+  `CALIBRATION_REQUIRED`; no constants or citations were added.
+
+P1-WP02 validation evidence:
+
+- Carbon and oxygen field inputs require caller-provided SI transport and
+  boundary values. The parameter file records the two effective diffusivities
+  and two bulk concentrations as `CALIBRATION_REQUIRED`; no values or sources
+  were invented.
+- `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
+  passed in the repository environment (13 tests). The test suite includes a
+  manufactured pure-diffusion benchmark, grid-refinement convergence,
+  nonnegative-concentration behavior, explicit stability rejection, and
+  conservative cell-to-grid source/sink mapping.
 
 ## P2 – Phase 2 – Colony System
 
@@ -96,10 +108,11 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P1-WP02 – Solute fields` is the first incomplete work package. Do not begin
-it until separately requested.
+`P1-WP03 – Cell model` is the first incomplete work package. Do not begin it
+until separately requested.
 
 ## Remaining Issues
 
-- No P1 scientific model, solute field, cell model, metabolism, mechanics, or
-  output implementation has begun.
+- The P1 solute-field transport foundation is complete. Cell model,
+  metabolism, mechanics, simulation orchestration, and output implementation
+  have not begun.

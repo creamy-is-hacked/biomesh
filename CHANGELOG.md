@@ -13,3 +13,6 @@ All notable repository changes are documented here.
 - P1-WP01 – Versioned TOML biological-parameter records with strict Pydantic
   validation, explicit `CALIBRATION_REQUIRED` handling, and a provenance-only
   P1 starter parameter file.
+- P1-WP02 – Configurable carbon and oxygen finite-volume diffusion fields with
+  explicit stability validation, prescribed transport boundaries, and
+  conservative cell exchange mapping.

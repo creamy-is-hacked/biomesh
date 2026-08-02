@@ -44,3 +44,39 @@ source = "CALIBRATION_REQUIRED"
 uncertainty = "CALIBRATION_REQUIRED"
 notes = "Required by the P1 carbon uptake balance; no value is approved."
 calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "effective_carbon_diffusivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^2 s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP02 carbon transport; no medium-specific value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "effective_oxygen_diffusivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^2 s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP02 oxygen transport; no medium-specific value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "carbon_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required top-boundary condition for P1-WP02 carbon transport; no experiment value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "oxygen_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required top-boundary condition for P1-WP02 oxygen transport; no experiment value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

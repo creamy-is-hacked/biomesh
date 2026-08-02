@@ -1,8 +1,10 @@
 # Parameter Sources
 
-P1-WP01 defines a versioned TOML parameter-file contract. The starter file,
-`parameters/p1_core_model.toml`, contains only quantities required by the P1
-equations and marks every value, source, and uncertainty as
+P1-WP01 defines a versioned TOML parameter-file contract. P1-WP02 extends the
+starter file, `parameters/p1_core_model.toml`, with effective carbon and
+oxygen diffusivities plus the two top-boundary bulk concentrations. The file
+contains only quantities required by the implemented P1 equations and marks
+every value, source, and uncertainty as
 `CALIBRATION_REQUIRED`. It supplies no biological constants, citations, or
 calibration results.
 

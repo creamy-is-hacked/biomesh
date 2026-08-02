@@ -16,10 +16,21 @@ tests           -> public package/module command
 Documentation and parameter provenance contracts are separate from runtime
 code. CI installs the package and runs linting, type checking, and tests.
 
-## Planned components
+## P1-WP02 solute fields
 
-The following P1 – Phase 1 – Core Model components are planned but not implemented: parameter
-configuration, solute fields, cell geometry, mechanics, metabolism,
-simulation orchestration, and scientific outputs. They must keep a directed
-dependency structure and avoid coupling presentation or output layers back
-into scientific calculations.
+`biomesh.solutes` implements independent carbon and oxygen finite-volume
+fields. It accepts all transport and boundary-condition values from callers;
+the module has no approved biological defaults. Its transport boundary
+conditions are constant bulk concentration at the top, no flux at the bottom,
+and periodic sides. Cell exchange is a small local data record mapped into
+volumetric source terms without importing the future P1 cell or metabolism
+modules.
+
+```text
+P1 caller -> biomesh.solutes
+cell exchange record -> source-rate mapping -> carbon and oxygen fields
+```
+
+Cell geometry, mechanics, metabolism, simulation orchestration, and scientific
+outputs remain unimplemented planned P1 components. They must avoid coupling
+presentation or output layers back into scientific calculations.
