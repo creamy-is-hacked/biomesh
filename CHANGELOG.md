@@ -19,3 +19,7 @@ All notable repository changes are documented here.
 - P1-WP03 – Configurable, deterministic 2D capsule-cell state with dry
   biomass-driven elongation, lineage-preserving division, and explicit
   validation of geometry and inputs.
+- P1-WP04 – Deterministic dual-substrate Monod metabolism with exact biomass
+  ODE integration, explicit carbon and oxygen yields, maintenance/death loss
+  accounting, conservative local solute coupling, and closed-system balance
+  verification.

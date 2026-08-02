@@ -16,7 +16,19 @@ def test_parameter_file_loads_required_provenance_records() -> None:
     parameters = load_parameter_file(PARAMETER_FILE)
 
     assert parameters.schema_version == 1
-    assert len(parameters.biological_parameters) == 12
+    assert len(parameters.biological_parameters) == 13
+    assert {
+        parameter.name for parameter in parameters.biological_parameters
+    }.issuperset(
+        {
+            "maximum_specific_growth_rate",
+            "carbon_half_saturation_constant",
+            "oxygen_half_saturation_constant",
+            "death_rate",
+            "biomass_yield_on_carbon",
+            "biomass_yield_on_oxygen",
+        }
+    )
     assert {
         parameter.value for parameter in parameters.biological_parameters
     } == {"CALIBRATION_REQUIRED"}

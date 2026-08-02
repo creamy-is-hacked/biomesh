@@ -35,7 +35,7 @@ Source: `docs/01_PHASE_ONE_CORE_MODEL.md`.
 | P1-WP01 | Repository and configuration | COMPLETE |
 | P1-WP02 | Solute fields | COMPLETE |
 | P1-WP03 | Cell model | COMPLETE |
-| P1-WP04 | Metabolism | INCOMPLETE |
+| P1-WP04 | Metabolism | COMPLETE |
 | P1-WP05 | Mechanics and attachment | INCOMPLETE |
 | P1-WP06 | Outputs | INCOMPLETE |
 | P1A | Phase 1 Audit | INCOMPLETE |
@@ -74,6 +74,19 @@ P1-WP03 validation evidence:
   tangent daughter capsule geometry.
 - `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
   passed in the repository environment (21 tests); `git diff --check` passed.
+
+P1-WP04 validation evidence:
+
+- Dual-substrate Monod kinetics use caller-provided SI parameters, exact
+  fixed-local-concentration biomass ODE integration, explicit carbon and oxygen
+  yields, and the configured first-order maintenance/death loss. Every unknown
+  biological value remains marked `CALIBRATION_REQUIRED`.
+- Focused tests verify Monod limiting cases, the analytical well-mixed growth
+  solution, yield/death accounting, conservative local field coupling,
+  closed-system mass balance, deterministic replay, and explicit uptake
+  failure without partial field mutation.
+- `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
+  passed in the repository environment (39 tests); `git diff --check` passed.
 
 ## P2 – Phase 2 – Colony System
 
@@ -120,11 +133,11 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P1-WP04 – Metabolism` is the first incomplete work package. Do not begin it
-until separately requested.
+`P1-WP05 – Mechanics and attachment` is the first incomplete work package. Do
+not begin it until separately requested.
 
 ## Remaining Issues
 
-- The P1 solute-field transport and cell-model foundations are complete.
-  Metabolism, mechanics, simulation orchestration, and output implementation
-  have not begun.
+- The P1 solute-field, cell-model, and metabolism foundations are complete.
+  Mechanics, simulation orchestration, and output implementation have not
+  begun.

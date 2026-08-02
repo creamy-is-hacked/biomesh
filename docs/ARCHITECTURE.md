@@ -31,6 +31,23 @@ P1 caller -> biomesh.solutes
 cell exchange record -> source-rate mapping -> carbon and oxygen fields
 ```
 
-Cell geometry, mechanics, metabolism, simulation orchestration, and scientific
-outputs remain unimplemented planned P1 components. They must avoid coupling
-presentation or output layers back into scientific calculations.
+Mechanics, simulation orchestration, and scientific outputs remain
+unimplemented planned P1 components. They must avoid coupling presentation or
+output layers back into scientific calculations.
+
+## P1-WP04 metabolism
+
+`biomesh.metabolism` depends on the completed cell and solute interfaces. It
+samples both local solute concentrations at the start of a step, integrates
+the specified biomass ODE exactly at those fixed concentrations, and maps
+growth-associated whole-cell uptake back through the conservative solute
+exchange interface. Caller-provided SI parameters contain all kinetic, yield,
+and maintenance/death behavior; the module has no biological defaults.
+
+```text
+cells + solute fields + metabolism parameters -> biomesh.metabolism
+biomesh.metabolism -> updated cells + conservative solute exchanges
+```
+
+Mechanics and future simulation/output layers may consume this interface, but
+metabolism does not import them.

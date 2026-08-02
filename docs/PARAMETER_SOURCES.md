@@ -1,10 +1,13 @@
 # Parameter Sources
 
-P1-WP01 defines a versioned TOML parameter-file contract. P1-WP02 extends the
-starter file, `parameters/p1_core_model.toml`, with effective carbon and
-oxygen diffusivities plus the two top-boundary bulk concentrations. The file
-contains only quantities required by the implemented P1 equations and marks
-every value, source, and uncertainty as
+P1-WP01 defines a versioned TOML parameter-file contract. P1-WP04 uses the
+starter file, `parameters/p1_core_model.toml`, for the maximum growth rate,
+carbon and oxygen half-saturation constants, the first-order maintenance/death
+rate, and independent carbon and oxygen biomass yields. Both yields use
+`kg mol^-1`, consistent with cell dry biomass in kilograms and solute exchange
+in moles. The oxygen yield was added by P1-WP04; its value and provenance are
+unknown. The file contains only quantities required by implemented P1
+equations and marks every value, source, and uncertainty as
 `CALIBRATION_REQUIRED`. It supplies no biological constants, citations, or
 calibration results.
 
