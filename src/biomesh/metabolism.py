@@ -16,7 +16,7 @@ All values use SI units.  This module contains no biological defaults.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from math import exp, expm1, isfinite
 
@@ -75,6 +75,8 @@ class CellMetabolismResult:
     final_dry_biomass_kg: float
     specific_growth_rate_s: float
     gross_biomass_production_kg: float
+    retained_biomass_production_kg: float
+    allocated_biomass_equivalent_kg: float
     maintenance_death_loss_kg: float
     carbon_uptake_mol: float
     oxygen_uptake_mol: float
@@ -128,14 +130,45 @@ def evaluate_cell_metabolism(
     death, which provides an explicit closed-system accounting identity for
     each substrate.
     """
+    return evaluate_allocated_cell_metabolism(
+        initial_dry_biomass_kg=initial_dry_biomass_kg,
+        carbon_concentration_mol_m3=carbon_concentration_mol_m3,
+        oxygen_concentration_mol_m3=oxygen_concentration_mol_m3,
+        time_step_s=time_step_s,
+        parameters=parameters,
+        growth_allocation_fraction=0.0,
+    )
+
+
+def evaluate_allocated_cell_metabolism(
+    initial_dry_biomass_kg: float,
+    carbon_concentration_mol_m3: float,
+    oxygen_concentration_mol_m3: float,
+    time_step_s: float,
+    parameters: MetabolismParameters,
+    *,
+    growth_allocation_fraction: float,
+) -> CellMetabolismResult:
+    """Integrate metabolism with an explicit gross-production allocation.
+
+    ``growth_allocation_fraction`` diverts that fraction of ``mu * X`` away
+    from retained cell biomass.  Substrate uptake remains tied to the full
+    gross biomass-equivalent production, so callers can account for the
+    allocated material in another explicitly modelled pool.  P1 callers use
+    :func:`evaluate_cell_metabolism`, which fixes the allocation to zero.
+    """
     _require_positive("initial_dry_biomass_kg", initial_dry_biomass_kg)
     _require_positive("time_step_s", time_step_s)
+    _require_fraction("growth_allocation_fraction", growth_allocation_fraction)
     specific_growth_rate_s = dual_substrate_monod_rate(
         carbon_concentration_mol_m3,
         oxygen_concentration_mol_m3,
         parameters,
     )
-    net_specific_rate_s = specific_growth_rate_s - parameters.death_rate_s
+    retained_specific_growth_rate_s = (
+        (1.0 - growth_allocation_fraction) * specific_growth_rate_s
+    )
+    net_specific_rate_s = retained_specific_growth_rate_s - parameters.death_rate_s
     exponent = net_specific_rate_s * time_step_s
     try:
         final_dry_biomass_kg = initial_dry_biomass_kg * exp(exponent)
@@ -162,6 +195,12 @@ def evaluate_cell_metabolism(
     gross_biomass_production_kg = (
         specific_growth_rate_s * integrated_biomass_kg_s
     )
+    allocated_biomass_equivalent_kg = (
+        growth_allocation_fraction * gross_biomass_production_kg
+    )
+    retained_biomass_production_kg = (
+        gross_biomass_production_kg - allocated_biomass_equivalent_kg
+    )
     maintenance_death_loss_kg = (
         parameters.death_rate_s * integrated_biomass_kg_s
     )
@@ -178,6 +217,8 @@ def evaluate_cell_metabolism(
         final_dry_biomass_kg=final_dry_biomass_kg,
         specific_growth_rate_s=specific_growth_rate_s,
         gross_biomass_production_kg=gross_biomass_production_kg,
+        retained_biomass_production_kg=retained_biomass_production_kg,
+        allocated_biomass_equivalent_kg=allocated_biomass_equivalent_kg,
         maintenance_death_loss_kg=maintenance_death_loss_kg,
         carbon_uptake_mol=carbon_uptake_mol,
         oxygen_uptake_mol=oxygen_uptake_mol,
@@ -191,6 +232,8 @@ def advance_metabolism(
     depth_m: float,
     dry_biomass_per_unit_length_kg_m: float,
     parameters: MetabolismParameters,
+    *,
+    growth_allocation_fractions: Mapping[str, float] | None = None,
 ) -> MetabolismStepResult:
     """Couple cell-local metabolism to carbon and oxygen solute fields.
 
@@ -206,6 +249,7 @@ def advance_metabolism(
         "dry_biomass_per_unit_length_kg_m",
         dry_biomass_per_unit_length_kg_m,
     )
+    allocations = _validated_allocations(cells, growth_allocation_fractions)
     results: list[CellMetabolismResult] = []
     exchanges: list[CellSoluteExchange] = []
     updated_cells: list[Cell] = []
@@ -216,7 +260,7 @@ def advance_metabolism(
         oxygen_row, oxygen_column = solute_fields.oxygen.cell_index(
             cell.x_m, cell.y_m
         )
-        result = evaluate_cell_metabolism(
+        result = evaluate_allocated_cell_metabolism(
             initial_dry_biomass_kg=cell.dry_biomass_kg,
             carbon_concentration_mol_m3=float(
                 solute_fields.carbon.concentration_mol_m3[
@@ -230,6 +274,7 @@ def advance_metabolism(
             ),
             time_step_s=time_step_s,
             parameters=parameters,
+            growth_allocation_fraction=allocations[cell.cell_id],
         )
         results.append(result)
         exchanges.append(
@@ -262,6 +307,31 @@ def advance_metabolism(
     return MetabolismStepResult(tuple(updated_cells), tuple(results))
 
 
+def _validated_allocations(
+    cells: Sequence[Cell],
+    allocations: Mapping[str, float] | None,
+) -> dict[str, float]:
+    cell_ids = [cell.cell_id for cell in cells]
+    if len(cell_ids) != len(set(cell_ids)):
+        raise MetabolismValidationError("cell IDs must be unique")
+    if allocations is None:
+        return dict.fromkeys(cell_ids, 0.0)
+    if not isinstance(allocations, Mapping) or set(allocations) != set(cell_ids):
+        raise MetabolismValidationError(
+            "growth_allocation_fractions must contain exactly one value for "
+            "every cell"
+        )
+    validated: dict[str, float] = {}
+    for cell_id in cell_ids:
+        allocation = allocations[cell_id]
+        _require_fraction(
+            f"growth_allocation_fractions[{cell_id!r}]",
+            allocation,
+        )
+        validated[cell_id] = allocation
+    return validated
+
+
 def _require_positive(name: str, value: float) -> None:
     if not isfinite(value) or value <= 0.0:
         raise MetabolismValidationError(
@@ -274,3 +344,8 @@ def _require_nonnegative(name: str, value: float) -> None:
         raise MetabolismValidationError(
             f"{name} must be finite and greater than or equal to zero"
         )
+
+
+def _require_fraction(name: str, value: float) -> None:
+    if not isfinite(value) or not 0.0 <= value <= 1.0:
+        raise MetabolismValidationError(f"{name} must be finite and within [0, 1]")

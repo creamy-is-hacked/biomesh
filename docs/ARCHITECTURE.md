@@ -1,12 +1,13 @@
 # Architecture
 
-## Current architecture through P2-WP01
+## Current architecture through P2-WP02
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
 and metadata-driven reproduction. P2-WP01 adds an isolated quorum-signal
 component and optional signal/history serialization without changing the P1
-orchestrator or its default artifacts.
+orchestrator or its default artifacts. P2-WP02 adds an isolated EPS allocation
+and local-matrix component; the audited P1 path still uses zero allocation.
 
 Dependency direction is intentionally simple:
 
@@ -16,7 +17,8 @@ validation      -> simulation orchestrator
 simulation      -> configuration-owned inputs + completed P1 components
 metabolism      -> cells + solutes
 mechanics       -> cells
-outputs         -> cells + solutes + quorum state
+EPS             -> cells + metabolism + solutes + quorum state
+outputs         -> cells + solutes + quorum state + optional EPS state
 quorum          -> cells + solutes
 tests           -> public component interfaces
 ```
@@ -156,4 +158,37 @@ and serialization path are unchanged.
 cells + signal field + quorum parameters -> biomesh.quorum
 biomesh.quorum -> updated signal + local histories + signal accounting
 optional signal + histories -> biomesh.outputs
+```
+
+## P2-WP02 EPS model
+
+`biomesh.eps` represents EPS as an immobile density field in `kg m^-3` on the
+same top-first grid geometry used by the audited solute and quorum fields. Each
+cell deposits EPS in the control volume containing its centre. P2-WP02 adds no
+EPS diffusion, decay, recycling, or shear-driven removal because those terms
+are not specified for this work package.
+
+The existing continuous quorum activation supplies `Q`. The caller-provided
+maximum allocation `f_EPS` gives `a = f_EPS Q`, and the shared metabolism
+integrator applies `dX/dt = ((1-a)mu-k_d)X`. Full gross anabolic production is
+charged to carbon and oxygen through the existing yield rules; the retained
+fraction increases living biomass and the allocated fraction accumulates as
+biomass-equivalent EPS. Each step reports both the EPS-pool residual and the
+combined living-biomass-plus-EPS residual. P1 calls the same integrator through
+its fixed zero-allocation interface, preserving audited behavior.
+
+Local cohesion and attachment strength are exposed as dimensionless
+multipliers `1 + sensitivity * EPS density`. This is a monotone mechanical
+interaction without inventing an absolute force scale, threshold, or
+detachment law. P2-WP05 may consume these modifiers when its separately
+specified shear behavior is implemented.
+
+`SimulationOutputWriter` can optionally serialize the EPS density array and a
+total-EPS table. Omitting EPS preserves the P1 artifact path.
+
+```text
+cells + quorum state + solutes + EPS field -> biomesh.eps
+biomesh.eps -> cost-adjusted cells + accumulated EPS + resource accounting
+local EPS density + sensitivities -> cohesion and attachment multipliers
+optional EPS field -> biomesh.outputs
 ```

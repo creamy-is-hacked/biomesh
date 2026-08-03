@@ -21,6 +21,14 @@ status remains `CALIBRATION_REQUIRED`. An induced rate of zero is the explicit
 configuration that disables positive feedback; the software does not silently
 select it.
 
+The isolated `parameters/p2_eps_model.toml` manifest adds the dimensionless
+`maximum_eps_allocation_fraction` and the
+`eps_cohesion_sensitivity` and `eps_attachment_strength_sensitivity` values in
+`m^3 kg^-1`. The sensitivities convert local EPS density in `kg m^-3` to
+dimensionless relative-strength multipliers. All three values, sources,
+uncertainties, and calibration statuses remain `CALIBRATION_REQUIRED`; the
+software supplies no biological defaults.
+
 The other P1-WP05 controls are explicit runtime configuration rather than
 biological constants: domain width is an experiment-specific SI length;
 maximum iterations and displacement fraction are numerical convergence
@@ -45,9 +53,9 @@ remain explicit rather than being silently defaulted.
 
 The P1 schema continues to require the complete P1 biological-parameter
 inventory. The separate P2-WP01 schema requires exactly the seven quorum
-records. Both reuse the same provenance fields, validate canonical SI units,
-and reject nonphysical numeric domains before values reach component
-constructors.
+records, and the P2-WP02 schema requires exactly the three EPS records. All
+reuse the same provenance fields, validate canonical SI units, and reject
+nonphysical numeric domains before values reach component constructors.
 
 ## File contract
 

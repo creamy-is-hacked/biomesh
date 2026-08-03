@@ -1,0 +1,28 @@
+schema_version = 1
+
+[[biological_parameters]]
+name = "maximum_eps_allocation_fraction"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required as f_EPS in P2-WP02; no producer-specific allocation fraction is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "eps_cohesion_sensitivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^3 kg^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required to convert local EPS density to a relative cohesion multiplier; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "eps_attachment_strength_sensitivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^3 kg^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required to convert local EPS density to a relative attachment-strength multiplier; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

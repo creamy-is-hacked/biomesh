@@ -50,7 +50,14 @@ _P2_WP01_PARAMETER_UNITS: dict[str, str] = {
     "quorum_activation_half_saturation_constant": "mol m^-3",
     "quorum_hill_coefficient": "1",
 }
-_KNOWN_PARAMETER_UNITS = _P1_PARAMETER_UNITS | _P2_WP01_PARAMETER_UNITS
+_P2_WP02_PARAMETER_UNITS: dict[str, str] = {
+    "maximum_eps_allocation_fraction": "1",
+    "eps_cohesion_sensitivity": "m^3 kg^-1",
+    "eps_attachment_strength_sensitivity": "m^3 kg^-1",
+}
+_KNOWN_PARAMETER_UNITS = (
+    _P1_PARAMETER_UNITS | _P2_WP01_PARAMETER_UNITS | _P2_WP02_PARAMETER_UNITS
+)
 _NONNEGATIVE_PARAMETERS = {
     "death_rate",
     "carbon_bulk_concentration",
@@ -60,6 +67,8 @@ _NONNEGATIVE_PARAMETERS = {
     "quorum_signal_degradation_rate",
     "basal_quorum_signal_production_rate",
     "induced_quorum_signal_production_rate",
+    "eps_cohesion_sensitivity",
+    "eps_attachment_strength_sensitivity",
 }
 
 
@@ -108,6 +117,11 @@ class BiologicalParameter(BaseModel):
             if not 0.0 <= self.value < 0.5:
                 raise ValueError(
                     "maximum_daughter_asymmetry_fraction must be within [0, 0.5)"
+                )
+        elif self.name == "maximum_eps_allocation_fraction":
+            if not 0.0 <= self.value <= 1.0:
+                raise ValueError(
+                    "maximum_eps_allocation_fraction must be within [0, 1]"
                 )
         elif self.name in _NONNEGATIVE_PARAMETERS:
             if self.value < 0.0:
@@ -169,6 +183,35 @@ class QuorumParameterSet(BaseModel):
         return self
 
 
+class EPSParameterSet(BaseModel):
+    """The versioned P2-WP02 EPS biological-parameter document."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    schema_version: Literal[1]
+    biological_parameters: list[BiologicalParameter] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_eps_parameter_names(self) -> Self:
+        """Reject duplicate or incomplete P2-WP02 parameter manifests."""
+        names = [parameter.name for parameter in self.biological_parameters]
+        if len(names) != len(set(names)):
+            raise ValueError("biological parameter names must be unique")
+        unexpected = sorted(set(names) - set(_P2_WP02_PARAMETER_UNITS))
+        if unexpected:
+            raise ValueError(
+                "unexpected P2-WP02 biological parameters: "
+                + ", ".join(unexpected)
+            )
+        missing = sorted(set(_P2_WP02_PARAMETER_UNITS) - set(names))
+        if missing:
+            raise ValueError(
+                "missing required P2-WP02 biological parameters: "
+                + ", ".join(missing)
+            )
+        return self
+
+
 def load_parameter_file(path: Path) -> ParameterSet:
     """Load and validate a TOML parameter file with an explicit error boundary."""
     try:
@@ -202,6 +245,25 @@ def load_quorum_parameter_file(path: Path) -> QuorumParameterSet:
 
     try:
         return QuorumParameterSet.model_validate(contents)
+    except ValidationError as error:
+        message = f"invalid parameter file {path}: {error}"
+        raise ParameterValidationError(message) from error
+
+
+def load_eps_parameter_file(path: Path) -> EPSParameterSet:
+    """Load and validate the isolated P2-WP02 EPS parameter document."""
+    try:
+        with path.open("rb") as parameter_file:
+            contents = tomllib.load(parameter_file)
+    except OSError as error:
+        message = f"unable to read parameter file {path}: {error.strerror or error}"
+        raise ParameterValidationError(message) from error
+    except tomllib.TOMLDecodeError as error:
+        message = f"invalid TOML in parameter file {path}: {error}"
+        raise ParameterValidationError(message) from error
+
+    try:
+        return EPSParameterSet.model_validate(contents)
     except ValidationError as error:
         message = f"invalid parameter file {path}: {error}"
         raise ParameterValidationError(message) from error

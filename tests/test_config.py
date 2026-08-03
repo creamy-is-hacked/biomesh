@@ -8,15 +8,18 @@ import pytest
 
 from biomesh.config import (
     BiologicalParameter,
+    EPSParameterSet,
     ParameterSet,
     ParameterValidationError,
     QuorumParameterSet,
+    load_eps_parameter_file,
     load_parameter_file,
     load_quorum_parameter_file,
 )
 
 PARAMETER_FILE = Path("parameters/p1_core_model.toml")
 QUORUM_PARAMETER_FILE = Path("parameters/p2_quorum_signal.toml")
+EPS_PARAMETER_FILE = Path("parameters/p2_eps_model.toml")
 
 
 def test_parameter_file_loads_required_provenance_records() -> None:
@@ -198,6 +201,62 @@ def test_quorum_parameter_rejects_non_si_unit_and_negative_rate() -> None:
             name="basal_quorum_signal_production_rate",
             value=-1.0,
             unit="mol s^-1",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )
+
+
+def test_eps_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP02 inputs remain isolated, complete, and uncalibrated."""
+    parameters = load_eps_parameter_file(EPS_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 3
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "maximum_eps_allocation_fraction",
+        "eps_cohesion_sensitivity",
+        "eps_attachment_strength_sensitivity",
+    }
+    assert {
+        parameter.value for parameter in parameters.biological_parameters
+    } == {"CALIBRATION_REQUIRED"}
+
+
+def test_incomplete_eps_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP02 manifest cannot silently configure the mechanism."""
+    parameter = BiologicalParameter(
+        name="maximum_eps_allocation_fraction",
+        value="CALIBRATION_REQUIRED",
+        unit="1",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP02"):
+        EPSParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_eps_parameter_rejects_non_si_unit_and_invalid_fraction() -> None:
+    """P2-WP02 parameters enforce canonical SI units and physical domains."""
+    with pytest.raises(ValueError, match="required SI unit"):
+        BiologicalParameter(
+            name="eps_cohesion_sensitivity",
+            value=1.0,
+            unit="kg m^-3",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )
+    with pytest.raises(ValueError, match=r"within \[0, 1\]"):
+        BiologicalParameter(
+            name="maximum_eps_allocation_fraction",
+            value=1.1,
+            unit="1",
             source="synthetic validation input",
             uncertainty="not applicable to synthetic validation",
             notes="Not a biological value.",

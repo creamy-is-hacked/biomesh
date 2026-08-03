@@ -3,7 +3,8 @@
 This module has no simulation update logic.  It writes the caller-owned
 ``Cell`` and ``SoluteFields`` state after a step, preserving SI quantities in
 column and array names. P2-WP01 optionally adds a quorum signal field and
-cell-local exposure/activation records without changing P1 artifacts. Biofilm
+cell-local exposure/activation records. P2-WP02 optionally adds EPS density
+and total-mass records without changing the P1 artifact path. Biofilm
 height is the greatest capsule-top elevation above the solid bottom; roughness
 is the population standard deviation of
 capsule-top elevations.  Both are geometric summaries, not biological
@@ -27,6 +28,7 @@ import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from biomesh.cells import Cell
+from biomesh.eps import EPSField
 from biomesh.quorum import CellQuorumState
 from biomesh.solutes import SoluteField, SoluteFields
 
@@ -218,6 +220,7 @@ class OutputPaths:
     mass_balance_table: Path
     field_files: tuple[Path, ...]
     quorum_history_table: Path | None = None
+    eps_summary_table: Path | None = None
 
 
 class SimulationOutputWriter:
@@ -247,7 +250,9 @@ class SimulationOutputWriter:
         self._division_event_rows: list[dict[str, object]] = []
         self._mass_balance_rows: list[dict[str, object]] = []
         self._quorum_history_rows: list[dict[str, object]] = []
+        self._eps_summary_rows: list[dict[str, object]] = []
         self._quorum_output_enabled: bool | None = None
+        self._eps_output_enabled: bool | None = None
         self._field_files: list[Path] = []
         self._last_time_s: float | None = None
         self._finalized = False
@@ -267,6 +272,7 @@ class SimulationOutputWriter:
         mass_balance_entries: Sequence[MassBalanceEntry],
         quorum_signal_field: SoluteField | None = None,
         quorum_states: Sequence[CellQuorumState] | None = None,
+        eps_field: EPSField | None = None,
     ) -> None:
         """Serialize a complete state snapshot and caller-reported balance.
 
@@ -293,9 +299,15 @@ class SimulationOutputWriter:
             signal_field=quorum_signal_field,
             states=quorum_states,
         )
+        validated_eps_field = self._validated_eps_field(solute_fields, eps_field)
         snapshot_index = len(self._field_files)
         field_file = self._fields_directory / f"{snapshot_index:06d}.npz"
-        _write_field_archive(field_file, solute_fields, quorum_signal_field)
+        _write_field_archive(
+            field_file,
+            solute_fields,
+            quorum_signal_field,
+            validated_eps_field,
+        )
         self._field_files.append(field_file)
 
         for cell in ordered_cells:
@@ -369,6 +381,14 @@ class SimulationOutputWriter:
                     "activation_fraction": observation.activation_fraction,
                 }
             )
+        if validated_eps_field is not None:
+            self._eps_summary_rows.append(
+                {
+                    "snapshot_index": snapshot_index,
+                    "time_s": time_s,
+                    "total_eps_kg": validated_eps_field.total_mass_kg,
+                }
+            )
         self._last_time_s = time_s
 
     def finalize(self) -> OutputPaths:
@@ -386,6 +406,11 @@ class SimulationOutputWriter:
             if self._quorum_output_enabled is True
             else None
         )
+        eps_summary_table = (
+            self._run_directory / "eps_summary.parquet"
+            if self._eps_output_enabled is True
+            else None
+        )
         _write_parquet(cells_table, self._cell_rows, _CELL_SCHEMA)
         _write_parquet(summary_table, self._summary_rows, _SUMMARY_SCHEMA)
         _write_parquet(
@@ -400,6 +425,12 @@ class SimulationOutputWriter:
                 self._quorum_history_rows,
                 _QUORUM_HISTORY_SCHEMA,
             )
+        if eps_summary_table is not None:
+            _write_parquet(
+                eps_summary_table,
+                self._eps_summary_rows,
+                _EPS_SUMMARY_SCHEMA,
+            )
         self._finalized = True
         return OutputPaths(
             run_directory=self._run_directory,
@@ -410,6 +441,7 @@ class SimulationOutputWriter:
             mass_balance_table=mass_balance_table,
             field_files=tuple(self._field_files),
             quorum_history_table=quorum_history_table,
+            eps_summary_table=eps_summary_table,
         )
 
     def _write_metadata(self) -> None:
@@ -531,6 +563,31 @@ class SimulationOutputWriter:
                 )
         return tuple(state_by_id[cell.cell_id] for cell in cells)
 
+    def _validated_eps_field(
+        self,
+        solute_fields: SoluteFields,
+        eps_field: EPSField | None,
+    ) -> EPSField | None:
+        eps_supplied = eps_field is not None
+        if self._eps_output_enabled is None:
+            self._eps_output_enabled = eps_supplied
+        elif self._eps_output_enabled != eps_supplied:
+            raise OutputValidationError(
+                "EPS output mode must remain consistent across snapshots"
+            )
+        if eps_field is None:
+            return None
+        carbon = solute_fields.carbon
+        if (
+            eps_field.shape != carbon.shape
+            or eps_field.width_m != carbon.width_m
+            or eps_field.height_m != carbon.height_m
+        ):
+            raise OutputValidationError(
+                "EPS field must share the solute grid geometry"
+            )
+        return eps_field
+
 
 _CELL_SCHEMA = pa.schema(
     [
@@ -592,6 +649,13 @@ _QUORUM_HISTORY_SCHEMA = pa.schema(
         pa.field("activation_fraction", pa.float64()),
     ]
 )
+_EPS_SUMMARY_SCHEMA = pa.schema(
+    [
+        pa.field("snapshot_index", pa.int64()),
+        pa.field("time_s", pa.float64()),
+        pa.field("total_eps_kg", pa.float64()),
+    ]
+)
 
 
 def _write_parquet(
@@ -612,6 +676,7 @@ def _write_field_archive(
     path: Path,
     fields: SoluteFields,
     quorum_signal_field: SoluteField | None = None,
+    eps_field: EPSField | None = None,
 ) -> None:
     arrays: tuple[tuple[str, np.ndarray[Any, np.dtype[Any]]], ...] = (
         (
@@ -665,6 +730,14 @@ def _write_field_archive(
                     dtype=np.float64,
                 ),
             ),
+        )
+    if eps_field is not None:
+        arrays += (
+            (
+                "eps_density_kg_m3",
+                np.asarray(eps_field.density_kg_m3, dtype=np.float64),
+            ),
+            ("eps_depth_m", np.asarray(eps_field.depth_m, dtype=np.float64)),
         )
     with ZipFile(path, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for name, array in arrays:

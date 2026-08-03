@@ -39,6 +39,10 @@ All notable repository changes are documented here.
   sensing, immutable exposure/activation history, discrete signal accounting,
   and optional signal/history outputs. All seven biological inputs remain
   configurable and `CALIBRATION_REQUIRED`.
+- P2-WP02 – Deterministic quorum-controlled EPS allocation and immobile local
+  accumulation with explicit producer growth cost, biomass-equivalent and
+  substrate accounting, monotone cohesion/attachment modifiers, optional EPS
+  outputs, and three configurable `CALIBRATION_REQUIRED` parameters.
 
 ### Fixed
 

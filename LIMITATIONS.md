@@ -31,3 +31,19 @@
 - P2-WP01 does not couple activation to EPS, competition, physiological state,
   waste, shear, or the Phase 1 orchestration loop; those remain later work
   packages or need an explicitly specified integration order.
+
+## P2-WP02 – EPS model
+
+- All three EPS parameters remain `CALIBRATION_REQUIRED`; manufactured SI
+  inputs verify allocation, accumulation, accounting, and monotonic direction
+  but are not biological values or benchmark claims.
+- EPS is an immobile local density field. P2-WP02 specifies no matrix
+  diffusion, degradation, recycling, or redistribution, so none is inferred.
+- EPS mass is the biomass-equivalent fraction of gross anabolic production in
+  the specified allocation equation. No unapproved EPS yield or composition
+  conversion is introduced.
+- Cohesion and attachment are relative dimensionless strength multipliers.
+  An absolute adhesion force law, detachment threshold, and shear response
+  remain outside P2-WP02 and must not be inferred from these modifiers.
+- EPS is coupled through the component interface and optional output path; the
+  Phase 1 reference orchestrator remains unchanged.
