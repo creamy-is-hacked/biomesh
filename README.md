@@ -6,12 +6,12 @@ development and a future Linux desktop research platform.
 ## Status
 
 The independent 2026-08-02 P1A – Phase 1 Audit accepted Phase 1 with recorded
-limitations. Executable numerical validations, boundary-aware global
-accounting, complete run provenance, and metadata-driven replay all pass. The
-default reference remains deliberately a zero-state software fixture: every
-biological parameter is `CALIBRATION_REQUIRED`, and no calibrated scientific
-result is claimed. Phase 2 may begin; see
-[the phase status](docs/PHASE_STATUS.md) for the current gate.
+limitations. All six P2 – Phase 2 – Colony System implementation packages are
+complete; the independent P2A release audit remains the current gate before
+Phase 3 may begin. The default P1 reference and all published P2 fixtures are
+manufactured software-validation evidence: every biological parameter remains
+`CALIBRATION_REQUIRED`, and no calibrated scientific result is claimed. See
+[the phase status](docs/PHASE_STATUS.md) for the current audit state.
 
 ## Development
 
@@ -29,6 +29,29 @@ ruff check .
 mypy src
 pytest -q
 ```
+
+The P2 command surface validates the published fixture set, runs seven
+experiment paths and four sweep paths, and renders one report per campaign:
+
+```bash
+python -m biomesh validate all
+python -m biomesh experiment experiments/producer.yaml
+python -m biomesh experiment experiments/nonproducer.yaml
+python -m biomesh experiment experiments/competition_50_50.yaml
+python -m biomesh experiment experiments/inoculation_intermixed.yaml
+python -m biomesh experiment experiments/inoculation_segregated.yaml
+python -m biomesh experiment experiments/eps_constitutive.yaml
+python -m biomesh experiment experiments/eps_quorum_controlled.yaml
+python -m biomesh sweep experiments/qs_threshold_sweep.yaml
+python -m biomesh sweep experiments/nutrient_oxygen_sweep.yaml
+python -m biomesh sweep experiments/eps_cost_sweep.yaml
+python -m biomesh sweep experiments/shear_sweep.yaml
+python -m biomesh report outputs/<campaign-directory>
+```
+
+Each published condition runs at fixed seeds 101, 202, and 303. Generated
+Parquet, NumPy, manifest, statistical, ranking, and PNG artifacts are release
+reproducibility evidence only; they are not biological calibration.
 
 Generated simulation output is intentionally not tracked. Project rules,
 scientific conventions, and phase boundaries are in [AGENTS.md](AGENTS.md).

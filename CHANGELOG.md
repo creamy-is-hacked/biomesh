@@ -67,6 +67,11 @@ All notable repository changes are documented here.
 
 ### Audit findings
 
+- P2A – Independent audit of
+  `88386fab116976ebae4b6a9a5a53bb1511053e86` found `P2A-003`: the implemented
+  P2-WP05/P2-WP06 release behavior was absent from `docs/ARCHITECTURE.md`, and
+  `README.md` still said Phase 2 may begin. The technical, campaign, artifact,
+  accounting, provenance, and byte-replay evidence otherwise passed.
 - P2A – Independent audit of `d0c80c5` failed (`P2A-001`): the P2 production
   campaign runner and all documented experiment, sweep, and report CLI paths
   were absent. This P2-WP06 remediation adds the deterministic runner and the
@@ -80,6 +85,11 @@ All notable repository changes are documented here.
 
 ### Fixed
 
+- P2-WP06 – Remediated `P2A-003` by aligning README status and the documented
+  command surface with all 11 published fixtures, and by documenting P2-WP05
+  waste/shear plus the P2-WP06 campaign adapter, update order, artifacts,
+  statistics, reports, and calibration boundary. The full required gate passed
+  with 145 tests; P2A must rerun independently before Phase 2 acceptance.
 - P2-WP06 – Added the executable P2 update adapter, strict artifact checks,
   raw Parquet/NumPy run outputs, provenance manifests, replicate statistics,
   descriptive observed-range sensitivity rankings, and PNG reports. Verified

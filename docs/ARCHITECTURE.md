@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P2-WP04
+## Current architecture through P2-WP06
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -12,6 +12,9 @@ P2-WP03 composes those interfaces into categorical producer/nonproducer
 competition and optional competition-history output. P2-WP04 adds a centralized
 physiological state machine, optional activity fractions at the shared
 metabolism boundary, and state-ledger output without changing the P1 path.
+P2-WP05 adds waste transport and deterministic shear-exposure detachment.
+P2-WP06 supplies the replicated campaign harness and the manufactured P2
+application adapter exposed through the CLI.
 
 Dependency direction is intentionally simple:
 
@@ -24,8 +27,13 @@ mechanics       -> cells
 EPS             -> cells + metabolism + solutes + quorum state
 competition     -> cells + metabolism + solutes + quorum state + EPS
 physiology      -> cells + solutes; supplies activity to metabolism/EPS/competition
-outputs         -> cells + solutes + optional quorum/EPS/competition/physiology state
+outputs         -> cells + solutes + optional quorum/EPS/competition/physiology/waste/shear state
 quorum          -> cells + solutes
+shear           -> cells + EPS + physiology state labels
+waste           -> cells + solutes + optional physiology activity
+experiments     -> campaign schema + caller-supplied run executor + aggregation
+P2 campaign     -> approved P2 interfaces + experiments + outputs
+CLI entry point -> P1 paths + P2 validation/experiment/sweep/report paths
 tests           -> public component interfaces
 ```
 
@@ -258,3 +266,74 @@ cells + carbon/oxygen history + physiological parameters -> physiology
 physiology -> states + activity fractions + dead/recycled/detached ledger
 optional physiology snapshot -> biomesh.outputs
 ```
+
+## P2-WP05 waste and shear
+
+`biomesh.waste` reuses the audited finite-volume `SoluteField` geometry for a
+waste concentration in `mol m^-3`. Caller-supplied whole-cell production rates
+are mapped to local control volumes and may be scaled by the same physiological
+activity mapping consumed by metabolism, EPS, and competition. First-order
+removal and the prescribed top boundary are included in the explicit stability
+limit and in the discrete molar accounting record. No biomass-to-waste yield or
+waste toxicity law is inferred.
+
+`biomesh.shear` accumulates deterministic uniform surface-parallel exposure in
+`Pa s`. A non-detached cell is selected when exposure reaches the configured
+base threshold multiplied by its caller-declared attachment resistance and its
+local P2-WP02 EPS attachment-strength multiplier. The shear component returns
+selected IDs and histories; `biomesh.physiology` owns the terminal detached
+transition and reconciled biomass ledger. Detached cells are excluded from the
+retained mechanics view, and the output layer records waste maps and shear
+summaries only when those states are supplied.
+
+```text
+cells + activity + waste field + waste parameters -> waste transport + molar accounting
+cells + EPS + attachment + shear parameters       -> selected detachment IDs
+selected IDs + physiology                         -> terminal detached ledger
+optional waste/shear state                        -> biomesh.outputs
+```
+
+This is a simplified exposure model, not CFD or a stochastic erosion law. All
+seven waste/shear biological inputs remain external, SI-labelled, and
+`CALIBRATION_REQUIRED`.
+
+## P2-WP06 campaigns and application path
+
+`biomesh.experiments` owns the strict campaign schema, condition/seed matrix,
+raw-run contract, replicate statistics, and observed-range ranking. The
+repository's `experiments/p2_wp06_campaign.toml` remains an unresolved
+`CALIBRATION_REQUIRED` biological experiment definition; it cannot execute
+until its unknown values are supplied with approved provenance.
+
+`biomesh.p2_campaign` is a separate production adapter for manufactured
+software validation. Eleven strict root-level JSON-compatible YAML fixtures
+cover all 15 executable conditions exactly once: producer and nonproducer
+monocultures, 50:50 competition, two inoculation patterns, constitutive and
+quorum-controlled EPS, and quorum-threshold, joint nutrient/oxygen, EPS-cost,
+and shear sweeps. Every condition runs at fixed seeds 101, 202, and 303.
+
+Each manufactured run composes the approved interfaces in the recorded order:
+quorum transport/local sensing, physiology activity, shared-resource
+competition and EPS allocation, waste transport, shear selection, physiology
+state/ledger update, retained-cell mechanics, and accounting/output. This
+adapter introduces no new mutation, evolution, biological constant, or
+calibration claim.
+
+The CLI exposes `validate all`, `experiment`, `sweep`, and `report`. Each run
+writes canonical P2 Parquet tables and NumPy field archives plus commit, seed,
+environment, update-order, parameter-file, and SHA-256 provenance. Campaign
+manifests preserve immutable raw artifact hashes. Aggregation writes per-time
+replicate means, sample variances, and Student's t confidence intervals, plus
+descriptive absolute ranges between specified sweep-condition means. Reports
+validate the complete artifact tree before rendering a deterministic PNG.
+
+```text
+published fixture -> manufactured P2 adapter -> 3 fixed-seed raw runs per condition
+raw runs           -> immutable hashes + replicate statistics + descriptive rankings
+validated campaign -> deterministic PNG report
+biological TOML records remain separately hashed and CALIBRATION_REQUIRED
+```
+
+The rankings characterize only the manufactured conditions supplied to each
+sweep. They are not a global sensitivity analysis, biological uncertainty
+estimate, or calibrated scientific result.

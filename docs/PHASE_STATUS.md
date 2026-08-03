@@ -206,6 +206,12 @@ P2-WP06 validation evidence:
   reject missing Parquet and malformed NumPy artifacts. The full required gate
   passed with 145 tests. P2A must rerun independently; no audit, P3, mutation,
   evolution, or biological-calibration claim is included.
+- `P2A-003` documentation remediation updates README status and the complete
+  11-fixture CLI surface, and extends `docs/ARCHITECTURE.md` through P2-WP06
+  with waste/shear, campaign update order, artifacts, statistics, reports, and
+  calibration boundaries. Module help, `validate all`, Ruff, mypy,
+  `git diff --check`, and all 145 tests passed. P2A remains `INCOMPLETE` until
+  a fresh clean-checkout audit accepts this remediation.
 
 ## P3 – Phase 3 – Desktop GUI
 
@@ -244,8 +250,5 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- `P2A-001` remediation requires an independent clean-clone P2A rerun before
+- `P2A-003` remediation requires an independent clean-clone P2A rerun before
   Phase 2 can be accepted; this work package does not accept or merge Phase 2.
-- The current `phase/2-colony-system` branch is noncanonical; align it with
-  `phase-2-colony-system` before an accepted-phase handoff without rewriting
-  history.
