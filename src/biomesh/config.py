@@ -24,6 +24,30 @@ NonBlankText = Annotated[str, StringConstraints(min_length=1, pattern=r"\S")]
 FiniteValue = Annotated[float, AllowInfNan(allow_inf_nan=False)]
 ParameterValue = FiniteValue | CalibrationRequired
 
+_P1_PARAMETER_UNITS: dict[str, str] = {
+    "maximum_specific_growth_rate": "s^-1",
+    "carbon_half_saturation_constant": "mol m^-3",
+    "oxygen_half_saturation_constant": "mol m^-3",
+    "death_rate": "s^-1",
+    "biomass_yield_on_carbon": "kg mol^-1",
+    "biomass_yield_on_oxygen": "kg mol^-1",
+    "effective_carbon_diffusivity": "m^2 s^-1",
+    "effective_oxygen_diffusivity": "m^2 s^-1",
+    "carbon_bulk_concentration": "mol m^-3",
+    "oxygen_bulk_concentration": "mol m^-3",
+    "dry_biomass_per_unit_length": "kg m^-1",
+    "cell_radius": "m",
+    "division_length": "m",
+    "maximum_daughter_asymmetry_fraction": "1",
+    "maximum_permitted_cell_overlap": "m",
+}
+_P1_NONNEGATIVE_PARAMETERS = {
+    "death_rate",
+    "carbon_bulk_concentration",
+    "oxygen_bulk_concentration",
+    "maximum_permitted_cell_overlap",
+}
+
 
 class ParameterValidationError(ValueError):
     """Raised when a parameter file does not meet the P1 provenance contract."""
@@ -45,6 +69,11 @@ class BiologicalParameter(BaseModel):
     @model_validator(mode="after")
     def validate_calibration_record(self) -> Self:
         """Keep unknown values explicit and prevent unsupported numeric values."""
+        expected_unit = _P1_PARAMETER_UNITS.get(self.name)
+        if expected_unit is not None and self.unit != expected_unit:
+            raise ValueError(
+                f"unit for {self.name} must be the P1 SI unit {expected_unit!r}"
+            )
         if self.value == "CALIBRATION_REQUIRED":
             if self.source != "CALIBRATION_REQUIRED":
                 raise ValueError(
@@ -61,6 +90,16 @@ class BiologicalParameter(BaseModel):
                 )
         elif self.source == "CALIBRATION_REQUIRED":
             raise ValueError("numeric values require a non-placeholder source")
+        elif self.name == "maximum_daughter_asymmetry_fraction":
+            if not 0.0 <= self.value < 0.5:
+                raise ValueError(
+                    "maximum_daughter_asymmetry_fraction must be within [0, 0.5)"
+                )
+        elif self.name in _P1_NONNEGATIVE_PARAMETERS:
+            if self.value < 0.0:
+                raise ValueError(f"{self.name} must be greater than or equal to zero")
+        elif expected_unit is not None and self.value <= 0.0:
+            raise ValueError(f"{self.name} must be greater than zero")
 
         return self
 
@@ -75,10 +114,15 @@ class ParameterSet(BaseModel):
 
     @model_validator(mode="after")
     def validate_unique_parameter_names(self) -> Self:
-        """Reject duplicate records rather than choosing one implicitly."""
+        """Reject duplicate or incomplete P1 parameter manifests."""
         names = [parameter.name for parameter in self.biological_parameters]
         if len(names) != len(set(names)):
             raise ValueError("biological parameter names must be unique")
+        missing = sorted(set(_P1_PARAMETER_UNITS) - set(names))
+        if missing:
+            raise ValueError(
+                "missing required P1 biological parameters: " + ", ".join(missing)
+            )
         return self
 
 

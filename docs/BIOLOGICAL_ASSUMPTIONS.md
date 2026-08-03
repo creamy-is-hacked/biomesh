@@ -16,6 +16,20 @@ have been calibrated.
 | Validation | Test, benchmark, or unresolved validation need |
 | Status | Proposed, accepted, superseded, or rejected |
 
+## P1-WP02 solute assumptions
+
+| ID | Statement | Scope | Evidence | Consequence | Validation | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| P1-SOL-001 | P1 solutes use a constant bulk concentration at the top, no flux at the solid bottom, and periodic side boundaries. | P1-WP02 transport domain | `docs/01_PHASE_ONE_CORE_MODEL.md`; experiment applicability `CALIBRATION_REQUIRED` | Transport represents the prescribed reference domain and not other reactor boundaries. | Manufactured diffusion, no-flux, and periodic-grid tests | accepted |
+| P1-SOL-002 | Each whole-cell exchange is assigned to the single control volume containing the cell center. | P1-WP02 cell-to-grid coupling | Numerical mapping choice; biological applicability `CALIBRATION_REQUIRED` | Uptake is conservative but spatially point-local at the selected grid resolution. | Conservative exchange and physical-coordinate mapping tests | accepted |
+
+## P1-WP03 cell assumptions
+
+| ID | Statement | Scope | Evidence | Consequence | Validation | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| P1-CELL-001 | Capsule centerline length is proportional to dry biomass through a configured factor, while radius remains caller supplied. | P1-WP03 growth geometry | `docs/01_PHASE_ONE_CORE_MODEL.md`; empirical mapping `CALIBRATION_REQUIRED` | P1 elongation changes length without an inferred radius law. | Biomass-to-length and parameter-provenance tests | accepted |
+| P1-CELL-002 | Division preserves the parent axis and radius, places daughter capsules tangent, and samples bounded biomass asymmetry uniformly from a seeded generator. | P1-WP03 division | P1 deterministic division choice; biological support `CALIBRATION_REQUIRED` | Division conserves dry biomass and is reproducible but omits rotation and morphology change. | Biomass, geometry, lineage, and fixed-seed tests | accepted |
+
 ## P1-WP04 metabolism assumptions
 
 | ID | Statement | Scope | Evidence | Consequence | Validation | Status |

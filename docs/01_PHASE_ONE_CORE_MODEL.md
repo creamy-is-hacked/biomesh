@@ -17,6 +17,7 @@ Implement:
 - Deterministic seeds.
 - Structured parameter files with units and provenance.
 - Scientific outputs and validation tests.
+- Deterministic simulation orchestration and metadata-driven reproduction.
 
 Do not implement:
 - Quorum sensing.
@@ -143,6 +144,33 @@ Save:
 - Seed, parameters, version, and commit hash.
 
 Use Parquet for tables and compressed NumPy or Zarr-compatible arrays for fields.
+
+### P1-WP07 Simulation Orchestration & Reproducibility
+- Add a deterministic simulation orchestrator that composes the completed
+  configuration, solute, cell, metabolism, mechanics, and output interfaces.
+- Define and test one explicit update order; route all stochastic behavior
+  through the recorded seed.
+- Account globally for solute, biomass yield equivalents, death loss, cell
+  exchange, and transport across the prescribed top boundary. Periodic sides
+  and the no-flux bottom contribute zero boundary transfer.
+- Record the Git commit when available, package and dependency versions,
+  parameter file, seed, platform, and Python version for each run.
+- Provide the minimum P1 application paths: `run`, `validate diffusion`,
+  `validate growth`, `validate mass-balance`, and `reproduce`.
+- Provide a deterministic software reference run whose biological manifest
+  remains `CALIBRATION_REQUIRED`. It must not substitute synthetic numbers for
+  unknown biological parameters or claim calibrated scientific results.
+
+Acceptance:
+- A focused integration test executes the P1 component update order and proves
+  deterministic replay from identical inputs and seed.
+- Boundary-aware global mass accounting satisfies the configured absolute and
+  relative tolerances or fails explicitly.
+- Run metadata contains all required provenance and can drive a byte-identical
+  reproduction in the same recorded environment.
+- The five required CLI application paths execute successfully.
+- The calibration-placeholder reference run is clearly identified as
+  non-scientific and reproducible without inventing biological values.
 
 ## Required Tests
 - Parameter validation.

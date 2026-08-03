@@ -142,6 +142,32 @@ def test_periodic_side_overlap_is_detected_and_prevented() -> None:
     assert all(0.0 <= cell.x_m < parameters.domain_width_m for cell in result.cells)
 
 
+def test_periodic_contact_checks_capsule_geometry_beyond_nearest_centres() -> None:
+    """Long angled capsules use the closest periodic segment image."""
+    cells = (
+        _cell("a", 2.0, 1.0, length_m=6.0, radius_m=0.25),
+        _cell(
+            "b",
+            7.0,
+            2.0,
+            orientation_rad=math.pi / 6.0,
+            length_m=6.0,
+            radius_m=0.25,
+        ),
+    )
+
+    assert maximum_overlap(cells, 10.0) == pytest.approx(0.36602540378443893)
+    result = relax_cells(
+        cells,
+        _parameters(
+            domain_width_m=10.0,
+            maximum_iterations=100,
+            displacement_fraction=0.5,
+        ),
+    )
+    assert result.maximum_overlap_m <= 1.0e-10
+
+
 def test_solid_boundary_is_enforced_after_mechanics_update() -> None:
     cells = (
         _cell("low", 4.0, 0.1, orientation_rad=math.pi / 2.0),

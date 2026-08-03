@@ -266,32 +266,49 @@ def _pair_overlap_and_normal(
     first: Cell, second: Cell, domain_width_m: float
 ) -> tuple[float, Point]:
     horizontal_delta_m = second.x_m - first.x_m
-    image_delta_m = (
+    nearest_image_delta_m = (
         (horizontal_delta_m + domain_width_m / 2.0) % domain_width_m
         - domain_width_m / 2.0
     )
-    second_image_shift_m = image_delta_m - horizontal_delta_m
+    nearest_image_shift_m = nearest_image_delta_m - horizontal_delta_m
     first_start, first_end = first.centreline_endpoints_m
     second_start, second_end = second.centreline_endpoints_m
-    shifted_second_start = (
-        second_start[0] + second_image_shift_m,
-        second_start[1],
-    )
-    shifted_second_end = (
-        second_end[0] + second_image_shift_m,
-        second_end[1],
-    )
-    first_point, second_point = _closest_segment_points(
-        first_start,
-        first_end,
-        shifted_second_start,
-        shifted_second_end,
-    )
+    closest_contact: tuple[float, Point, Point, float] | None = None
+    for periodic_offset_m in (0.0, -domain_width_m, domain_width_m):
+        second_image_shift_m = nearest_image_shift_m + periodic_offset_m
+        shifted_second_start = (
+            second_start[0] + second_image_shift_m,
+            second_start[1],
+        )
+        shifted_second_end = (
+            second_end[0] + second_image_shift_m,
+            second_end[1],
+        )
+        first_point, second_point = _closest_segment_points(
+            first_start,
+            first_end,
+            shifted_second_start,
+            shifted_second_end,
+        )
+        distance_m = sqrt(
+            (second_point[0] - first_point[0]) ** 2
+            + (second_point[1] - first_point[1]) ** 2
+        )
+        if closest_contact is None or distance_m < closest_contact[0]:
+            closest_contact = (
+                distance_m,
+                first_point,
+                second_point,
+                nearest_image_delta_m + periodic_offset_m,
+            )
+
+    if closest_contact is None:  # pragma: no cover - the candidate set is fixed.
+        raise AssertionError("periodic contact search produced no candidates")
+    distance_m, first_point, second_point, image_delta_m = closest_contact
     difference = (
         second_point[0] - first_point[0],
         second_point[1] - first_point[1],
     )
-    distance_m = sqrt(difference[0] ** 2 + difference[1] ** 2)
     overlap_m = max(0.0, first.radius_m + second.radius_m - distance_m)
     if distance_m > 0.0:
         return overlap_m, (difference[0] / distance_m, difference[1] / distance_m)

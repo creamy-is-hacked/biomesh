@@ -1,20 +1,26 @@
 # Architecture
 
-## M0 – Repository Bootstrap implementation
+## Current P1 architecture
 
-The current codebase contains a minimal `biomesh` Python package and a
-typed command-line entry point. The command-line interface provides package
-help and version discovery only; it has no simulation behavior.
+The typed P1 components are composed by a deterministic simulation layer. The
+CLI exposes the numerical validators, calibration-placeholder reference run,
+and metadata-driven reproduction without adding presentation or Phase 2
+behavior.
 
 Dependency direction is intentionally simple:
 
 ```text
-CLI entry point -> biomesh package metadata
-tests           -> public package/module command
+CLI entry point -> validation + reference replay
+validation      -> simulation orchestrator
+simulation      -> configuration-owned inputs + completed P1 components
+metabolism      -> cells + solutes
+mechanics       -> cells
+outputs         -> cells + solutes
+tests           -> public component interfaces
 ```
 
-Documentation and parameter provenance contracts are separate from runtime
-code. CI installs the package and runs linting, type checking, and tests.
+Documentation and parameter provenance contracts remain separate from runtime
+science. No orchestration value overrides the biological manifest.
 
 ## P1-WP02 solute fields
 
@@ -24,16 +30,16 @@ the module has no approved biological defaults. Its transport boundary
 conditions are constant bulk concentration at the top, no flux at the bottom,
 and periodic sides. Cell exchange is a small local data record mapped into
 volumetric source terms without importing the future P1 cell or metabolism
-modules.
+modules. Arrays are top-first while physical coordinates use `y = 0 m` at the
+bottom; cell lookup reverses the vertical row index explicitly.
 
 ```text
 P1 caller -> biomesh.solutes
 cell exchange record -> source-rate mapping -> carbon and oxygen fields
 ```
 
-Simulation orchestration remains an unimplemented planned P1 component. It
-must avoid coupling presentation or output layers back into scientific
-calculations.
+Simulation orchestration consumes this interface without coupling output state
+back into transport calculations.
 
 ## P1-WP04 metabolism
 
@@ -59,7 +65,9 @@ metabolism does not import them.
 interact when the periodic-image distance between their centreline segments is
 less than the sum of their radii. The deterministic, translation-only solver
 applies pair corrections, maps horizontal centres through the periodic domain,
-and enforces the solid bottom at `y = 0 m` after each iteration.
+and enforces the solid bottom at `y = 0 m` after each iteration. Contact search
+checks the neighboring periodic segment images rather than assuming the
+nearest center image contains the closest capsule geometry.
 
 Initial surface behavior is an explicit `bottom` or `none` configuration.
 Bottom-attached cells remain tangent to the surface while retaining horizontal
@@ -80,9 +88,10 @@ future-phase behavior is introduced by P1-WP05.
 `biomesh.outputs` is a write-only consumer of the completed `Cell` and
 `SoluteFields` interfaces. It emits canonical Parquet cell, summary, division,
 and mass-balance tables plus deterministic compressed NumPy field archives.
-The caller supplies the seed, exact parameter mapping, package version, commit
-hash, and unit-aware mass-balance terms; the output layer does not infer model
-inputs or scientific fluxes. Height is the maximum capsule-top elevation and
+The caller supplies complete run provenance and unit-aware mass-balance terms;
+the output layer does not infer model inputs or scientific fluxes. It rejects
+snapshots whose supplied balance residual exceeds the configured combined
+absolute-plus-relative tolerance. Height is the maximum capsule-top elevation and
 roughness is the population standard deviation of capsule-top elevations, both
 in metres.
 
@@ -93,3 +102,28 @@ biomesh.outputs -> Parquet tables + compressed NumPy fields + metadata JSON
 
 Output serialization does not mutate simulation state or feed data back into
 the model.
+
+## P1-WP07 orchestration and reproducibility
+
+`biomesh.simulation` applies one recorded update order: coupled metabolism and
+solute transport, seeded cell division, deterministic capsule relaxation,
+global accounting, then output. It clones caller-owned fields, sorts cells by
+identifier, uses one NumPy generator seeded from run metadata, and carries
+surface attachment through division.
+
+`biomesh.mass_balance` integrates the prescribed top-boundary finite-volume
+flux. Periodic side transfers cancel and the bottom contributes zero flux.
+Carbon and oxygen totals include their dry-biomass yield equivalents; death is
+an explicit tracked outflow. Output records both the residual and relative
+error and enforces the combined absolute-plus-relative tolerance.
+
+`biomesh.provenance` records the Git commit when available, package and runtime
+dependency versions, parameter-file identity and SHA-256, seed, platform, and
+Python version. `biomesh.reference` copies the exact parameter documents and
+byte-compares a metadata-driven replay.
+
+The default reference uses an explicit normalized zero state because the
+biological manifest remains `CALIBRATION_REQUIRED`. It exercises configuration,
+serialization, provenance, and reproduction only. The full P1 update sequence
+is exercised by the manufactured mass-balance validator with inputs labelled
+non-scientific.

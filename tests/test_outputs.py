@@ -82,6 +82,11 @@ def _metadata() -> RunMetadata:
         parameters={"nested": {"beta": 2, "alpha": 1}, "schema_version": 1},
         package_version="0.0.0",
         commit_hash="abc123",
+        dependency_versions={"numpy": "test", "pyarrow": "test"},
+        parameter_file="parameters/test.toml",
+        parameter_file_sha256="123456",
+        platform="synthetic-platform",
+        python_version="3.14.test",
     )
 
 
@@ -95,6 +100,7 @@ def _mass_balance() -> tuple[MassBalanceEntry, MassBalanceEntry]:
             final_amount=4.0,
             net_input_amount=-1.0,
             absolute_tolerance=1.0e-9,
+            relative_tolerance=1.0e-12,
         ),
         MassBalanceEntry(
             quantity="biomass",
@@ -103,6 +109,7 @@ def _mass_balance() -> tuple[MassBalanceEntry, MassBalanceEntry]:
             final_amount=3.0,
             net_input_amount=2.0,
             absolute_tolerance=1.0e-12,
+            relative_tolerance=1.0e-12,
         ),
     )
 
@@ -190,8 +197,13 @@ def test_writer_exports_complete_si_state_and_provenance(tmp_path: Path) -> None
     metadata = json.loads(paths.metadata_file.read_text(encoding="utf-8"))
     assert metadata == {
         "commit_hash": "abc123",
+        "dependency_versions": {"numpy": "test", "pyarrow": "test"},
         "package_version": "0.0.0",
+        "parameter_file": "parameters/test.toml",
+        "parameter_file_sha256": "123456",
         "parameters": {"nested": {"alpha": 1, "beta": 2}, "schema_version": 1},
+        "platform": "synthetic-platform",
+        "python_version": "3.14.test",
         "seed": 42,
     }
 
@@ -246,3 +258,28 @@ def test_snapshot_input_and_lifecycle_failures_are_explicit(tmp_path: Path) -> N
         )
     with pytest.raises(OutputValidationError, match="must not already exist"):
         SimulationOutputWriter(tmp_path / "run", _metadata())
+
+
+def test_writer_rejects_mass_balance_outside_declared_tolerance(
+    tmp_path: Path,
+) -> None:
+    """A failed conservation gate cannot be serialized as an accepted snapshot."""
+    writer = SimulationOutputWriter(tmp_path / "run", _metadata())
+    failed_balance = MassBalanceEntry(
+        quantity="carbon",
+        unit="mol",
+        initial_amount=1.0,
+        final_amount=0.5,
+        net_input_amount=0.0,
+        absolute_tolerance=1.0e-12,
+        relative_tolerance=0.0,
+    )
+
+    with pytest.raises(OutputValidationError, match="carbon"):
+        writer.write_snapshot(
+            time_s=0.0,
+            cells=_cells(),
+            solute_fields=_fields(),
+            division_events=(),
+            mass_balance_entries=(failed_balance,),
+        )

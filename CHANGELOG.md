@@ -30,3 +30,31 @@ All notable repository changes are documented here.
   state: SI-labelled Parquet snapshots and summaries, division and
   unit-aware mass-balance tables, compressed NumPy fields, and canonical run
   provenance metadata.
+- P1-WP07 – Deterministic Phase 1 orchestration across metabolism, solute
+  transport, seeded division, mechanics, global accounting, and outputs;
+  executable diffusion, growth, mass-balance, run, and reproduce paths;
+  environment-complete provenance; and a calibration-gated software reference.
+
+### Fixed
+
+- P1A – Corrected physical bottom-to-grid indexing so cell exchange uses the
+  same vertical convention as the diffusion boundaries and mechanics domain.
+- P1A – Made coupled carbon/oxygen updates atomic when either solute step fails.
+- P1A – Corrected periodic capsule contact search to consider neighboring
+  segment images, preventing missed overlaps for long angled cells.
+- P1A – Enforced known P1 SI units, physical numeric domains, a complete P1
+  biological-parameter manifest, and provenance for cell radius.
+- P1A – Reject output snapshots whose supplied mass-balance residual exceeds
+  its declared tolerance.
+
+### Audit
+
+- P1A – Phase 1 Audit executed on 2026-08-02 with result `FAIL`. Component
+  defects above were repaired and 66 tests pass, but Phase 1 is not accepted:
+  it must be rerun after the subsequent P1-WP07 orchestration and reproducibility
+  remediation. P2 remains blocked until that independent audit completes.
+- P1A – Independent audit rerun completed on 2026-08-02 with result
+  `PASS WITH RECORDED LIMITATIONS`. A fresh Python 3.14.4 environment, 71 tests,
+  lint, strict typing, CLI help, diffusion, growth, boundary-aware mass balance,
+  reference generation, and zero-mismatch reproduction all passed. Phase 1 is
+  accepted; calibration and the user-owned Git handoff remain documented.

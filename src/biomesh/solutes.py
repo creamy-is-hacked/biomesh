@@ -52,9 +52,11 @@ class CellSoluteExchange:
 class SoluteField:
     """One explicitly stepped solute concentration field.
 
-    ``shape`` is ``(vertical_cells, horizontal_cells)``.  The top boundary is
-    held at ``top_bulk_concentration_mol_m3``; the bottom has zero normal
-    diffusive flux; the left and right sides are periodic.
+    ``shape`` is ``(vertical_cells, horizontal_cells)``.  Array row zero is the
+    physical top of the domain and the last row is adjacent to the bottom at
+    ``y = 0 m``.  The top boundary is held at
+    ``top_bulk_concentration_mol_m3``; the bottom has zero normal diffusive
+    flux; the left and right sides are periodic.
     """
 
     name: str
@@ -147,7 +149,9 @@ class SoluteField:
             raise SoluteValidationError("cell x_m must be within [0, width_m)")
         if not 0.0 <= y_m < self.height_m:
             raise SoluteValidationError("cell y_m must be within [0, height_m)")
-        return int(y_m / self.cell_height_m), int(x_m / self.cell_width_m)
+        row_from_bottom = int(y_m / self.cell_height_m)
+        row = self.shape[0] - 1 - row_from_bottom
+        return row, int(x_m / self.cell_width_m)
 
     def _laplacian_mol_m5(self) -> FloatArray:
         concentration = self.concentration_mol_m3
@@ -257,8 +261,15 @@ class SoluteFields:
         carbon_source, oxygen_source = self.source_rates_from_cell_exchanges(
             exchanges, depth_m
         )
-        self.carbon.advance(time_step_s, carbon_source)
-        self.oxygen.advance(time_step_s, oxygen_source)
+        carbon_before = self.carbon.concentration_mol_m3.copy()
+        oxygen_before = self.oxygen.concentration_mol_m3.copy()
+        try:
+            self.carbon.advance(time_step_s, carbon_source)
+            self.oxygen.advance(time_step_s, oxygen_source)
+        except Exception:
+            self.carbon.concentration_mol_m3[...] = carbon_before
+            self.oxygen.concentration_mol_m3[...] = oxygen_before
+            raise
 
     @staticmethod
     def _validate_exchange(exchange: CellSoluteExchange) -> None:

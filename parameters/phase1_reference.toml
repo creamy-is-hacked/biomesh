@@ -1,0 +1,20 @@
+schema_version = 1
+purpose = "P1-WP07 deterministic software reproducibility reference"
+calibration_status = "CALIBRATION_REQUIRED"
+biological_parameter_file = "p1_core_model.toml"
+seed = 42
+output_directory = "outputs/p1-wp07-reference-seed-42"
+notes = "Zero-duration, zero-cell, zero-solute normalized SI fixture. It verifies configuration, output, provenance, and replay only; it is not a biological experiment."
+
+[zero_state_fixture]
+grid_rows = 2
+grid_columns = 2
+domain_width_m = 1.0
+domain_height_m = 1.0
+depth_m = 1.0
+carbon_concentration_mol_m3 = 0.0
+oxygen_concentration_mol_m3 = 0.0
+carbon_diffusivity_m2_s = 0.0
+oxygen_diffusivity_m2_s = 0.0
+carbon_top_bulk_concentration_mol_m3 = 0.0
+oxygen_top_bulk_concentration_mol_m3 = 0.0

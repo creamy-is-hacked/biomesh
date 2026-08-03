@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from biomesh.solutes import (
     CellSoluteExchange,
     DiffusionStabilityError,
+    NegativeConcentrationError,
     SoluteField,
     SoluteFields,
 )
@@ -144,3 +145,34 @@ def test_cell_exchange_rejects_out_of_domain_position() -> None:
         fields.source_rates_from_cell_exchanges(
             [CellSoluteExchange(1.0, 0.1, 0.0, 0.0)], depth_m=1.0
         )
+
+
+def test_cell_coordinates_map_bottom_to_last_array_row() -> None:
+    """Physical y coordinates agree with top-first diffusion array ordering."""
+    field, _ = _analytical_mode((4, 4))
+
+    assert field.cell_index(0.1, 0.1)[0] == 3
+    assert field.cell_index(0.1, 0.9)[0] == 0
+
+
+def test_coupled_field_advance_rolls_back_if_second_solute_fails() -> None:
+    """The public two-field update cannot leave a partial carbon mutation."""
+    carbon = SoluteField(
+        "carbon", (2, 2), 1.0, 1.0, 0.0, 0.0, np.ones((2, 2))
+    )
+    oxygen = SoluteField(
+        "oxygen", (2, 2), 1.0, 1.0, 0.0, 0.0, np.ones((2, 2))
+    )
+    fields = SoluteFields(carbon, oxygen)
+    carbon_before = carbon.concentration_mol_m3.copy()
+    oxygen_before = oxygen.concentration_mol_m3.copy()
+
+    with pytest.raises(NegativeConcentrationError):
+        fields.advance_with_cell_exchanges(
+            1.0,
+            [CellSoluteExchange(0.25, 0.25, -0.1, -10.0)],
+            depth_m=1.0,
+        )
+
+    assert np.array_equal(carbon.concentration_mol_m3, carbon_before)
+    assert np.array_equal(oxygen.concentration_mol_m3, oxygen_before)

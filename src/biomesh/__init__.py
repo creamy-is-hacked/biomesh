@@ -1,3 +1,3 @@
-"""BioMesh package shell for M0 – Repository Bootstrap."""
+"""BioMesh package metadata."""
 
 __version__ = "0.0.0"

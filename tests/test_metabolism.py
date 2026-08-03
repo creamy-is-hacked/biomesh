@@ -186,8 +186,8 @@ def _closed_system_state(time_step_s: float) -> np.ndarray:
     return np.array(
         [
             cell.dry_biomass_kg,
-            fields.carbon.concentration_mol_m3[0, 0],
-            fields.oxygen.concentration_mol_m3[0, 0],
+            fields.carbon.concentration_mol_m3[1, 0],
+            fields.oxygen.concentration_mol_m3[1, 0],
         ]
     )
 
@@ -219,9 +219,9 @@ def test_coupling_uses_each_cells_local_control_volume() -> None:
     assert step.cell_results[1].specific_growth_rate_s > (
         step.cell_results[0].specific_growth_rate_s
     )
-    assert fields.carbon.concentration_mol_m3[0, 0] < carbon[0, 0]
-    assert fields.carbon.concentration_mol_m3[0, 1] < carbon[0, 1]
-    assert np.array_equal(fields.carbon.concentration_mol_m3[1], carbon[1])
+    assert fields.carbon.concentration_mol_m3[1, 0] < carbon[1, 0]
+    assert fields.carbon.concentration_mol_m3[1, 1] < carbon[1, 1]
+    assert np.array_equal(fields.carbon.concentration_mol_m3[0], carbon[0])
     assert step.cells[0].age_s == pytest.approx(3.2)
     assert step.cells[0].length_m == pytest.approx(
         step.cells[0].dry_biomass_kg / 2.0

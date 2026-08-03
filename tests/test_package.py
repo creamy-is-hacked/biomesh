@@ -1,4 +1,4 @@
-"""M0 – Repository Bootstrap package-shell tests."""
+"""Package metadata and command-help tests."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ import biomesh
 
 
 def test_package_exposes_version() -> None:
-    """The package exposes the M0 – Repository Bootstrap version identifier."""
+    """The package exposes its current version identifier."""
     assert biomesh.__version__ == "0.0.0"
 
 
 def test_module_help_succeeds() -> None:
-    """The module command exposes its help without simulation behavior."""
+    """The module command exposes its current help."""
     result = subprocess.run(
         [sys.executable, "-m", "biomesh", "--help"],
         check=False,
@@ -23,5 +23,7 @@ def test_module_help_succeeds() -> None:
     )
 
     assert result.returncode == 0
-    assert "BioMesh biofilm simulator" in result.stdout
+    assert "BioMesh Phase 1 core-model runner" in result.stdout
     assert "--version" in result.stdout
+    assert "validate" in result.stdout
+    assert "reproduce" in result.stdout

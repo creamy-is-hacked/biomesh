@@ -2,7 +2,9 @@
 
 P1-WP01 defines a versioned TOML parameter-file contract. The starter file,
 `parameters/p1_core_model.toml`, contains the quantities required by completed
-P1 work packages. P1-WP05 adds `maximum_permitted_cell_overlap` in metres as
+P1 work packages. P1A adds the previously omitted `cell_radius` capsule
+quantity as `CALIBRATION_REQUIRED`. P1-WP05 adds
+`maximum_permitted_cell_overlap` in metres as
 the acceptance threshold corresponding to `MechanicsParameters.maximum_overlap_m`.
 No scientific threshold has been approved, so its value, source, uncertainty,
 and status remain `CALIBRATION_REQUIRED`. The file supplies no invented
@@ -29,6 +31,10 @@ controls and the source and uncertainty of experiment-specific geometry.
 
 Every future biological parameter must include all fields. Unknown values must
 remain explicit rather than being silently defaulted.
+
+The schema requires the complete P1 biological-parameter inventory, validates
+the canonical SI unit for every known P1 quantity, and rejects nonphysical
+numeric domains before values reach component constructors.
 
 ## File contract
 

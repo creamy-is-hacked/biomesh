@@ -1,14 +1,17 @@
 # BioMesh
 
-BioMesh is a planned, scientifically grounded 2D bacterial biofilm simulator
-and future Linux desktop research platform.
+BioMesh is a scientifically grounded 2D bacterial biofilm simulator under
+development and a future Linux desktop research platform.
 
 ## Status
 
-M0 – Repository Bootstrap provides repository tooling, documentation contracts,
-a package shell, and continuous integration. No biological or numerical model
-is implemented yet. See [the phase status](docs/PHASE_STATUS.md) for the
-current gate.
+The independent 2026-08-02 P1A – Phase 1 Audit accepted Phase 1 with recorded
+limitations. Executable numerical validations, boundary-aware global
+accounting, complete run provenance, and metadata-driven replay all pass. The
+default reference remains deliberately a zero-state software fixture: every
+biological parameter is `CALIBRATION_REQUIRED`, and no calibrated scientific
+result is claimed. Phase 2 may begin; see
+[the phase status](docs/PHASE_STATUS.md) for the current gate.
 
 ## Development
 

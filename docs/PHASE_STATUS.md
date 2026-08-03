@@ -38,75 +38,50 @@ Source: `docs/01_PHASE_ONE_CORE_MODEL.md`.
 | P1-WP04 | Metabolism | COMPLETE |
 | P1-WP05 | Mechanics and attachment | COMPLETE |
 | P1-WP06 | Outputs | COMPLETE |
-| P1A | Phase 1 Audit | INCOMPLETE |
+| P1-WP07 | Simulation Orchestration & Reproducibility | COMPLETE |
+| P1A | Phase 1 Audit | COMPLETE |
 
-P1-WP01 validation evidence:
+P1 work-package evidence before audit:
 
-- A fresh Python 3.14 virtual environment installed the editable package with
-  `.[dev]` successfully and `python -m biomesh --help` passed.
-- `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
-  passed in the repository environment (6 tests).
-- At the P1-WP01 handoff, `parameters/p1_core_model.toml` passed strict
-  TOML/Pydantic validation with five P1 biological quantities. Each used SI
-  units and explicitly recorded value, source, and uncertainty as
-  `CALIBRATION_REQUIRED`; no constants or citations were added.
+- WP01: editable Python 3.14 installation, strict TOML/Pydantic provenance, CLI
+  help, lint, typing, and 6 tests passed.
+- WP02: manufactured diffusion, refinement, nonnegativity, stability rejection,
+  no-flux behavior, and conservative cell exchange passed (13 tests total).
+- WP03: SI capsule state, biomass-conserving seeded division, lineage, and
+  daughter geometry passed (21 tests total).
+- WP04: dual-substrate Monod limits, analytical growth, yield/death accounting,
+  closed-system coupling, replay, and atomic failure passed (39 tests total).
+- WP05: periodic capsule relaxation, bottom attachment, boundary enforcement,
+  convergence errors, and overlap metrics passed (56 tests total).
+- WP06: deterministic Parquet/NumPy output, provenance, geometry summaries,
+  mass-balance records, immutability, and byte replay passed (59 tests total).
 
-P1-WP02 validation evidence:
+P1A independent audit evidence (2026-08-02):
 
-- Carbon and oxygen field inputs require caller-provided SI transport and
-  boundary values. The parameter file records the two effective diffusivities
-  and two bulk concentrations as `CALIBRATION_REQUIRED`; no values or sources
-  were invented.
-- `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
-  passed in the repository environment (13 tests). The test suite includes a
-  manufactured pure-diffusion benchmark, grid-refinement convergence,
-  nonnegative-concentration behavior, explicit stability rejection, and
-  conservative cell-to-grid source/sink mapping.
+- Audit result: `PASS WITH RECORDED LIMITATIONS`; Phase 1 is accepted.
+- Fresh Python 3.14.4 editable `.[dev]` install passed. `pytest -q` passed
+  (71 tests); Ruff, mypy, `git diff --check`, and module help passed.
+- All five required CLI paths passed. Diffusion error was
+  `6.655336877159357e-07` versus `2e-3`; refinement ratio was
+  `0.23887522547268525`; growth error was `0.0 kg`; reference replay had zero
+  byte mismatches.
+- Full-pipeline mass balance had maximum residual `3.8033812210791496e-16`,
+  relative error `7.52623300477429e-17`, and overlap `0.0 m`. An independent
+  25-step probe closed within `5.342948306008566e-16`.
+- Independent periodic geometry, boundary transfer, time refinement, public
+  typing, module-boundary, documentation, and work-package acceptance reviews
+  found no Critical or Major defect.
 
-P1-WP03 validation evidence:
+P1-WP07 validation evidence:
 
-- Cells are validated 2D capsules with SI position, geometry, dry biomass,
-  and age fields. The dry-biomass-per-length mapping, division threshold, and
-  maximum daughter-asymmetry fraction are configurable parameter records, all
-  explicitly marked `CALIBRATION_REQUIRED`; no biological values were added.
-- Focused tests verify biomass conservation, deterministic seeded lineage
-  replay, lineage-parent persistence, strict threshold behaviour, and valid
-  tangent daughter capsule geometry.
-- `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
-  passed in the repository environment (21 tests); `git diff --check` passed.
-
-P1-WP04 validation evidence:
-
-- Dual-substrate Monod kinetics use caller-provided SI parameters, exact
-  fixed-local-concentration biomass ODE integration, explicit carbon and oxygen
-  yields, and the configured first-order maintenance/death loss. Every unknown
-  biological value remains marked `CALIBRATION_REQUIRED`.
-- Focused tests verify Monod limiting cases, the analytical well-mixed growth
-  solution, yield/death accounting, conservative local field coupling,
-  closed-system mass balance, deterministic replay, and explicit uptake
-  failure without partial field mutation.
-- `python -m biomesh --help`, `ruff check .`, `mypy src`, and `pytest -q`
-  passed in the repository environment (39 tests); `git diff --check` passed.
-
-P1-WP05 validation evidence:
-
-- Existing `Cell` capsules are relaxed deterministically against capsule
-  contacts, periodic sides, and the solid bottom without a duplicate cell type.
-- Initial bottom attachment is configurable; the SI overlap threshold remains
-  `CALIBRATION_REQUIRED`, and convergence failure reports the residual metric.
-- All required checks passed in Python 3.14.4 (56 tests).
-
-P1-WP06 validation evidence:
-
-- Deterministic, write-only exports serialize existing cell and solute state
-  without modifying simulation behavior: SI-labelled Parquet cell snapshots,
-  summary metrics, division events, unit-aware mass-balance entries, metadata,
-  and compressed NumPy field archives.
-- Focused tests verify complete artifacts and provenance, state immutability,
-  geometric height/roughness metrics, mass-balance residuals, explicit writer
-  validation, and byte-identical exports for identical inputs.
-- `python -m biomesh --help`, `ruff check .`, `mypy src`, `pytest -q`, and
-  `git diff --check` passed in the repository environment (59 tests).
+- Deterministic orchestration now composes metabolism, solutes, seeded
+  division, mechanics, boundary-aware accounting, and output. Run metadata
+  records commit, package/dependency versions, parameter file/hash, seed,
+  platform, and Python version.
+- The `CALIBRATION_REQUIRED` reference replay produced zero byte mismatches.
+- All required checks and five CLI paths passed (71 tests). Mass-balance maximum
+  residual was `3.8033812210791496e-16`, relative error `7.52623300477429e-17`,
+  and overlap `0.0 m`.
 
 ## P2 – Phase 2 – Colony System
 
@@ -153,9 +128,11 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P1A – Phase 1 Audit` is the first incomplete work package; begin it only when requested.
+`P2-WP01 – Quorum signal`. Phase 2 may begin.
 
 ## Remaining Issues
 
-- P1-WP06 exports are complete. No simulation orchestration is implemented;
-  P1A – Phase 1 Audit has not begun.
+- All biological values remain `CALIBRATION_REQUIRED`; the reference is a
+  non-scientific software/replay fixture.
+- The branch name is noncanonical and the user-owned commit/tag handoff remains;
+  Git was intentionally unchanged by P1A.

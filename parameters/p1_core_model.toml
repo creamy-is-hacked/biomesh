@@ -100,6 +100,15 @@ notes = "Required by P1-WP03 to derive capsule centreline length from dry biomas
 calibration_status = "CALIBRATION_REQUIRED"
 
 [[biological_parameters]]
+name = "cell_radius"
+value = "CALIBRATION_REQUIRED"
+unit = "m"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 for 2D capsule geometry; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
 name = "division_length"
 value = "CALIBRATION_REQUIRED"
 unit = "m"

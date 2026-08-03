@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from math import isfinite, sqrt
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import numpy as np
@@ -30,6 +30,19 @@ from biomesh.solutes import SoluteFields
 
 class OutputValidationError(ValueError):
     """Raised when an output record is incomplete, ambiguous, or unsafe."""
+
+
+class _ArrayWriter(Protocol):
+    def __call__(
+        self,
+        file: BytesIO,
+        array: np.ndarray[Any, np.dtype[Any]],
+        *,
+        allow_pickle: bool,
+    ) -> None: ...
+
+
+_write_array = cast(_ArrayWriter, np.lib.format.write_array)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +58,11 @@ class RunMetadata:
     parameters: Mapping[str, object]
     package_version: str
     commit_hash: str
+    dependency_versions: Mapping[str, str]
+    parameter_file: str
+    parameter_file_sha256: str
+    platform: str
+    python_version: str
 
     def __post_init__(self) -> None:
         if (
@@ -55,6 +73,27 @@ class RunMetadata:
             raise OutputValidationError("seed must be a nonnegative integer")
         _require_nonblank("package_version", self.package_version)
         _require_nonblank("commit_hash", self.commit_hash)
+        _require_nonblank("parameter_file", self.parameter_file)
+        _require_nonblank("parameter_file_sha256", self.parameter_file_sha256)
+        _require_nonblank("platform", self.platform)
+        _require_nonblank("python_version", self.python_version)
+        if (
+            not isinstance(self.dependency_versions, Mapping)
+            or not self.dependency_versions
+        ):
+            raise OutputValidationError(
+                "dependency_versions must be a non-empty mapping"
+            )
+        if any(
+            not isinstance(name, str)
+            or not name
+            or not isinstance(version, str)
+            or not version
+            for name, version in self.dependency_versions.items()
+        ):
+            raise OutputValidationError(
+                "dependency names and versions must be non-empty strings"
+            )
         if not isinstance(self.parameters, Mapping) or not self.parameters:
             raise OutputValidationError("parameters must be a non-empty mapping")
         if any(not isinstance(key, str) or not key for key in self.parameters):
@@ -74,13 +113,23 @@ class RunMetadata:
         if not isinstance(canonical, dict):  # Defensive; a mapping encodes as object.
             raise OutputValidationError("parameters must serialize as a JSON object")
         object.__setattr__(self, "parameters", canonical)
+        object.__setattr__(
+            self,
+            "dependency_versions",
+            dict(sorted(self.dependency_versions.items())),
+        )
 
     def as_dict(self) -> dict[str, object]:
         """Return metadata in the stable structure written to JSON."""
         return {
             "commit_hash": self.commit_hash,
+            "dependency_versions": self.dependency_versions,
             "package_version": self.package_version,
+            "parameter_file": self.parameter_file,
+            "parameter_file_sha256": self.parameter_file_sha256,
             "parameters": self.parameters,
+            "platform": self.platform,
+            "python_version": self.python_version,
             "seed": self.seed,
         }
 
@@ -116,6 +165,7 @@ class MassBalanceEntry:
     final_amount: float
     net_input_amount: float
     absolute_tolerance: float
+    relative_tolerance: float
 
     def __post_init__(self) -> None:
         _require_nonblank("quantity", self.quantity)
@@ -124,11 +174,33 @@ class MassBalanceEntry:
         _require_finite("final_amount", self.final_amount)
         _require_finite("net_input_amount", self.net_input_amount)
         _require_nonnegative("absolute_tolerance", self.absolute_tolerance)
+        _require_nonnegative("relative_tolerance", self.relative_tolerance)
 
     @property
     def residual_amount(self) -> float:
         """Return the signed balance residual in the entry's declared unit."""
         return self.final_amount - self.initial_amount - self.net_input_amount
+
+    @property
+    def scale_amount(self) -> float:
+        """Return the magnitude used by the configured relative-error gate."""
+        return max(
+            abs(self.initial_amount),
+            abs(self.final_amount),
+            abs(self.net_input_amount),
+        )
+
+    @property
+    def relative_error(self) -> float:
+        """Return residual magnitude relative to the largest balance term."""
+        if self.scale_amount == 0.0:
+            return 0.0 if self.residual_amount == 0.0 else float("inf")
+        return abs(self.residual_amount) / self.scale_amount
+
+    @property
+    def allowed_residual_amount(self) -> float:
+        """Return the combined absolute-plus-relative residual allowance."""
+        return self.absolute_tolerance + self.relative_tolerance * self.scale_amount
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,6 +245,11 @@ class SimulationOutputWriter:
         self._field_files: list[Path] = []
         self._last_time_s: float | None = None
         self._finalized = False
+
+    @property
+    def metadata(self) -> RunMetadata:
+        """Return the immutable run-level provenance owned by this writer."""
+        return self._metadata
 
     def write_snapshot(
         self,
@@ -260,6 +337,8 @@ class SimulationOutputWriter:
                     "net_input_amount": entry.net_input_amount,
                     "residual_amount": entry.residual_amount,
                     "absolute_tolerance": entry.absolute_tolerance,
+                    "relative_error": entry.relative_error,
+                    "relative_tolerance": entry.relative_tolerance,
                 }
             )
         self._last_time_s = time_s
@@ -341,6 +420,16 @@ class SimulationOutputWriter:
         quantities = [entry.quantity for entry in entries]
         if len(quantities) != len(set(quantities)):
             raise OutputValidationError("mass-balance quantities must be unique")
+        failed = [
+            entry.quantity
+            for entry in entries
+            if abs(entry.residual_amount) > entry.allowed_residual_amount
+        ]
+        if failed:
+            names = ", ".join(sorted(failed))
+            raise OutputValidationError(
+                "mass-balance residual exceeds its combined tolerance for: " + names
+            )
         return tuple(sorted(entries, key=lambda entry: entry.quantity))
 
 
@@ -391,6 +480,8 @@ _MASS_BALANCE_SCHEMA = pa.schema(
         pa.field("net_input_amount", pa.float64()),
         pa.field("residual_amount", pa.float64()),
         pa.field("absolute_tolerance", pa.float64()),
+        pa.field("relative_error", pa.float64()),
+        pa.field("relative_tolerance", pa.float64()),
     ]
 )
 
@@ -444,9 +535,7 @@ def _write_field_archive(path: Path, fields: SoluteFields) -> None:
     with ZipFile(path, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for name, array in arrays:
             buffer = BytesIO()
-            np.lib.format.write_array(  # type: ignore[no-untyped-call]
-                buffer, array, allow_pickle=False
-            )
+            _write_array(buffer, array, allow_pickle=False)
             entry = ZipInfo(f"{name}.npy", date_time=(1980, 1, 1, 0, 0, 0))
             entry.compress_type = ZIP_DEFLATED
             entry.create_system = 3
