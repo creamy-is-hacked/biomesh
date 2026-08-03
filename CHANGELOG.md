@@ -47,6 +47,11 @@ All notable repository changes are documented here.
   and oxygen, producer-only quorum-scaled EPS cost, shared local matrix benefit,
   frequency, segregation, lineage, and local-fitness tracking, plus canonical
   optional competition outputs. No new numeric biological parameter was added.
+- P2-WP04 – Centralized active, slow, dormant, dead, and detached physiological
+  states with explicit nutrient/oxygen exposure thresholds and delays,
+  configurable metabolic activity, dead-biomass persistence or recycling,
+  reconciled population ledgers, and deterministic optional outputs. All 13
+  numeric biological inputs remain configurable and `CALIBRATION_REQUIRED`.
 
 ### Fixed
 

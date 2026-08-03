@@ -15,7 +15,7 @@ introduced in this work package.
 
 from __future__ import annotations
 
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from math import isclose, isfinite
 
@@ -209,6 +209,7 @@ def advance_eps_metabolism(
     start_time_s: float,
     dry_biomass_per_unit_length_kg_m: float,
     producing_cell_ids: Collection[str] | None = None,
+    metabolic_activity_fractions: Mapping[str, float] | None = None,
 ) -> EPSStepResult:
     """Advance quorum-controlled EPS allocation and coupled metabolism once.
 
@@ -250,6 +251,7 @@ def advance_eps_metabolism(
             dry_biomass_per_unit_length_kg_m,
             metabolism_parameters,
             growth_allocation_fractions=allocations,
+            metabolic_activity_fractions=metabolic_activity_fractions,
         )
         density_increase_kg_m3 = np.zeros(eps_field.shape, dtype=np.float64)
         production: list[CellEPSProduction] = []

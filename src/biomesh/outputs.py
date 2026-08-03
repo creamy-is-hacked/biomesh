@@ -6,12 +6,12 @@ column and array names. P2-WP01 optionally adds a quorum signal field and
 cell-local exposure/activation records. P2-WP02 optionally adds EPS density
 and total-mass records. P2-WP03 optionally adds competition frequency,
 segregation, lineage, and local-fitness records without changing the P1
-artifact path. Biofilm
-height is the greatest capsule-top elevation above the solid bottom; roughness
-is the population standard deviation of
-capsule-top elevations.  Both are geometric summaries, not biological
-parameters.  Mass-balance entries are supplied by the simulation because this
-layer must not infer unrecorded sources, sinks, or boundary fluxes.
+artifact path. P2-WP04 optionally adds reconciled physiological state counts
+and biomass totals. Biofilm height is the greatest capsule-top elevation above
+the solid bottom; roughness is the population standard deviation of capsule-top
+elevations. Both are geometric summaries, not biological parameters.
+Mass-balance entries are supplied by the simulation because this layer must not
+infer unrecorded sources, sinks, or boundary fluxes.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ import pyarrow.parquet as pq  # type: ignore[import-untyped]
 from biomesh.cells import Cell
 from biomesh.competition import CompetitionSnapshot
 from biomesh.eps import EPSField
+from biomesh.physiology import PhysiologySnapshot, build_physiology_snapshot
 from biomesh.quorum import CellQuorumState
 from biomesh.solutes import SoluteField, SoluteFields
 
@@ -227,6 +228,7 @@ class OutputPaths:
     competition_summary_table: Path | None = None
     competition_strain_table: Path | None = None
     competition_cell_table: Path | None = None
+    physiology_summary_table: Path | None = None
 
 
 class SimulationOutputWriter:
@@ -260,9 +262,11 @@ class SimulationOutputWriter:
         self._competition_summary_rows: list[dict[str, object]] = []
         self._competition_strain_rows: list[dict[str, object]] = []
         self._competition_cell_rows: list[dict[str, object]] = []
+        self._physiology_summary_rows: list[dict[str, object]] = []
         self._quorum_output_enabled: bool | None = None
         self._eps_output_enabled: bool | None = None
         self._competition_output_enabled: bool | None = None
+        self._physiology_output_enabled: bool | None = None
         self._field_files: list[Path] = []
         self._last_time_s: float | None = None
         self._finalized = False
@@ -284,6 +288,7 @@ class SimulationOutputWriter:
         quorum_states: Sequence[CellQuorumState] | None = None,
         eps_field: EPSField | None = None,
         competition_snapshot: CompetitionSnapshot | None = None,
+        physiology_snapshot: PhysiologySnapshot | None = None,
     ) -> None:
         """Serialize a complete state snapshot and caller-reported balance.
 
@@ -315,6 +320,11 @@ class SimulationOutputWriter:
             time_s=time_s,
             cells=ordered_cells,
             snapshot=competition_snapshot,
+        )
+        validated_physiology = self._validated_physiology_snapshot(
+            time_s=time_s,
+            cells=ordered_cells,
+            snapshot=physiology_snapshot,
         )
         snapshot_index = len(self._field_files)
         field_file = self._fields_directory / f"{snapshot_index:06d}.npz"
@@ -465,6 +475,28 @@ class SimulationOutputWriter:
                         ),
                     }
                 )
+        if validated_physiology is not None:
+            totals = validated_physiology.totals
+            self._physiology_summary_rows.append(
+                {
+                    "snapshot_index": snapshot_index,
+                    "time_s": time_s,
+                    "active_cell_count": totals.active_cell_count,
+                    "slow_cell_count": totals.slow_cell_count,
+                    "dormant_cell_count": totals.dormant_cell_count,
+                    "dead_cell_count": totals.dead_cell_count,
+                    "detached_cell_count": totals.detached_cell_count,
+                    "active_biomass_kg": totals.active_biomass_kg,
+                    "slow_biomass_kg": totals.slow_biomass_kg,
+                    "dormant_biomass_kg": totals.dormant_biomass_kg,
+                    "dead_biomass_kg": totals.dead_biomass_kg,
+                    "detached_biomass_kg": totals.detached_biomass_kg,
+                    "retained_biomass_kg": totals.retained_biomass_kg,
+                    "recycled_dead_biomass_kg": (
+                        totals.recycled_dead_biomass_kg
+                    ),
+                }
+            )
         self._last_time_s = time_s
 
     def finalize(self) -> OutputPaths:
@@ -500,6 +532,11 @@ class SimulationOutputWriter:
         competition_cell_table = (
             self._run_directory / "competition_cells.parquet"
             if self._competition_output_enabled is True
+            else None
+        )
+        physiology_summary_table = (
+            self._run_directory / "physiology_summary.parquet"
+            if self._physiology_output_enabled is True
             else None
         )
         _write_parquet(cells_table, self._cell_rows, _CELL_SCHEMA)
@@ -540,6 +577,12 @@ class SimulationOutputWriter:
                 self._competition_cell_rows,
                 _COMPETITION_CELL_SCHEMA,
             )
+        if physiology_summary_table is not None:
+            _write_parquet(
+                physiology_summary_table,
+                self._physiology_summary_rows,
+                _PHYSIOLOGY_SUMMARY_SCHEMA,
+            )
         self._finalized = True
         return OutputPaths(
             run_directory=self._run_directory,
@@ -554,6 +597,7 @@ class SimulationOutputWriter:
             competition_summary_table=competition_summary_table,
             competition_strain_table=competition_strain_table,
             competition_cell_table=competition_cell_table,
+            physiology_summary_table=physiology_summary_table,
         )
 
     def _write_metadata(self) -> None:
@@ -746,6 +790,46 @@ class SimulationOutputWriter:
                 )
         return snapshot
 
+    def _validated_physiology_snapshot(
+        self,
+        *,
+        time_s: float,
+        cells: tuple[Cell, ...],
+        snapshot: PhysiologySnapshot | None,
+    ) -> PhysiologySnapshot | None:
+        supplied = snapshot is not None
+        if self._physiology_output_enabled is None:
+            self._physiology_output_enabled = supplied
+        elif self._physiology_output_enabled != supplied:
+            raise OutputValidationError(
+                "physiology output mode must remain consistent across snapshots"
+            )
+        if snapshot is None:
+            return None
+        if not isinstance(snapshot, PhysiologySnapshot):
+            raise OutputValidationError(
+                "physiology_snapshot must be a PhysiologySnapshot instance"
+            )
+        if snapshot.time_s != time_s:
+            raise OutputValidationError(
+                "physiology snapshot time_s must equal output snapshot time_s"
+            )
+        try:
+            expected = build_physiology_snapshot(
+                time_s=time_s,
+                cells=cells,
+                cell_states=snapshot.cell_states,
+            )
+        except ValueError as error:
+            raise OutputValidationError(
+                f"invalid physiology snapshot: {error}"
+            ) from error
+        if snapshot != expected:
+            raise OutputValidationError(
+                "physiology snapshot totals must match the output cell population"
+            )
+        return snapshot
+
 
 _CELL_SCHEMA = pa.schema(
     [
@@ -851,6 +935,24 @@ _COMPETITION_CELL_SCHEMA = pa.schema(
         pa.field("local_eps_density_kg_m3", pa.float64()),
         pa.field("cohesion_multiplier", pa.float64()),
         pa.field("attachment_strength_multiplier", pa.float64()),
+    ]
+)
+_PHYSIOLOGY_SUMMARY_SCHEMA = pa.schema(
+    [
+        pa.field("snapshot_index", pa.int64()),
+        pa.field("time_s", pa.float64()),
+        pa.field("active_cell_count", pa.int64()),
+        pa.field("slow_cell_count", pa.int64()),
+        pa.field("dormant_cell_count", pa.int64()),
+        pa.field("dead_cell_count", pa.int64()),
+        pa.field("detached_cell_count", pa.int64()),
+        pa.field("active_biomass_kg", pa.float64()),
+        pa.field("slow_biomass_kg", pa.float64()),
+        pa.field("dormant_biomass_kg", pa.float64()),
+        pa.field("dead_biomass_kg", pa.float64()),
+        pa.field("detached_biomass_kg", pa.float64()),
+        pa.field("retained_biomass_kg", pa.float64()),
+        pa.field("recycled_dead_biomass_kg", pa.float64()),
     ]
 )
 

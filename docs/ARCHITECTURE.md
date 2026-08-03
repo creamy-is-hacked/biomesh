@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P2-WP03
+## Current architecture through P2-WP04
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -9,7 +9,9 @@ component and optional signal/history serialization without changing the P1
 orchestrator or its default artifacts. P2-WP02 adds an isolated EPS allocation
 and local-matrix component; the audited P1 path still uses zero allocation.
 P2-WP03 composes those interfaces into categorical producer/nonproducer
-competition and optional competition-history output.
+competition and optional competition-history output. P2-WP04 adds a centralized
+physiological state machine, optional activity fractions at the shared
+metabolism boundary, and state-ledger output without changing the P1 path.
 
 Dependency direction is intentionally simple:
 
@@ -21,7 +23,8 @@ metabolism      -> cells + solutes
 mechanics       -> cells
 EPS             -> cells + metabolism + solutes + quorum state
 competition     -> cells + metabolism + solutes + quorum state + EPS
-outputs         -> cells + solutes + quorum state + optional EPS/competition state
+physiology      -> cells + solutes; supplies activity to metabolism/EPS/competition
+outputs         -> cells + solutes + optional quorum/EPS/competition/physiology state
 quorum          -> cells + solutes
 tests           -> public component interfaces
 ```
@@ -221,4 +224,37 @@ Omitting competition state preserves all earlier output paths.
 strain roles + cells + quorum state + shared resources + EPS -> competition
 competition -> role-specific EPS cost + shared matrix benefit + metrics
 optional competition snapshot -> biomesh.outputs
+```
+
+## P2-WP04 physiological states
+
+`biomesh.physiology` owns the only strict P2 physiological-state inventory:
+active, slow, dormant, dead, and detached. Each cell has an immutable,
+chronological history of local carbon and oxygen exposure plus continuous
+limitation, dormancy, lethal, and recovery durations. Thresholds, delays, slow
+and dormant activity fractions, and optional dead-biomass recycling are all
+caller supplied in SI units.
+
+The component returns per-cell activity fractions through the existing shared
+metabolism interface. EPS and competition accept the same optional mapping, so
+reduced activity consistently scales growth-associated resource consumption and
+EPS production. Omitting the mapping preserves all P1 through P2-WP03 behavior.
+Quorum production remains unchanged because WP04 specifies no state-dependent
+production rule.
+
+Dead cells are terminal and either retain biomass or transfer it by an explicit
+first-order rate into a cumulative recycled-biomass ledger. No recycled mass is
+silently assigned to a resource field. Detached is also terminal; WP04 accepts
+only caller-selected detachments and provides a non-detached mechanics view,
+leaving every shear and detachment law to P2-WP05.
+
+Each snapshot partitions counts and retained dry biomass over all five states
+and verifies that the totals equal the cell population. Optional canonical
+physiology summaries expose active, slow, dormant, dead, detached, retained,
+and recycled biomass without changing earlier output modes.
+
+```text
+cells + carbon/oxygen history + physiological parameters -> physiology
+physiology -> states + activity fractions + dead/recycled/detached ledger
+optional physiology snapshot -> biomesh.outputs
 ```

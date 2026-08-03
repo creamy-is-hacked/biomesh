@@ -65,3 +65,24 @@
 - Competition is exposed through the component and optional output interfaces;
   the Phase 1 reference orchestrator remains unchanged. Replicated competition
   experiments and sensitivity analysis remain P2-WP06.
+
+## P2-WP04 – Physiological states
+
+- All 13 physiological thresholds, delays, activity fractions, and recycling
+  inputs remain `CALIBRATION_REQUIRED`; manufactured SI inputs validate the
+  state machine and accounting but are not biological values or benchmarks.
+- Either carbon or oxygen can drive limitation, dormancy, or death after its
+  configured continuous delay. Recovery requires both solutes above the slow
+  thresholds. This compact abstraction is not an organism-specific stress
+  response or gene-regulatory model.
+- The slow and dormant fractions scale both gross growth and the existing P1
+  maintenance/death term. Dead and detached cells have zero metabolic activity.
+  Quorum signal production remains the P2-WP01 whole-cell rule because P2-WP04
+  specifies no state-dependent signal-production parameter.
+- Recycled dead biomass transfers to a separately reported biomass ledger; it
+  is not returned to carbon, oxygen, or EPS because composition and conversion
+  yields are unspecified. Persisting dead biomass remains spatially retained.
+- WP04 accepts only an explicit caller-selected detachment transition and
+  excludes detached records from mechanics through a filter. It introduces no
+  shear, force, exposure, attachment, EPS-resistance, or probability law from
+  P2-WP05. The Phase 1 reference orchestrator remains unchanged.

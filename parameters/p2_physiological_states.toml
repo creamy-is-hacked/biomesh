@@ -1,0 +1,118 @@
+schema_version = 1
+
+[[biological_parameters]]
+name = "carbon_slow_threshold"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Carbon threshold at or below which continuous limitation can move an active cell to slow; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "oxygen_slow_threshold"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Oxygen threshold at or below which continuous limitation can move an active cell to slow; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "carbon_dormancy_threshold"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Carbon threshold for the slow-to-dormant exposure history; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "oxygen_dormancy_threshold"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Oxygen threshold for the slow-to-dormant exposure history; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "carbon_death_threshold"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Carbon threshold for lethal deprivation history; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "oxygen_death_threshold"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Oxygen threshold for lethal deprivation history; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "slow_transition_delay"
+value = "CALIBRATION_REQUIRED"
+unit = "s"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required continuous limitation time before active-to-slow transition; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "dormancy_transition_delay"
+value = "CALIBRATION_REQUIRED"
+unit = "s"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required continuous severe-limitation time before slow-to-dormant transition; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "death_transition_delay"
+value = "CALIBRATION_REQUIRED"
+unit = "s"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required continuous lethal-deprivation time before a living cell becomes dead; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "recovery_transition_delay"
+value = "CALIBRATION_REQUIRED"
+unit = "s"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required continuous carbon-and-oxygen recovery time before slow or dormant returns to active; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "slow_metabolic_activity_fraction"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Slow-state fraction of active metabolism; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "dormant_metabolic_activity_fraction"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Dormant-state fraction of active metabolism and must be below the slow fraction; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "dead_biomass_recycling_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Optional first-order transfer rate from retained dead biomass to the explicit recycled-biomass ledger when the recycle rule is selected; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

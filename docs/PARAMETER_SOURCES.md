@@ -37,6 +37,16 @@ continues to use the P1 metabolism parameters and the P2-WP01/P2-WP02 quorum
 and EPS parameters, all of which retain their recorded provenance and
 calibration status.
 
+The isolated `parameters/p2_physiological_states.toml` manifest adds carbon
+and oxygen slow, dormancy, and death thresholds in `mol m^-3`; slow, dormancy,
+death, and recovery delays in seconds; dimensionless slow and dormant metabolic
+activity fractions; and the optional first-order dead-biomass recycling rate
+in `s^-1`. All 13 values, sources, uncertainties, and calibration statuses
+remain `CALIBRATION_REQUIRED`. Runtime validation requires nested thresholds
+(`death <= dormancy <= slow`) and `dormant < slow < active (1)`. The categorical
+dead-biomass choice is explicit runtime configuration: `persist` requires no
+recycling rate, while `recycle` requires an approved positive rate.
+
 The other P1-WP05 controls are explicit runtime configuration rather than
 biological constants: domain width is an experiment-specific SI length;
 maximum iterations and displacement fraction are numerical convergence
@@ -61,9 +71,10 @@ remain explicit rather than being silently defaulted.
 
 The P1 schema continues to require the complete P1 biological-parameter
 inventory. The separate P2-WP01 schema requires exactly the seven quorum
-records, and the P2-WP02 schema requires exactly the three EPS records. All
-reuse the same provenance fields, validate canonical SI units, and reject
-nonphysical numeric domains before values reach component constructors.
+records, P2-WP02 requires exactly the three EPS records, and P2-WP04 requires
+exactly the 13 physiological records. All reuse the same provenance fields,
+validate canonical SI units, and reject nonphysical numeric domains before
+values reach component constructors.
 
 ## File contract
 

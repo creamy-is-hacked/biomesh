@@ -16,7 +16,7 @@ included, and horizontal distance follows the existing periodic domain.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from math import isfinite
 from typing import Literal
@@ -140,6 +140,7 @@ def advance_competition(
     time_step_s: float,
     start_time_s: float,
     dry_biomass_per_unit_length_kg_m: float,
+    metabolic_activity_fractions: Mapping[str, float] | None = None,
 ) -> CompetitionStepResult:
     """Advance one mixed competition step and report deterministic metrics."""
     if not isinstance(strain_roles, CompetitionStrains):
@@ -172,6 +173,7 @@ def advance_competition(
         start_time_s=start_time_s,
         dry_biomass_per_unit_length_kg_m=dry_biomass_per_unit_length_kg_m,
         producing_cell_ids=producing_cell_ids,
+        metabolic_activity_fractions=metabolic_activity_fractions,
     )
     production_by_id = {
         production.cell_id: production for production in eps_result.cell_production

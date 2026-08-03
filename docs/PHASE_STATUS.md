@@ -92,7 +92,7 @@ Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
 | P2-WP01 | Quorum signal | COMPLETE |
 | P2-WP02 | EPS model | COMPLETE |
 | P2-WP03 | Competition | COMPLETE |
-| P2-WP04 | Physiological states | INCOMPLETE |
+| P2-WP04 | Physiological states | COMPLETE |
 | P2-WP05 | Waste and shear | INCOMPLETE |
 | P2-WP06 | Experiments | INCOMPLETE |
 | P2A | Phase 2 Audit | INCOMPLETE |
@@ -132,6 +132,19 @@ P2-WP03 validation evidence:
 - P2-WP03 adds no numeric biological parameter. The full required gate passed:
   112 tests, Ruff, mypy, `git diff --check`, and module help.
 
+P2-WP04 validation evidence:
+
+- A centralized explicit state model implements active, slow, dormant, dead,
+  and detached states using configurable carbon/oxygen thresholds, continuous
+  delays, immutable exposure history, and deterministic recovery.
+- Dormant activity is lower than active activity by explicit configuration and
+  flows through metabolism, EPS, and competition. Dead biomass either persists
+  or follows an explicit first-order recycled-biomass ledger; all state counts
+  and retained biomass reconcile with the population.
+- All 13 numeric biological parameters remain configurable and
+  `CALIBRATION_REQUIRED`. The full required gate passed: 127 tests, Ruff, mypy,
+  `git diff --check`, and module help.
+
 ## P3 – Phase 3 – Desktop GUI
 
 Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
@@ -163,11 +176,13 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P2-WP04 – Physiological states`.
+`P2-WP05 – Waste and shear`.
 
 ## Remaining Issues
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- The branch name is noncanonical and the user-owned commit/tag handoff remains;
-  Git was intentionally unchanged by P1A.
+- P2-WP05 waste and shear, P2-WP06 experiments, and P2A remain incomplete.
+- The current `phase/2-colony-system` branch is noncanonical; align it with
+  `phase-2-colony-system` before an accepted-phase handoff without rewriting
+  history.

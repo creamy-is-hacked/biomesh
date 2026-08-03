@@ -148,6 +148,7 @@ def evaluate_allocated_cell_metabolism(
     parameters: MetabolismParameters,
     *,
     growth_allocation_fraction: float,
+    metabolic_activity_fraction: float = 1.0,
 ) -> CellMetabolismResult:
     """Integrate metabolism with an explicit gross-production allocation.
 
@@ -156,19 +157,24 @@ def evaluate_allocated_cell_metabolism(
     gross biomass-equivalent production, so callers can account for the
     allocated material in another explicitly modelled pool.  P1 callers use
     :func:`evaluate_cell_metabolism`, which fixes the allocation to zero.
+    ``metabolic_activity_fraction`` is the optional P2-WP04 multiplier applied
+    to both growth and the existing maintenance/death term; its default one
+    preserves the audited P1 equation.
     """
     _require_positive("initial_dry_biomass_kg", initial_dry_biomass_kg)
     _require_positive("time_step_s", time_step_s)
     _require_fraction("growth_allocation_fraction", growth_allocation_fraction)
+    _require_fraction("metabolic_activity_fraction", metabolic_activity_fraction)
     specific_growth_rate_s = dual_substrate_monod_rate(
         carbon_concentration_mol_m3,
         oxygen_concentration_mol_m3,
         parameters,
-    )
+    ) * metabolic_activity_fraction
+    effective_death_rate_s = parameters.death_rate_s * metabolic_activity_fraction
     retained_specific_growth_rate_s = (
         (1.0 - growth_allocation_fraction) * specific_growth_rate_s
     )
-    net_specific_rate_s = retained_specific_growth_rate_s - parameters.death_rate_s
+    net_specific_rate_s = retained_specific_growth_rate_s - effective_death_rate_s
     exponent = net_specific_rate_s * time_step_s
     try:
         final_dry_biomass_kg = initial_dry_biomass_kg * exp(exponent)
@@ -202,7 +208,7 @@ def evaluate_allocated_cell_metabolism(
         gross_biomass_production_kg - allocated_biomass_equivalent_kg
     )
     maintenance_death_loss_kg = (
-        parameters.death_rate_s * integrated_biomass_kg_s
+        effective_death_rate_s * integrated_biomass_kg_s
     )
     carbon_uptake_mol = (
         gross_biomass_production_kg
@@ -234,6 +240,7 @@ def advance_metabolism(
     parameters: MetabolismParameters,
     *,
     growth_allocation_fractions: Mapping[str, float] | None = None,
+    metabolic_activity_fractions: Mapping[str, float] | None = None,
 ) -> MetabolismStepResult:
     """Couple cell-local metabolism to carbon and oxygen solute fields.
 
@@ -250,6 +257,7 @@ def advance_metabolism(
         dry_biomass_per_unit_length_kg_m,
     )
     allocations = _validated_allocations(cells, growth_allocation_fractions)
+    activities = _validated_activity_fractions(cells, metabolic_activity_fractions)
     results: list[CellMetabolismResult] = []
     exchanges: list[CellSoluteExchange] = []
     updated_cells: list[Cell] = []
@@ -275,6 +283,7 @@ def advance_metabolism(
             time_step_s=time_step_s,
             parameters=parameters,
             growth_allocation_fraction=allocations[cell.cell_id],
+            metabolic_activity_fraction=activities[cell.cell_id],
         )
         results.append(result)
         exchanges.append(
@@ -329,6 +338,29 @@ def _validated_allocations(
             allocation,
         )
         validated[cell_id] = allocation
+    return validated
+
+
+def _validated_activity_fractions(
+    cells: Sequence[Cell],
+    activities: Mapping[str, float] | None,
+) -> dict[str, float]:
+    cell_ids = [cell.cell_id for cell in cells]
+    if activities is None:
+        return dict.fromkeys(cell_ids, 1.0)
+    if not isinstance(activities, Mapping) or set(activities) != set(cell_ids):
+        raise MetabolismValidationError(
+            "metabolic_activity_fractions must contain exactly one value for "
+            "every cell"
+        )
+    validated: dict[str, float] = {}
+    for cell_id in cell_ids:
+        activity = activities[cell_id]
+        _require_fraction(
+            f"metabolic_activity_fractions[{cell_id!r}]",
+            activity,
+        )
+        validated[cell_id] = activity
     return validated
 
 

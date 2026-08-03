@@ -11,15 +11,18 @@ from biomesh.config import (
     EPSParameterSet,
     ParameterSet,
     ParameterValidationError,
+    PhysiologyParameterSet,
     QuorumParameterSet,
     load_eps_parameter_file,
     load_parameter_file,
+    load_physiology_parameter_file,
     load_quorum_parameter_file,
 )
 
 PARAMETER_FILE = Path("parameters/p1_core_model.toml")
 QUORUM_PARAMETER_FILE = Path("parameters/p2_quorum_signal.toml")
 EPS_PARAMETER_FILE = Path("parameters/p2_eps_model.toml")
+PHYSIOLOGY_PARAMETER_FILE = Path("parameters/p2_physiological_states.toml")
 
 
 def test_parameter_file_loads_required_provenance_records() -> None:
@@ -238,6 +241,48 @@ def test_incomplete_eps_parameter_manifest_fails_explicitly() -> None:
 
     with pytest.raises(ValueError, match="missing required P2-WP02"):
         EPSParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_physiology_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP04 thresholds, delays, activities, and recycling stay uncalibrated."""
+    parameters = load_physiology_parameter_file(PHYSIOLOGY_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 13
+    assert {
+        parameter.value for parameter in parameters.biological_parameters
+    } == {"CALIBRATION_REQUIRED"}
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "carbon_slow_threshold",
+        "oxygen_slow_threshold",
+        "carbon_dormancy_threshold",
+        "oxygen_dormancy_threshold",
+        "carbon_death_threshold",
+        "oxygen_death_threshold",
+        "slow_transition_delay",
+        "dormancy_transition_delay",
+        "death_transition_delay",
+        "recovery_transition_delay",
+        "slow_metabolic_activity_fraction",
+        "dormant_metabolic_activity_fraction",
+        "dead_biomass_recycling_rate",
+    }
+
+
+def test_incomplete_physiology_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP04 manifest cannot silently configure state behavior."""
+    parameter = BiologicalParameter(
+        name="slow_transition_delay",
+        value="CALIBRATION_REQUIRED",
+        unit="s",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP04"):
+        PhysiologyParameterSet(schema_version=1, biological_parameters=[parameter])
 
 
 def test_eps_parameter_rejects_non_si_unit_and_invalid_fraction() -> None:
