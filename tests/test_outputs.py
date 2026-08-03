@@ -160,6 +160,7 @@ def test_writer_exports_complete_si_state_and_provenance(tmp_path: Path) -> None
     assert paths.division_events_table.is_file()
     assert paths.mass_balance_table.is_file()
     assert paths.metadata_file.is_file()
+    assert paths.quorum_history_table is None
     assert paths.field_files == (tmp_path / "run" / "fields" / "000000.npz",)
 
     cells_table = pq.read_table(paths.cells_table).to_pydict()

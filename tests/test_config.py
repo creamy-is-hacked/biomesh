@@ -10,10 +10,13 @@ from biomesh.config import (
     BiologicalParameter,
     ParameterSet,
     ParameterValidationError,
+    QuorumParameterSet,
     load_parameter_file,
+    load_quorum_parameter_file,
 )
 
 PARAMETER_FILE = Path("parameters/p1_core_model.toml")
+QUORUM_PARAMETER_FILE = Path("parameters/p2_quorum_signal.toml")
 
 
 def test_parameter_file_loads_required_provenance_records() -> None:
@@ -100,7 +103,7 @@ def test_malformed_toml_fails_with_clear_error(tmp_path: Path) -> None:
 
 def test_known_p1_parameter_rejects_non_si_unit() -> None:
     """Known P1 quantities cannot enter the model under an inconsistent unit."""
-    with pytest.raises(ValueError, match="P1 SI unit"):
+    with pytest.raises(ValueError, match="required SI unit"):
         BiologicalParameter(
             name="death_rate",
             value=1.0,
@@ -140,3 +143,63 @@ def test_incomplete_p1_parameter_manifest_fails_explicitly() -> None:
 
     with pytest.raises(ValueError, match="missing required P1"):
         ParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_quorum_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP01 inputs remain isolated, complete, and explicitly uncalibrated."""
+    parameters = load_quorum_parameter_file(QUORUM_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 7
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "effective_quorum_signal_diffusivity",
+        "quorum_signal_top_bulk_concentration",
+        "quorum_signal_degradation_rate",
+        "basal_quorum_signal_production_rate",
+        "induced_quorum_signal_production_rate",
+        "quorum_activation_half_saturation_constant",
+        "quorum_hill_coefficient",
+    }
+    assert {
+        parameter.value for parameter in parameters.biological_parameters
+    } == {"CALIBRATION_REQUIRED"}
+
+
+def test_incomplete_quorum_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP01 manifest cannot silently configure the mechanism."""
+    parameter = BiologicalParameter(
+        name="quorum_signal_degradation_rate",
+        value="CALIBRATION_REQUIRED",
+        unit="s^-1",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP01"):
+        QuorumParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_quorum_parameter_rejects_non_si_unit_and_negative_rate() -> None:
+    """P2-WP01 parameters use their canonical SI units and physical domains."""
+    with pytest.raises(ValueError, match="required SI unit"):
+        BiologicalParameter(
+            name="quorum_signal_degradation_rate",
+            value=1.0,
+            unit="h^-1",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )
+    with pytest.raises(ValueError, match="greater than or equal to zero"):
+        BiologicalParameter(
+            name="basal_quorum_signal_production_rate",
+            value=-1.0,
+            unit="mol s^-1",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )

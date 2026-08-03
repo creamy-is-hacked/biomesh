@@ -1,11 +1,12 @@
 # Architecture
 
-## Current P1 architecture
+## Current architecture through P2-WP01
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
-and metadata-driven reproduction without adding presentation or Phase 2
-behavior.
+and metadata-driven reproduction. P2-WP01 adds an isolated quorum-signal
+component and optional signal/history serialization without changing the P1
+orchestrator or its default artifacts.
 
 Dependency direction is intentionally simple:
 
@@ -15,7 +16,8 @@ validation      -> simulation orchestrator
 simulation      -> configuration-owned inputs + completed P1 components
 metabolism      -> cells + solutes
 mechanics       -> cells
-outputs         -> cells + solutes
+outputs         -> cells + solutes + quorum state
+quorum          -> cells + solutes
 tests           -> public component interfaces
 ```
 
@@ -127,3 +129,31 @@ biological manifest remains `CALIBRATION_REQUIRED`. It exercises configuration,
 serialization, provenance, and reproduction only. The full P1 update sequence
 is exercised by the manufactured mass-balance validator with inputs labelled
 non-scientific.
+
+## P2-WP01 quorum signal
+
+`biomesh.quorum` reuses one `SoluteField` for signal concentration in
+`mol m^-3`. Cell-centre lookup and grid orientation are therefore identical to
+the audited carbon and oxygen paths. Caller-supplied whole-cell basal and
+induced rates are mapped conservatively into the containing control volume.
+First-order degradation is combined with diffusion and production in one
+explicit update after checking the tighter diffusion-degradation stability
+limit.
+
+Feedback production samples the local Hill response at the start of a step.
+The accepted end-of-step field is sampled again, producing immutable,
+chronological cell-local exposure and activation histories. The continuous
+Hill fraction is recorded without inventing a binary activation threshold.
+Each step reports signal production, degradation, top-boundary transfer, and a
+discrete conservation residual.
+
+`SimulationOutputWriter` accepts quorum state only when explicitly supplied. In
+that mode it adds the signal array to each field archive and writes a canonical
+`quorum_history.parquet` table. When quorum state is absent, the P1 artifact set
+and serialization path are unchanged.
+
+```text
+cells + signal field + quorum parameters -> biomesh.quorum
+biomesh.quorum -> updated signal + local histories + signal accounting
+optional signal + histories -> biomesh.outputs
+```

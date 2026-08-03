@@ -10,6 +10,17 @@ No scientific threshold has been approved, so its value, source, uncertainty,
 and status remain `CALIBRATION_REQUIRED`. The file supplies no invented
 constants, citations, or calibration results.
 
+The isolated `parameters/p2_quorum_signal.toml` manifest adds
+`effective_quorum_signal_diffusivity` in `m^2 s^-1`,
+`quorum_signal_top_bulk_concentration` and
+`quorum_activation_half_saturation_constant` in `mol m^-3`,
+`quorum_signal_degradation_rate` in `s^-1`, basal and induced whole-cell
+production rates in `mol s^-1`, and the dimensionless
+`quorum_hill_coefficient`. Every value, source, uncertainty, and calibration
+status remains `CALIBRATION_REQUIRED`. An induced rate of zero is the explicit
+configuration that disables positive feedback; the software does not silently
+select it.
+
 The other P1-WP05 controls are explicit runtime configuration rather than
 biological constants: domain width is an experiment-specific SI length;
 maximum iterations and displacement fraction are numerical convergence
@@ -32,9 +43,11 @@ controls and the source and uncertainty of experiment-specific geometry.
 Every future biological parameter must include all fields. Unknown values must
 remain explicit rather than being silently defaulted.
 
-The schema requires the complete P1 biological-parameter inventory, validates
-the canonical SI unit for every known P1 quantity, and rejects nonphysical
-numeric domains before values reach component constructors.
+The P1 schema continues to require the complete P1 biological-parameter
+inventory. The separate P2-WP01 schema requires exactly the seven quorum
+records. Both reuse the same provenance fields, validate canonical SI units,
+and reject nonphysical numeric domains before values reach component
+constructors.
 
 ## File contract
 

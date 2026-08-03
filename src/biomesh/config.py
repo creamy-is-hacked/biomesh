@@ -1,4 +1,4 @@
-"""Validated loading for Phase 1 biological parameter records."""
+"""Validated loading for completed biological-parameter work packages."""
 
 from __future__ import annotations
 
@@ -41,16 +41,30 @@ _P1_PARAMETER_UNITS: dict[str, str] = {
     "maximum_daughter_asymmetry_fraction": "1",
     "maximum_permitted_cell_overlap": "m",
 }
-_P1_NONNEGATIVE_PARAMETERS = {
+_P2_WP01_PARAMETER_UNITS: dict[str, str] = {
+    "effective_quorum_signal_diffusivity": "m^2 s^-1",
+    "quorum_signal_top_bulk_concentration": "mol m^-3",
+    "quorum_signal_degradation_rate": "s^-1",
+    "basal_quorum_signal_production_rate": "mol s^-1",
+    "induced_quorum_signal_production_rate": "mol s^-1",
+    "quorum_activation_half_saturation_constant": "mol m^-3",
+    "quorum_hill_coefficient": "1",
+}
+_KNOWN_PARAMETER_UNITS = _P1_PARAMETER_UNITS | _P2_WP01_PARAMETER_UNITS
+_NONNEGATIVE_PARAMETERS = {
     "death_rate",
     "carbon_bulk_concentration",
     "oxygen_bulk_concentration",
     "maximum_permitted_cell_overlap",
+    "quorum_signal_top_bulk_concentration",
+    "quorum_signal_degradation_rate",
+    "basal_quorum_signal_production_rate",
+    "induced_quorum_signal_production_rate",
 }
 
 
 class ParameterValidationError(ValueError):
-    """Raised when a parameter file does not meet the P1 provenance contract."""
+    """Raised when a parameter file does not meet the provenance contract."""
 
 
 class BiologicalParameter(BaseModel):
@@ -69,10 +83,10 @@ class BiologicalParameter(BaseModel):
     @model_validator(mode="after")
     def validate_calibration_record(self) -> Self:
         """Keep unknown values explicit and prevent unsupported numeric values."""
-        expected_unit = _P1_PARAMETER_UNITS.get(self.name)
+        expected_unit = _KNOWN_PARAMETER_UNITS.get(self.name)
         if expected_unit is not None and self.unit != expected_unit:
             raise ValueError(
-                f"unit for {self.name} must be the P1 SI unit {expected_unit!r}"
+                f"unit for {self.name} must be the required SI unit {expected_unit!r}"
             )
         if self.value == "CALIBRATION_REQUIRED":
             if self.source != "CALIBRATION_REQUIRED":
@@ -95,7 +109,7 @@ class BiologicalParameter(BaseModel):
                 raise ValueError(
                     "maximum_daughter_asymmetry_fraction must be within [0, 0.5)"
                 )
-        elif self.name in _P1_NONNEGATIVE_PARAMETERS:
+        elif self.name in _NONNEGATIVE_PARAMETERS:
             if self.value < 0.0:
                 raise ValueError(f"{self.name} must be greater than or equal to zero")
         elif expected_unit is not None and self.value <= 0.0:
@@ -126,6 +140,35 @@ class ParameterSet(BaseModel):
         return self
 
 
+class QuorumParameterSet(BaseModel):
+    """The versioned P2-WP01 quorum biological-parameter document."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    schema_version: Literal[1]
+    biological_parameters: list[BiologicalParameter] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_quorum_parameter_names(self) -> Self:
+        """Reject duplicate or incomplete P2-WP01 parameter manifests."""
+        names = [parameter.name for parameter in self.biological_parameters]
+        if len(names) != len(set(names)):
+            raise ValueError("biological parameter names must be unique")
+        unexpected = sorted(set(names) - set(_P2_WP01_PARAMETER_UNITS))
+        if unexpected:
+            raise ValueError(
+                "unexpected P2-WP01 biological parameters: "
+                + ", ".join(unexpected)
+            )
+        missing = sorted(set(_P2_WP01_PARAMETER_UNITS) - set(names))
+        if missing:
+            raise ValueError(
+                "missing required P2-WP01 biological parameters: "
+                + ", ".join(missing)
+            )
+        return self
+
+
 def load_parameter_file(path: Path) -> ParameterSet:
     """Load and validate a TOML parameter file with an explicit error boundary."""
     try:
@@ -140,6 +183,25 @@ def load_parameter_file(path: Path) -> ParameterSet:
 
     try:
         return ParameterSet.model_validate(contents)
+    except ValidationError as error:
+        message = f"invalid parameter file {path}: {error}"
+        raise ParameterValidationError(message) from error
+
+
+def load_quorum_parameter_file(path: Path) -> QuorumParameterSet:
+    """Load and validate the isolated P2-WP01 quorum parameter document."""
+    try:
+        with path.open("rb") as parameter_file:
+            contents = tomllib.load(parameter_file)
+    except OSError as error:
+        message = f"unable to read parameter file {path}: {error.strerror or error}"
+        raise ParameterValidationError(message) from error
+    except tomllib.TOMLDecodeError as error:
+        message = f"invalid TOML in parameter file {path}: {error}"
+        raise ParameterValidationError(message) from error
+
+    try:
+        return QuorumParameterSet.model_validate(contents)
     except ValidationError as error:
         message = f"invalid parameter file {path}: {error}"
         raise ParameterValidationError(message) from error

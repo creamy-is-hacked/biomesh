@@ -89,13 +89,25 @@ Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
 
 | ID | Work package | Status |
 | --- | --- | --- |
-| P2-WP01 | Quorum signal | INCOMPLETE |
+| P2-WP01 | Quorum signal | COMPLETE |
 | P2-WP02 | EPS model | INCOMPLETE |
 | P2-WP03 | Competition | INCOMPLETE |
 | P2-WP04 | Physiological states | INCOMPLETE |
 | P2-WP05 | Waste and shear | INCOMPLETE |
 | P2-WP06 | Experiments | INCOMPLETE |
 | P2A | Phase 2 Audit | INCOMPLETE |
+
+P2-WP01 validation evidence:
+
+- Quorum production supports configurable basal and Hill-scaled induced
+  whole-cell rates; signal transport reuses the audited finite-volume geometry
+  with first-order degradation and a combined stability gate.
+- Manufactured diffusion-decay, analytical Hill response, equal-count geometry,
+  degradation, signal accounting, validation-failure, history, output, and
+  byte-replay tests passed.
+- All seven quorum biological parameters remain configurable and
+  `CALIBRATION_REQUIRED`. The full required gate passed: 87 tests, Ruff, mypy,
+  `git diff --check`, and module help.
 
 ## P3 – Phase 3 – Desktop GUI
 
@@ -128,7 +140,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P2-WP01 – Quorum signal`. Phase 2 may begin.
+`P2-WP02 – EPS model`.
 
 ## Remaining Issues
 

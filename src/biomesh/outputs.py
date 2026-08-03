@@ -1,9 +1,11 @@
-"""Deterministic P1-WP06 serialization of existing simulation state.
+"""Deterministic serialization of existing simulation state.
 
 This module has no simulation update logic.  It writes the caller-owned
 ``Cell`` and ``SoluteFields`` state after a step, preserving SI quantities in
-column and array names.  Biofilm height is the greatest capsule-top elevation
-above the solid bottom; roughness is the population standard deviation of
+column and array names. P2-WP01 optionally adds a quorum signal field and
+cell-local exposure/activation records without changing P1 artifacts. Biofilm
+height is the greatest capsule-top elevation above the solid bottom; roughness
+is the population standard deviation of
 capsule-top elevations.  Both are geometric summaries, not biological
 parameters.  Mass-balance entries are supplied by the simulation because this
 layer must not infer unrecorded sources, sinks, or boundary fluxes.
@@ -25,7 +27,8 @@ import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from biomesh.cells import Cell
-from biomesh.solutes import SoluteFields
+from biomesh.quorum import CellQuorumState
+from biomesh.solutes import SoluteField, SoluteFields
 
 
 class OutputValidationError(ValueError):
@@ -214,10 +217,11 @@ class OutputPaths:
     division_events_table: Path
     mass_balance_table: Path
     field_files: tuple[Path, ...]
+    quorum_history_table: Path | None = None
 
 
 class SimulationOutputWriter:
-    """Write deterministic P1 output artifacts without retaining model state.
+    """Write deterministic model artifacts without retaining model state.
 
     Each :meth:`write_snapshot` call serializes field arrays immediately and
     retains only table rows needed to make compact Parquet tables at
@@ -242,6 +246,8 @@ class SimulationOutputWriter:
         self._summary_rows: list[dict[str, object]] = []
         self._division_event_rows: list[dict[str, object]] = []
         self._mass_balance_rows: list[dict[str, object]] = []
+        self._quorum_history_rows: list[dict[str, object]] = []
+        self._quorum_output_enabled: bool | None = None
         self._field_files: list[Path] = []
         self._last_time_s: float | None = None
         self._finalized = False
@@ -259,6 +265,8 @@ class SimulationOutputWriter:
         solute_fields: SoluteFields,
         division_events: Sequence[DivisionEvent],
         mass_balance_entries: Sequence[MassBalanceEntry],
+        quorum_signal_field: SoluteField | None = None,
+        quorum_states: Sequence[CellQuorumState] | None = None,
     ) -> None:
         """Serialize a complete state snapshot and caller-reported balance.
 
@@ -278,9 +286,16 @@ class SimulationOutputWriter:
         ordered_cells = self._validated_cells(cells)
         ordered_events = self._validated_events(division_events)
         ordered_balance = self._validated_mass_balance_entries(mass_balance_entries)
+        ordered_quorum_states = self._validated_quorum_state(
+            time_s=time_s,
+            cells=ordered_cells,
+            solute_fields=solute_fields,
+            signal_field=quorum_signal_field,
+            states=quorum_states,
+        )
         snapshot_index = len(self._field_files)
         field_file = self._fields_directory / f"{snapshot_index:06d}.npz"
-        _write_field_archive(field_file, solute_fields)
+        _write_field_archive(field_file, solute_fields, quorum_signal_field)
         self._field_files.append(field_file)
 
         for cell in ordered_cells:
@@ -341,6 +356,19 @@ class SimulationOutputWriter:
                     "relative_tolerance": entry.relative_tolerance,
                 }
             )
+        for state in ordered_quorum_states:
+            observation = state.current
+            self._quorum_history_rows.append(
+                {
+                    "snapshot_index": snapshot_index,
+                    "time_s": time_s,
+                    "cell_id": state.cell_id,
+                    "signal_concentration_mol_m3": (
+                        observation.signal_concentration_mol_m3
+                    ),
+                    "activation_fraction": observation.activation_fraction,
+                }
+            )
         self._last_time_s = time_s
 
     def finalize(self) -> OutputPaths:
@@ -353,6 +381,11 @@ class SimulationOutputWriter:
         summary_table = self._run_directory / "summary.parquet"
         division_events_table = self._run_directory / "division_events.parquet"
         mass_balance_table = self._run_directory / "mass_balance.parquet"
+        quorum_history_table = (
+            self._run_directory / "quorum_history.parquet"
+            if self._quorum_output_enabled is True
+            else None
+        )
         _write_parquet(cells_table, self._cell_rows, _CELL_SCHEMA)
         _write_parquet(summary_table, self._summary_rows, _SUMMARY_SCHEMA)
         _write_parquet(
@@ -361,6 +394,12 @@ class SimulationOutputWriter:
         _write_parquet(
             mass_balance_table, self._mass_balance_rows, _MASS_BALANCE_SCHEMA
         )
+        if quorum_history_table is not None:
+            _write_parquet(
+                quorum_history_table,
+                self._quorum_history_rows,
+                _QUORUM_HISTORY_SCHEMA,
+            )
         self._finalized = True
         return OutputPaths(
             run_directory=self._run_directory,
@@ -370,6 +409,7 @@ class SimulationOutputWriter:
             division_events_table=division_events_table,
             mass_balance_table=mass_balance_table,
             field_files=tuple(self._field_files),
+            quorum_history_table=quorum_history_table,
         )
 
     def _write_metadata(self) -> None:
@@ -432,6 +472,65 @@ class SimulationOutputWriter:
             )
         return tuple(sorted(entries, key=lambda entry: entry.quantity))
 
+    def _validated_quorum_state(
+        self,
+        *,
+        time_s: float,
+        cells: tuple[Cell, ...],
+        solute_fields: SoluteFields,
+        signal_field: SoluteField | None,
+        states: Sequence[CellQuorumState] | None,
+    ) -> tuple[CellQuorumState, ...]:
+        if (signal_field is None) != (states is None):
+            raise OutputValidationError(
+                "quorum_signal_field and quorum_states must be supplied together"
+            )
+        quorum_supplied = signal_field is not None
+        if self._quorum_output_enabled is None:
+            self._quorum_output_enabled = quorum_supplied
+        elif self._quorum_output_enabled != quorum_supplied:
+            raise OutputValidationError(
+                "quorum output mode must remain consistent across snapshots"
+            )
+        if signal_field is None or states is None:
+            return ()
+        if signal_field.shape != solute_fields.carbon.shape or (
+            signal_field.width_m != solute_fields.carbon.width_m
+            or signal_field.height_m != solute_fields.carbon.height_m
+        ):
+            raise OutputValidationError(
+                "quorum signal field must share the solute grid geometry"
+            )
+        validated = tuple(states)
+        if any(not isinstance(state, CellQuorumState) for state in validated):
+            raise OutputValidationError(
+                "quorum_states must contain only CellQuorumState instances"
+            )
+        state_by_id = {state.cell_id: state for state in validated}
+        cell_ids = {cell.cell_id for cell in cells}
+        if len(state_by_id) != len(validated) or set(state_by_id) != cell_ids:
+            raise OutputValidationError(
+                "quorum_states must contain exactly one state for every cell"
+            )
+        if any(state.current.time_s != time_s for state in validated):
+            raise OutputValidationError(
+                "current quorum observation time must equal snapshot time_s"
+            )
+        for cell in cells:
+            row, column = signal_field.cell_index(cell.x_m, cell.y_m)
+            recorded_concentration = state_by_id[
+                cell.cell_id
+            ].current.signal_concentration_mol_m3
+            field_concentration = float(
+                signal_field.concentration_mol_m3[row, column]
+            )
+            if recorded_concentration != field_concentration:
+                raise OutputValidationError(
+                    f"current quorum exposure for {cell.cell_id} must match the "
+                    "signal field at the cell centre"
+                )
+        return tuple(state_by_id[cell.cell_id] for cell in cells)
+
 
 _CELL_SCHEMA = pa.schema(
     [
@@ -484,6 +583,15 @@ _MASS_BALANCE_SCHEMA = pa.schema(
         pa.field("relative_tolerance", pa.float64()),
     ]
 )
+_QUORUM_HISTORY_SCHEMA = pa.schema(
+    [
+        pa.field("snapshot_index", pa.int64()),
+        pa.field("time_s", pa.float64()),
+        pa.field("cell_id", pa.string()),
+        pa.field("signal_concentration_mol_m3", pa.float64()),
+        pa.field("activation_fraction", pa.float64()),
+    ]
+)
 
 
 def _write_parquet(
@@ -500,7 +608,11 @@ def _write_parquet(
     )
 
 
-def _write_field_archive(path: Path, fields: SoluteFields) -> None:
+def _write_field_archive(
+    path: Path,
+    fields: SoluteFields,
+    quorum_signal_field: SoluteField | None = None,
+) -> None:
     arrays: tuple[tuple[str, np.ndarray[Any, np.dtype[Any]]], ...] = (
         (
             "carbon_concentration_mol_m3",
@@ -532,6 +644,28 @@ def _write_field_archive(path: Path, fields: SoluteFields) -> None:
             np.asarray(fields.oxygen.top_bulk_concentration_mol_m3, dtype=np.float64),
         ),
     )
+    if quorum_signal_field is not None:
+        arrays += (
+            (
+                "quorum_signal_concentration_mol_m3",
+                np.asarray(
+                    quorum_signal_field.concentration_mol_m3,
+                    dtype=np.float64,
+                ),
+            ),
+            ("quorum_signal_name", np.asarray(quorum_signal_field.name)),
+            (
+                "quorum_signal_diffusivity_m2_s",
+                np.asarray(quorum_signal_field.diffusivity_m2_s, dtype=np.float64),
+            ),
+            (
+                "quorum_signal_top_bulk_concentration_mol_m3",
+                np.asarray(
+                    quorum_signal_field.top_bulk_concentration_mol_m3,
+                    dtype=np.float64,
+                ),
+            ),
+        )
     with ZipFile(path, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for name, array in arrays:
             buffer = BytesIO()

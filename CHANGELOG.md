@@ -34,6 +34,11 @@ All notable repository changes are documented here.
   transport, seeded division, mechanics, global accounting, and outputs;
   executable diffusion, growth, mass-balance, run, and reproduce paths;
   environment-complete provenance; and a calibration-gated software reference.
+- P2-WP01 – Deterministic quorum-signal production with optional positive
+  feedback, finite-volume diffusion, first-order degradation, cell-local Hill
+  sensing, immutable exposure/activation history, discrete signal accounting,
+  and optional signal/history outputs. All seven biological inputs remain
+  configurable and `CALIBRATION_REQUIRED`.
 
 ### Fixed
 
