@@ -94,7 +94,7 @@ Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
 | P2-WP03 | Competition | COMPLETE |
 | P2-WP04 | Physiological states | COMPLETE |
 | P2-WP05 | Waste and shear | COMPLETE |
-| P2-WP06 | Experiments | INCOMPLETE |
+| P2-WP06 | Experiments | COMPLETE |
 | P2A | Phase 2 Audit | INCOMPLETE |
 
 P2-WP01 validation evidence:
@@ -162,6 +162,23 @@ P2-WP05 validation evidence:
   `CALIBRATION_REQUIRED`. The full required gate passed: 138 tests, Ruff,
   mypy, `git diff --check`, and module help.
 
+P2-WP06 validation evidence:
+
+- A strict campaign schema covers producer and nonproducer monocultures, 50:50
+  competition, two inoculation patterns, constitutive and quorum-controlled
+  EPS, and two or more levels for every required quorum, nutrient/oxygen,
+  EPS-cost, and shear sweep. Every condition has three fixed seeds in the
+  repository's unresolved campaign definition.
+- The harness records biological-parameter hashes and one immutable raw
+  condition/seed manifest per run, validates the complete P2 scalar/map output
+  contract, preserves raw output hashes, and reports per-time replicate mean,
+  sample variance, and Student's t confidence intervals. It adds no sensitivity
+  ranking or coupled biological update order.
+- Unknown sweep values remain configurable, SI-labelled, provenance-complete,
+  and `CALIBRATION_REQUIRED`. Synthetic matrix, replay, statistics,
+  preservation, and explicit-failure tests passed. The full required gate
+  passed: 142 tests, Ruff, mypy, `git diff --check`, and module help.
+
 ## P3 – Phase 3 – Desktop GUI
 
 Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
@@ -193,13 +210,13 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P2-WP06 – Experiments`.
+`P2A – Phase 2 Audit`.
 
 ## Remaining Issues
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- P2-WP06 experiments and P2A remain incomplete.
+- P2A remains incomplete; Phase 2 is not accepted until that audit passes.
 - The current `phase/2-colony-system` branch is noncanonical; align it with
   `phase-2-colony-system` before an accepted-phase handoff without rewriting
   history.

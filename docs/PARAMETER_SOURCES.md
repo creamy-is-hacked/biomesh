@@ -63,6 +63,14 @@ values, sources, uncertainties, and calibration statuses remain
 `CALIBRATION_REQUIRED`. The implementation does not infer a biomass-to-waste
 conversion, a toxicity effect, a stochastic probability, or a fluid-flow law.
 
+P2-WP06 adds no new biological parameter. The campaign definition in
+`experiments/p2_wp06_campaign.toml` references the completed parameter
+manifests and records every sweep override with its existing SI unit, source,
+uncertainty, notes, calibration status, and an explicit categorical level ID.
+Unknown sweep values remain `CALIBRATION_REQUIRED`. Fixed seeds and the
+confidence level are recorded reproducibility/statistical controls, not
+biological constants.
+
 ## Required parameter record
 
 | Field | Required content |

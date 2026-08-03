@@ -58,6 +58,11 @@ All notable repository changes are documented here.
   caller-declared attachment and existing local EPS attachment strength; and
   optional waste-map and detachment-rate outputs. All seven new inputs remain
   configurable and `CALIBRATION_REQUIRED`.
+- P2-WP06 – A strict replicated-experiment harness covering monocultures,
+  50:50 competition, inoculation patterns, EPS control modes, and quorum,
+  resource, EPS-cost, and shear sweeps. It records condition/seed manifests,
+  parameter and raw-artifact hashes, complete SI result metrics and maps, and
+  deterministic replicate means, sample variances, and confidence intervals.
 
 ### Fixed
 

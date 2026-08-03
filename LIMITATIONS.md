@@ -106,3 +106,20 @@
 - Shear selects IDs for the existing terminal physiology transition and output
   interface; the P1 reference orchestrator remains unchanged. P2-WP06
   experiments and sensitivity analysis remain out of scope.
+
+## P2-WP06 – Experiments
+
+- The repository campaign is a `CALIBRATION_REQUIRED` experiment definition;
+  its unknown sweep levels are not biological values or completed calibration
+  results. The harness is verified with explicitly synthetic fixed-seed inputs.
+- The harness intentionally accepts a typed run executor instead of inventing
+  a coupled P2 update order. Every executor must preserve the approved
+  component contracts and emit the complete standard P2 raw artifact set.
+- The reported quorum-active fraction is the population summary of the
+  continuous P2-WP01 Hill activation response. No binary active/inactive
+  threshold is inferred.
+- Confidence intervals use a caller-recorded confidence level and Student's
+  t interval over fixed-seed replicates. They describe replicate variation,
+  not biological uncertainty or calibration quality.
+- The condition sweeps produce result statistics only. They do not introduce
+  sensitivity ranking, new biological mechanisms, a GUI, or P2A audit claims.
