@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P2-WP02
+## Current architecture through P2-WP03
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -8,6 +8,8 @@ and metadata-driven reproduction. P2-WP01 adds an isolated quorum-signal
 component and optional signal/history serialization without changing the P1
 orchestrator or its default artifacts. P2-WP02 adds an isolated EPS allocation
 and local-matrix component; the audited P1 path still uses zero allocation.
+P2-WP03 composes those interfaces into categorical producer/nonproducer
+competition and optional competition-history output.
 
 Dependency direction is intentionally simple:
 
@@ -18,7 +20,8 @@ simulation      -> configuration-owned inputs + completed P1 components
 metabolism      -> cells + solutes
 mechanics       -> cells
 EPS             -> cells + metabolism + solutes + quorum state
-outputs         -> cells + solutes + quorum state + optional EPS state
+competition     -> cells + metabolism + solutes + quorum state + EPS
+outputs         -> cells + solutes + quorum state + optional EPS/competition state
 quorum          -> cells + solutes
 tests           -> public component interfaces
 ```
@@ -191,4 +194,31 @@ cells + quorum state + solutes + EPS field -> biomesh.eps
 biomesh.eps -> cost-adjusted cells + accumulated EPS + resource accounting
 local EPS density + sensitivities -> cohesion and attachment multipliers
 optional EPS field -> biomesh.outputs
+```
+
+## P2-WP03 competition
+
+`biomesh.competition` assigns caller-named strains to the categorical roles
+`producer` and `nonproducer`. Both roles are advanced together through the
+existing metabolism and finite-volume resource update. Producers alone pass a
+quorum-scaled allocation to the EPS model; nonproducers retain zero allocation
+while sampling the same local EPS density and mechanical modifiers as any
+co-located producer. The P2-WP02 default remains unchanged: omitting an
+explicit producer-cell selection treats every cell as an EPS producer.
+
+Each accepted step derives cell-count and dry-biomass frequencies, strain
+summaries, preserved parent IDs, and realized per-capita biomass-change rates
+in `s^-1`. Spatial segregation is the mean fraction of exactly equidistant
+nearest neighbours with the same strain. Distance uses the existing periodic
+horizontal domain and requires no neighbourhood-radius parameter.
+
+`SimulationOutputWriter` optionally writes canonical competition summary,
+strain, and cell tables. The cell table includes lineage, local fitness, EPS
+allocation, local matrix density, and both relative mechanical modifiers.
+Omitting competition state preserves all earlier output paths.
+
+```text
+strain roles + cells + quorum state + shared resources + EPS -> competition
+competition -> role-specific EPS cost + shared matrix benefit + metrics
+optional competition snapshot -> biomesh.outputs
 ```

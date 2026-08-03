@@ -4,7 +4,9 @@ This module has no simulation update logic.  It writes the caller-owned
 ``Cell`` and ``SoluteFields`` state after a step, preserving SI quantities in
 column and array names. P2-WP01 optionally adds a quorum signal field and
 cell-local exposure/activation records. P2-WP02 optionally adds EPS density
-and total-mass records without changing the P1 artifact path. Biofilm
+and total-mass records. P2-WP03 optionally adds competition frequency,
+segregation, lineage, and local-fitness records without changing the P1
+artifact path. Biofilm
 height is the greatest capsule-top elevation above the solid bottom; roughness
 is the population standard deviation of
 capsule-top elevations.  Both are geometric summaries, not biological
@@ -28,6 +30,7 @@ import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from biomesh.cells import Cell
+from biomesh.competition import CompetitionSnapshot
 from biomesh.eps import EPSField
 from biomesh.quorum import CellQuorumState
 from biomesh.solutes import SoluteField, SoluteFields
@@ -221,6 +224,9 @@ class OutputPaths:
     field_files: tuple[Path, ...]
     quorum_history_table: Path | None = None
     eps_summary_table: Path | None = None
+    competition_summary_table: Path | None = None
+    competition_strain_table: Path | None = None
+    competition_cell_table: Path | None = None
 
 
 class SimulationOutputWriter:
@@ -251,8 +257,12 @@ class SimulationOutputWriter:
         self._mass_balance_rows: list[dict[str, object]] = []
         self._quorum_history_rows: list[dict[str, object]] = []
         self._eps_summary_rows: list[dict[str, object]] = []
+        self._competition_summary_rows: list[dict[str, object]] = []
+        self._competition_strain_rows: list[dict[str, object]] = []
+        self._competition_cell_rows: list[dict[str, object]] = []
         self._quorum_output_enabled: bool | None = None
         self._eps_output_enabled: bool | None = None
+        self._competition_output_enabled: bool | None = None
         self._field_files: list[Path] = []
         self._last_time_s: float | None = None
         self._finalized = False
@@ -273,6 +283,7 @@ class SimulationOutputWriter:
         quorum_signal_field: SoluteField | None = None,
         quorum_states: Sequence[CellQuorumState] | None = None,
         eps_field: EPSField | None = None,
+        competition_snapshot: CompetitionSnapshot | None = None,
     ) -> None:
         """Serialize a complete state snapshot and caller-reported balance.
 
@@ -300,6 +311,11 @@ class SimulationOutputWriter:
             states=quorum_states,
         )
         validated_eps_field = self._validated_eps_field(solute_fields, eps_field)
+        validated_competition = self._validated_competition_snapshot(
+            time_s=time_s,
+            cells=ordered_cells,
+            snapshot=competition_snapshot,
+        )
         snapshot_index = len(self._field_files)
         field_file = self._fields_directory / f"{snapshot_index:06d}.npz"
         _write_field_archive(
@@ -389,6 +405,66 @@ class SimulationOutputWriter:
                     "total_eps_kg": validated_eps_field.total_mass_kg,
                 }
             )
+        if validated_competition is not None:
+            self._competition_summary_rows.append(
+                {
+                    "snapshot_index": snapshot_index,
+                    "time_s": time_s,
+                    "producer_cell_frequency": (
+                        validated_competition.producer_cell_frequency
+                    ),
+                    "producer_biomass_frequency": (
+                        validated_competition.producer_biomass_frequency
+                    ),
+                    "nearest_neighbor_segregation_fraction": (
+                        validated_competition.nearest_neighbor_segregation_fraction
+                    ),
+                }
+            )
+            for strain_metric in validated_competition.strain_metrics:
+                self._competition_strain_rows.append(
+                    {
+                        "snapshot_index": snapshot_index,
+                        "time_s": time_s,
+                        "strain": strain_metric.strain,
+                        "role": strain_metric.role,
+                        "cell_count": strain_metric.cell_count,
+                        "cell_frequency": strain_metric.cell_frequency,
+                        "dry_biomass_kg": strain_metric.dry_biomass_kg,
+                        "biomass_frequency": strain_metric.biomass_frequency,
+                        "mean_realized_local_fitness_s": (
+                            strain_metric.mean_realized_local_fitness_s
+                        ),
+                    }
+                )
+            for cell_metric in validated_competition.cell_metrics:
+                self._competition_cell_rows.append(
+                    {
+                        "snapshot_index": snapshot_index,
+                        "time_s": time_s,
+                        "cell_id": cell_metric.cell_id,
+                        "parent_id": cell_metric.parent_id,
+                        "strain": cell_metric.strain,
+                        "role": cell_metric.role,
+                        "initial_dry_biomass_kg": (
+                            cell_metric.initial_dry_biomass_kg
+                        ),
+                        "final_dry_biomass_kg": cell_metric.final_dry_biomass_kg,
+                        "realized_local_fitness_s": (
+                            cell_metric.realized_local_fitness_s
+                        ),
+                        "eps_allocation_fraction": (
+                            cell_metric.eps_allocation_fraction
+                        ),
+                        "local_eps_density_kg_m3": (
+                            cell_metric.local_eps_density_kg_m3
+                        ),
+                        "cohesion_multiplier": cell_metric.cohesion_multiplier,
+                        "attachment_strength_multiplier": (
+                            cell_metric.attachment_strength_multiplier
+                        ),
+                    }
+                )
         self._last_time_s = time_s
 
     def finalize(self) -> OutputPaths:
@@ -411,6 +487,21 @@ class SimulationOutputWriter:
             if self._eps_output_enabled is True
             else None
         )
+        competition_summary_table = (
+            self._run_directory / "competition_summary.parquet"
+            if self._competition_output_enabled is True
+            else None
+        )
+        competition_strain_table = (
+            self._run_directory / "competition_strains.parquet"
+            if self._competition_output_enabled is True
+            else None
+        )
+        competition_cell_table = (
+            self._run_directory / "competition_cells.parquet"
+            if self._competition_output_enabled is True
+            else None
+        )
         _write_parquet(cells_table, self._cell_rows, _CELL_SCHEMA)
         _write_parquet(summary_table, self._summary_rows, _SUMMARY_SCHEMA)
         _write_parquet(
@@ -431,6 +522,24 @@ class SimulationOutputWriter:
                 self._eps_summary_rows,
                 _EPS_SUMMARY_SCHEMA,
             )
+        if competition_summary_table is not None:
+            _write_parquet(
+                competition_summary_table,
+                self._competition_summary_rows,
+                _COMPETITION_SUMMARY_SCHEMA,
+            )
+        if competition_strain_table is not None:
+            _write_parquet(
+                competition_strain_table,
+                self._competition_strain_rows,
+                _COMPETITION_STRAIN_SCHEMA,
+            )
+        if competition_cell_table is not None:
+            _write_parquet(
+                competition_cell_table,
+                self._competition_cell_rows,
+                _COMPETITION_CELL_SCHEMA,
+            )
         self._finalized = True
         return OutputPaths(
             run_directory=self._run_directory,
@@ -442,6 +551,9 @@ class SimulationOutputWriter:
             field_files=tuple(self._field_files),
             quorum_history_table=quorum_history_table,
             eps_summary_table=eps_summary_table,
+            competition_summary_table=competition_summary_table,
+            competition_strain_table=competition_strain_table,
+            competition_cell_table=competition_cell_table,
         )
 
     def _write_metadata(self) -> None:
@@ -588,6 +700,52 @@ class SimulationOutputWriter:
             )
         return eps_field
 
+    def _validated_competition_snapshot(
+        self,
+        *,
+        time_s: float,
+        cells: tuple[Cell, ...],
+        snapshot: CompetitionSnapshot | None,
+    ) -> CompetitionSnapshot | None:
+        supplied = snapshot is not None
+        if self._competition_output_enabled is None:
+            self._competition_output_enabled = supplied
+        elif self._competition_output_enabled != supplied:
+            raise OutputValidationError(
+                "competition output mode must remain consistent across snapshots"
+            )
+        if snapshot is None:
+            return None
+        if not isinstance(snapshot, CompetitionSnapshot):
+            raise OutputValidationError(
+                "competition_snapshot must be a CompetitionSnapshot instance"
+            )
+        if snapshot.time_s != time_s:
+            raise OutputValidationError(
+                "competition snapshot time_s must equal output snapshot time_s"
+            )
+        metric_by_id = {metric.cell_id: metric for metric in snapshot.cell_metrics}
+        cell_ids = {cell.cell_id for cell in cells}
+        if (
+            len(metric_by_id) != len(snapshot.cell_metrics)
+            or set(metric_by_id) != cell_ids
+        ):
+            raise OutputValidationError(
+                "competition cell metrics must contain exactly one record for "
+                "every cell"
+            )
+        for cell in cells:
+            metric = metric_by_id[cell.cell_id]
+            if (
+                metric.strain != cell.strain
+                or metric.parent_id != cell.parent_id
+                or metric.final_dry_biomass_kg != cell.dry_biomass_kg
+            ):
+                raise OutputValidationError(
+                    f"competition metric for {cell.cell_id} must match cell state"
+                )
+        return snapshot
+
 
 _CELL_SCHEMA = pa.schema(
     [
@@ -654,6 +812,45 @@ _EPS_SUMMARY_SCHEMA = pa.schema(
         pa.field("snapshot_index", pa.int64()),
         pa.field("time_s", pa.float64()),
         pa.field("total_eps_kg", pa.float64()),
+    ]
+)
+_COMPETITION_SUMMARY_SCHEMA = pa.schema(
+    [
+        pa.field("snapshot_index", pa.int64()),
+        pa.field("time_s", pa.float64()),
+        pa.field("producer_cell_frequency", pa.float64()),
+        pa.field("producer_biomass_frequency", pa.float64()),
+        pa.field("nearest_neighbor_segregation_fraction", pa.float64()),
+    ]
+)
+_COMPETITION_STRAIN_SCHEMA = pa.schema(
+    [
+        pa.field("snapshot_index", pa.int64()),
+        pa.field("time_s", pa.float64()),
+        pa.field("strain", pa.string()),
+        pa.field("role", pa.string()),
+        pa.field("cell_count", pa.int64()),
+        pa.field("cell_frequency", pa.float64()),
+        pa.field("dry_biomass_kg", pa.float64()),
+        pa.field("biomass_frequency", pa.float64()),
+        pa.field("mean_realized_local_fitness_s", pa.float64()),
+    ]
+)
+_COMPETITION_CELL_SCHEMA = pa.schema(
+    [
+        pa.field("snapshot_index", pa.int64()),
+        pa.field("time_s", pa.float64()),
+        pa.field("cell_id", pa.string()),
+        pa.field("parent_id", pa.string(), nullable=True),
+        pa.field("strain", pa.string()),
+        pa.field("role", pa.string()),
+        pa.field("initial_dry_biomass_kg", pa.float64()),
+        pa.field("final_dry_biomass_kg", pa.float64()),
+        pa.field("realized_local_fitness_s", pa.float64()),
+        pa.field("eps_allocation_fraction", pa.float64()),
+        pa.field("local_eps_density_kg_m3", pa.float64()),
+        pa.field("cohesion_multiplier", pa.float64()),
+        pa.field("attachment_strength_multiplier", pa.float64()),
     ]
 )
 

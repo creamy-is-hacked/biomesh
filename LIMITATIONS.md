@@ -47,3 +47,21 @@
   remain outside P2-WP02 and must not be inferred from these modifiers.
 - EPS is coupled through the component interface and optional output path; the
   Phase 1 reference orchestrator remains unchanged.
+
+## P2-WP03 – Competition
+
+- P2-WP03 adds no numeric biological values. Strain roles are categorical
+  experiment configuration; all reused metabolism, quorum, and EPS values
+  retain their existing provenance and `CALIBRATION_REQUIRED` status.
+- The matrix benefit is limited to the existing local relative cohesion and
+  attachment multipliers. No survival protection, force law, phenotype
+  switching, dispersal, detachment, mutation, or evolution is inferred.
+- Realized local fitness is a one-step per-capita biomass-change rate, not a
+  calibrated selection coefficient. Nearest-neighbour segregation is a
+  deterministic descriptive metric and has no inferred biological radius.
+- The controlled tests establish software neutrality, configured production
+  cost, conservation, and replay. They are not biological competition
+  benchmarks or organism-specific outcome claims.
+- Competition is exposed through the component and optional output interfaces;
+  the Phase 1 reference orchestrator remains unchanged. Replicated competition
+  experiments and sensitivity analysis remain P2-WP06.

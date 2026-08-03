@@ -29,6 +29,14 @@ dimensionless relative-strength multipliers. All three values, sources,
 uncertainties, and calibration statuses remain `CALIBRATION_REQUIRED`; the
 software supplies no biological defaults.
 
+P2-WP03 adds no numeric biological parameter. Producer and nonproducer strain
+identities are explicit categorical experiment configuration. Frequencies,
+per-capita dry-biomass change rates in `s^-1`, nearest-neighbour segregation,
+and local matrix modifiers are derived from existing state. Competition
+continues to use the P1 metabolism parameters and the P2-WP01/P2-WP02 quorum
+and EPS parameters, all of which retain their recorded provenance and
+calibration status.
+
 The other P1-WP05 controls are explicit runtime configuration rather than
 biological constants: domain width is an experiment-specific SI length;
 maximum iterations and displacement fraction are numerical convergence

@@ -15,7 +15,7 @@ introduced in this work package.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from math import isclose, isfinite
 
@@ -208,6 +208,7 @@ def advance_eps_metabolism(
     time_step_s: float,
     start_time_s: float,
     dry_biomass_per_unit_length_kg_m: float,
+    producing_cell_ids: Collection[str] | None = None,
 ) -> EPSStepResult:
     """Advance quorum-controlled EPS allocation and coupled metabolism once.
 
@@ -221,10 +222,15 @@ def advance_eps_metabolism(
     ordered_cells = _validated_cells(cells)
     states = _validated_quorum_states(ordered_cells, quorum_states, start_time_s)
     state_by_id = {state.cell_id: state for state in states}
+    producer_ids = _validated_producing_cell_ids(
+        ordered_cells, producing_cell_ids
+    )
     allocations = {
         cell.cell_id: (
             eps_parameters.maximum_allocation_fraction
             * state_by_id[cell.cell_id].current.activation_fraction
+            if cell.cell_id in producer_ids
+            else 0.0
         )
         for cell in ordered_cells
     }
@@ -373,6 +379,32 @@ def _validated_quorum_states(
             "current quorum observation time must equal start_time_s"
         )
     return tuple(state_by_id[cell.cell_id] for cell in cells)
+
+
+def _validated_producing_cell_ids(
+    cells: tuple[Cell, ...],
+    producing_cell_ids: Collection[str] | None,
+) -> frozenset[str]:
+    cell_ids = {cell.cell_id for cell in cells}
+    if producing_cell_ids is None:
+        return frozenset(cell_ids)
+    if isinstance(producing_cell_ids, (str, bytes)) or not isinstance(
+        producing_cell_ids, Collection
+    ):
+        raise EPSValidationError("producing_cell_ids must be a collection of cell IDs")
+    producer_ids = tuple(producing_cell_ids)
+    if any(not isinstance(cell_id, str) or not cell_id for cell_id in producer_ids):
+        raise EPSValidationError(
+            "producing_cell_ids must contain only non-empty strings"
+        )
+    if len(producer_ids) != len(set(producer_ids)):
+        raise EPSValidationError("producing_cell_ids must not contain duplicates")
+    unknown = sorted(set(producer_ids) - cell_ids)
+    if unknown:
+        raise EPSValidationError(
+            "producing_cell_ids contains unknown cell IDs: " + ", ".join(unknown)
+        )
+    return frozenset(producer_ids)
 
 
 def _require_positive(name: str, value: float) -> None:

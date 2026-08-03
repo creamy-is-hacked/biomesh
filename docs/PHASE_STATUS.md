@@ -91,7 +91,7 @@ Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
 | --- | --- | --- |
 | P2-WP01 | Quorum signal | COMPLETE |
 | P2-WP02 | EPS model | COMPLETE |
-| P2-WP03 | Competition | INCOMPLETE |
+| P2-WP03 | Competition | COMPLETE |
 | P2-WP04 | Physiological states | INCOMPLETE |
 | P2-WP05 | Waste and shear | INCOMPLETE |
 | P2-WP06 | Experiments | INCOMPLETE |
@@ -120,6 +120,17 @@ P2-WP02 validation evidence:
 - All three EPS biological parameters remain configurable and
   `CALIBRATION_REQUIRED`. The full required gate passed: 102
   tests, Ruff, mypy, `git diff --check`, and module help.
+
+P2-WP03 validation evidence:
+
+- Producer and nonproducer roles share the existing simultaneous carbon and
+  oxygen update; only producers pay quorum-scaled EPS allocation, while both
+  roles receive the same local matrix modifiers.
+- Neutral, well-mixed cost, resource competition, quorum/EPS interaction,
+  conservation, frequency, segregation, lineage, local-fitness, input-order,
+  fixed-seed, validation-failure, optional-output, and byte-replay tests passed.
+- P2-WP03 adds no numeric biological parameter. The full required gate passed:
+  112 tests, Ruff, mypy, `git diff --check`, and module help.
 
 ## P3 – Phase 3 – Desktop GUI
 
@@ -152,7 +163,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P2-WP03 – Competition`.
+`P2-WP04 – Physiological states`.
 
 ## Remaining Issues
 

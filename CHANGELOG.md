@@ -43,6 +43,10 @@ All notable repository changes are documented here.
   accumulation with explicit producer growth cost, biomass-equivalent and
   substrate accounting, monotone cohesion/attachment modifiers, optional EPS
   outputs, and three configurable `CALIBRATION_REQUIRED` parameters.
+- P2-WP03 – Deterministic producer/nonproducer competition over shared carbon
+  and oxygen, producer-only quorum-scaled EPS cost, shared local matrix benefit,
+  frequency, segregation, lineage, and local-fitness tracking, plus canonical
+  optional competition outputs. No new numeric biological parameter was added.
 
 ### Fixed
 

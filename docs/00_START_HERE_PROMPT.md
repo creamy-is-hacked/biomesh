@@ -1,6 +1,6 @@
 # BioMesh Start Here — M0 – Repository Bootstrap Prompt and Model Routing
 
-Use this file first. Copy only the prompt below into a GPT or Codex coding session opened at the BioMesh repository root. The model must stop after M0 – Repository Bootstrap; P1 – Phase 1 – Core Model begins in `01_PHASE_ONE_CORE_MODEL.md` only after the scaffold is reviewed and committed manually.
+Use this file first. Copy only the prompt below into a GPT or Codex coding session opened at the BioMesh repository root. The model must stop after M0 – Repository Bootstrap; P1 – Phase 1 – Core Model begins in `01_PHASE_ONE_CORE_MODEL.md` only after M0 satisfies its acceptance gate and is committed under the canonical Git workflow.
 
 ## Recommended Model for M0 – Repository Bootstrap
 
@@ -50,7 +50,9 @@ IMPLEMENTATION RULES
 - Do not add placeholder simulation classes or fake scientific behavior.
 - Do not invent biological constants, citations, benchmark results, or test success.
 - Use existing dependency versions unless they are broken; avoid unnecessary pinning.
-- No automatic Git commit, push, pull request, tag, or release.
+- After every acceptance criterion and required check passes, follow the
+  canonical work-package Git workflow in `docs/STANDARDS.md` Section 11.
+- Do not create pull requests or releases automatically.
 - Do not modify the planning files unless a path or command is objectively incorrect.
 
 TOKEN DISCIPLINE
@@ -59,7 +61,9 @@ TOKEN DISCIPLINE
 - Prefer targeted patches and concise test output.
 - Do not explain routine code line by line.
 - Stop when acceptance checks pass or a concrete blocker prevents them.
-- Final response: changed files, commands/results, blockers, and next manual Git step; maximum 20 lines.
+- Final response: changed files, commands/results, blockers, and, when the
+  work package passes, the commit SHA, branch, and files committed; maximum 20
+  lines.
 
 REQUIRED CHECKS
 Run from a clean environment when feasible:
@@ -82,7 +86,8 @@ M0 passes only when:
 - CI mirrors the local commands;
 - documentation distinguishes implemented work from planned work;
 - no P1 – Phase 1 – Core Model scientific behavior has been added;
-- `git diff` is reviewable and no GitHub write action occurred.
+- `git diff` is reviewable before the canonical work-package Git workflow is
+  performed.
 
 Begin by inspecting the repository and reporting only material conflicts with this task. Then implement M0.
 ```
@@ -117,7 +122,8 @@ When these exact models are unavailable:
 
 ## Per-Work-Package Invocation
 
-After M0 – Repository Bootstrap is committed manually, begin each package with this compact wrapper:
+After M0 – Repository Bootstrap is accepted and committed under the canonical
+workflow, begin each package with this compact wrapper:
 
 ```text
 Execute only [WORK PACKAGE ID] from [DOCUMENT]. Read docs/STANDARDS.md,
@@ -125,7 +131,9 @@ then AGENTS.md, docs/PHASE_STATUS.md, that package section, and directly
 affected code/tests.
 Obey its acceptance criteria. Patch existing work; do not expand scope.
 Run focused tests first, then required regression tests. Update PHASE_STATUS
-and CHANGELOG with evidence. Do not commit or push. Final report <=20 lines.
+and CHANGELOG with evidence. When all acceptance criteria and the required
+verification commands pass, follow the canonical work-package Git workflow in
+docs/STANDARDS.md Section 11. Final report <=20 lines.
 ```
 
 For audits, replace it with:
