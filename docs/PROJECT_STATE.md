@@ -4,8 +4,9 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-03 after the P2-WP06 remediation working tree;
-the historical independent P2A failure was against `d0c80c5`.
+Snapshot verified: 2026-08-03 after the P2-WP06 remediation commit `8ac6551`;
+a clean Python 3.14 editable-install clone reproduced its fixture path and all
+144 tests. The historical independent P2A failure was against `d0c80c5`.
 
 | Field | Current state |
 | --- | --- |
@@ -36,8 +37,8 @@ the historical independent P2A failure was against `d0c80c5`.
   using manufactured SI-labelled software-validation fixtures. Existing
   biological records remain provenance-complete and `CALIBRATION_REQUIRED`;
   fixtures and their outputs are not calibration or biological evidence. P2A
-  has not independently revalidated this remediation. It adds no mutation or
-  evolution.
+  has not independently revalidated this remediation, despite clean-clone
+  application-path reproduction. It adds no mutation or evolution.
 - License selection is pending.
 
 ## Update policy

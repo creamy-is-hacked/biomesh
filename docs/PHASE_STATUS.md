@@ -187,7 +187,10 @@ P2-WP06 validation evidence:
   report plot. The fixtures are SI-labelled manufactured software validation,
   not biological calibration. Local evidence: 144 tests, Ruff, mypy,
   `git diff --check`, module help, `validate all`, all six required command
-  paths, and report passed on 2026-08-03. P2A must now rerun independently.
+  paths, and report passed on 2026-08-03. A clean clone created a fresh Python
+  3.14 environment, installed `.[dev]`, passed `validate all`, ran the
+  competition fixture and report, and passed all 144 tests. P2A must now rerun
+  independently.
 
 ## P3 – Phase 3 – Desktop GUI
 

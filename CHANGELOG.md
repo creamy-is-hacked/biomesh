@@ -79,7 +79,8 @@ All notable repository changes are documented here.
   raw Parquet/NumPy run outputs, provenance manifests, replicate statistics,
   descriptive observed-range sensitivity rankings, and PNG reports. Verified
   locally with all required CLI paths, `ruff check .`, `mypy src`, and 144
-  tests. Fixtures are manufactured software validation only, not calibration.
+  tests, then reproduced from a fresh Python 3.14 editable-install clone.
+  Fixtures are manufactured software validation only, not calibration.
 
 ### Fixed
 

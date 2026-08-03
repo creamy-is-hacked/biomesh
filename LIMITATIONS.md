@@ -117,8 +117,8 @@
   component contracts and emit the complete standard P2 raw artifact set.
 - P2-WP06 now supplies a production adapter and CLI binding for manufactured
   software-validation fixtures only. `P2A-001` is not closed by this work:
-  an independent P2A rerun must verify clean-clone reproduction and the coupled
-  application path before Phase 2 acceptance.
+  a clean-clone application-path reproduction passed, but an independent P2A
+  rerun must still review coupled behavior before Phase 2 acceptance.
 - Manufactured fixture values and outputs use SI labels but are deliberately
   separate from biological parameter records. They are not calibration,
   benchmark, or biological-result evidence.
