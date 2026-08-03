@@ -158,6 +158,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             fixture_output = run_fixture_command(
                 fixture_file=arguments.fixture_file,
                 output_directory=output,
+                expected_kind=arguments.command,
             )
             print(fixture_output)
             return 0

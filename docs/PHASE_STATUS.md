@@ -191,6 +191,21 @@ P2-WP06 validation evidence:
   3.14 environment, installed `.[dev]`, passed `validate all`, ran the
   competition fixture and report, and passed all 144 tests. P2A must now rerun
   independently.
+- P2A follow-up finding `P2A-002` identified that the six published fixtures
+  still omitted root-level CLI coverage for the two inoculation patterns, both
+  EPS-control modes, and the nutrient/oxygen sweep. The remediation now
+  publishes 11 strict fixtures covering all 15 executable conditions exactly
+  once, each at fixed seeds 101, 202, and 303, and keeps manufactured fixture
+  configuration hashes separate from the five `CALIBRATION_REQUIRED`
+  biological-parameter records.
+- Pre-commit application-path evidence passed all 11 experiment/sweep commands
+  and all 11 report paths twice with byte-identical directory trees: 45 runs,
+  675 verified raw artifact hashes, 630 mean/sample-variance/Student-t rows,
+  168 applicable observed-range ranking rows, and maximum absolute accounting
+  residual `4.199134257027165e-30`. Strict report validation and focused tests
+  reject missing Parquet and malformed NumPy artifacts. The full required gate
+  passed with 145 tests. P2A must rerun independently; no audit, P3, mutation,
+  evolution, or biological-calibration claim is included.
 
 ## P3 – Phase 3 – Desktop GUI
 

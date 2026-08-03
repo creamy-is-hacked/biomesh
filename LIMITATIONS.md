@@ -119,9 +119,16 @@
   software-validation fixtures only. `P2A-001` is not closed by this work:
   a clean-clone application-path reproduction passed, but an independent P2A
   rerun must still review coupled behavior before Phase 2 acceptance.
+- The published adapter has 11 strict root-level fixtures that expose all 15
+  executable conditions exactly once, including separate intermixed and
+  segregated inoculation paths, separate constitutive and quorum-controlled EPS
+  paths, and the joint nutrient/oxygen sweep. This closes the P2-WP06 release
+  surface identified by `P2A-002`; it does not close the independent P2A gate.
 - Manufactured fixture values and outputs use SI labels but are deliberately
   separate from biological parameter records. They are not calibration,
-  benchmark, or biological-result evidence.
+  benchmark, or biological-result evidence. Fixture bytes are hashed as the
+  campaign configuration, while the five biological TOML records remain
+  separately hashed, provenance-complete, and `CALIBRATION_REQUIRED`.
 - The reported quorum-active fraction is the population summary of the
   continuous P2-WP01 Hill activation response. No binary active/inactive
   threshold is inferred.

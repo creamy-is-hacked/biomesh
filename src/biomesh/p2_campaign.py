@@ -14,14 +14,16 @@ for retained cells; 8. accounting and serialization.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import math
 import platform
 import subprocess
 import sys
 from dataclasses import dataclass, replace
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
@@ -31,6 +33,10 @@ from biomesh.cells import Cell
 from biomesh.competition import CompetitionStrains, advance_competition
 from biomesh.eps import EPSField, EPSParameters
 from biomesh.experiments import (
+    REQUIRED_FIELD_ARRAYS,
+    REQUIRED_METRIC_UNITS,
+    REQUIRED_RUN_FILES,
+    SWEEP_PARAMETERS,
     ExperimentCampaign,
     ExperimentCondition,
     ExperimentObservation,
@@ -63,6 +69,31 @@ from biomesh.solutes import SoluteField, SoluteFields
 from biomesh.waste import WasteParameters, advance_waste
 
 FIXTURE_SCHEMA_VERSION = 1
+FIXTURE_SEEDS = (101, 202, 303)
+FixtureKind = Literal["experiment", "sweep"]
+PUBLISHED_FIXTURES: dict[str, tuple[FixtureKind, tuple[str, ...]]] = {
+    "producer.yaml": ("experiment", ("producer",)),
+    "nonproducer.yaml": ("experiment", ("nonproducer",)),
+    "competition_50_50.yaml": ("experiment", ("competition-50-50",)),
+    "inoculation_intermixed.yaml": ("experiment", ("inoculation-intermixed",)),
+    "inoculation_segregated.yaml": ("experiment", ("inoculation-segregated",)),
+    "eps_constitutive.yaml": ("experiment", ("eps-constitutive",)),
+    "eps_quorum_controlled.yaml": ("experiment", ("eps-quorum-controlled",)),
+    "qs_threshold_sweep.yaml": ("sweep", ("qs-low", "qs-high")),
+    "nutrient_oxygen_sweep.yaml": (
+        "sweep",
+        ("resources-low", "resources-high"),
+    ),
+    "eps_cost_sweep.yaml": ("sweep", ("eps-cost-low", "eps-cost-high")),
+    "shear_sweep.yaml": ("sweep", ("shear-low", "shear-high")),
+}
+BIOLOGICAL_PARAMETER_FILES = (
+    "../parameters/p1_core_model.toml",
+    "../parameters/p2_quorum_signal.toml",
+    "../parameters/p2_eps_model.toml",
+    "../parameters/p2_physiological_states.toml",
+    "../parameters/p2_waste_shear.toml",
+)
 UPDATE_ORDER = [
     "quorum_transport_and_local_sensing",
     "physiology_activity",
@@ -79,6 +110,7 @@ UPDATE_ORDER = [
 class FixtureCommand:
     """Parsed JSON-compatible YAML command fixture."""
 
+    fixture_kind: FixtureKind
     campaign_id: str
     condition_ids: tuple[str, ...]
 
@@ -103,7 +135,8 @@ def load_fixture_command(path: Path) -> FixtureCommand:
         )
     if payload["schema_version"] != FIXTURE_SCHEMA_VERSION:
         raise ExperimentValidationError("unsupported fixture schema_version")
-    if payload["fixture_kind"] not in {"experiment", "sweep"}:
+    fixture_kind = payload["fixture_kind"]
+    if fixture_kind not in {"experiment", "sweep"}:
         raise ExperimentValidationError("fixture_kind must be experiment or sweep")
     campaign_id = payload["campaign_id"]
     condition_ids = payload["condition_ids"]
@@ -120,12 +153,21 @@ def load_fixture_command(path: Path) -> FixtureCommand:
         raise ExperimentValidationError(
             "fixture condition_ids must be unique nonblank strings"
         )
-    return FixtureCommand(campaign_id, tuple(condition_ids))
+    return FixtureCommand(fixture_kind, campaign_id, tuple(condition_ids))
 
 
-def run_fixture_command(*, fixture_file: Path, output_directory: Path) -> Path:
+def run_fixture_command(
+    *,
+    fixture_file: Path,
+    output_directory: Path,
+    expected_kind: FixtureKind,
+) -> Path:
     """Run selected P2 conditions with three deterministic seeds and real artifacts."""
     command = load_fixture_command(fixture_file)
+    if command.fixture_kind != expected_kind:
+        raise ExperimentValidationError(
+            f"{expected_kind} command requires fixture_kind={expected_kind}"
+        )
     full = _software_campaign(fixture_file)
     by_id = {condition.condition_id: condition for condition in full.conditions}
     missing = sorted(set(command.condition_ids) - set(by_id))
@@ -155,25 +197,47 @@ def validate_all(repository_root: Path) -> dict[str, object]:
     """Validate unresolved biological records and all executable fixture files."""
     load_experiment_campaign(repository_root / "experiments/p2_wp06_campaign.toml")
     fixture_directory = repository_root / "experiments"
-    fixtures = sorted(
-        fixture_directory / name
-        for name in (
-            "producer.yaml",
-            "nonproducer.yaml",
-            "competition_50_50.yaml",
-            "qs_threshold_sweep.yaml",
-            "eps_cost_sweep.yaml",
-            "shear_sweep.yaml",
-        )
-    )
-    if len(fixtures) != 6:
+    actual_names = {path.name for path in fixture_directory.glob("*.yaml")}
+    expected_names = set(PUBLISHED_FIXTURES)
+    if actual_names != expected_names:
+        missing = sorted(expected_names - actual_names)
+        unexpected = sorted(actual_names - expected_names)
         raise ExperimentValidationError(
-            "expected exactly six P2 software-validation fixtures"
+            "published fixture set mismatch; "
+            f"missing={missing}, unexpected={unexpected}"
         )
-    commands = [load_fixture_command(path) for path in fixtures]
+    commands: list[FixtureCommand] = []
+    for name, (fixture_kind, condition_ids) in PUBLISHED_FIXTURES.items():
+        command = load_fixture_command(fixture_directory / name)
+        if (
+            command.fixture_kind != fixture_kind
+            or command.condition_ids != condition_ids
+        ):
+            raise ExperimentValidationError(
+                f"published fixture {name} does not match its required command contract"
+            )
+        commands.append(command)
+    full_campaign = _software_campaign(fixture_directory / "producer.yaml")
+    published_conditions = [
+        condition_id for command in commands for condition_id in command.condition_ids
+    ]
+    expected_conditions = {
+        condition.condition_id for condition in full_campaign.conditions
+    }
+    if (
+        len(published_conditions) != len(set(published_conditions))
+        or set(published_conditions) != expected_conditions
+    ):
+        raise ExperimentValidationError(
+            "published fixtures must cover every executable condition exactly once"
+        )
+    if tuple(full_campaign.seeds) != FIXTURE_SEEDS:
+        raise ExperimentValidationError("software fixtures require three fixed seeds")
     return {
         "fixture_count": len(commands),
+        "condition_count": len(published_conditions),
         "passed": True,
+        "seeds": list(FIXTURE_SEEDS),
         "scientific_calibration": "not claimed; manufactured software fixtures only",
     }
 
@@ -260,7 +324,7 @@ def _software_campaign(fixture_file: Path) -> ExperimentCampaign:
         condition("inoculation-intermixed", "inoculation_pattern", 0.5),
         condition("inoculation-segregated", "inoculation_pattern", 0.5, "segregated"),
         condition("eps-constitutive", "eps_control", 0.5, eps="constitutive"),
-        condition("eps-quorum", "eps_control", 0.5),
+        condition("eps-quorum-controlled", "eps_control", 0.5),
         condition(
             "qs-low",
             "quorum_threshold_sweep",
@@ -338,8 +402,8 @@ def _software_campaign(fixture_file: Path) -> ExperimentCampaign:
         ),
         calibration_status="CALIBRATION_REQUIRED",
         confidence_level=0.95,
-        seeds=[101, 202, 303],
-        biological_parameter_files=[str(fixture_file.resolve())],
+        seeds=list(FIXTURE_SEEDS),
+        biological_parameter_files=list(BIOLOGICAL_PARAMETER_FILES),
         conditions=conditions,
     )
 
@@ -424,7 +488,7 @@ def _run_fixture_replicate(
     metadata = RunMetadata(
         seed=request.seed,
         parameters={
-            "fixture": "manufactured SI software validation",
+            "software_fixture": "manufactured SI software validation",
             "condition": request.condition.model_dump(mode="json"),
             "update_order": UPDATE_ORDER,
         },
@@ -758,45 +822,465 @@ def _commit_hash() -> str:
 
 
 def _validate_campaign_artifacts(output_directory: Path) -> None:
+    """Validate the complete immutable campaign and raw-artifact contract."""
     manifest = output_directory / "campaign_manifest.json"
     summary = output_directory / "summary_statistics.json"
     ranking = output_directory / "sensitivity_ranking.json"
     if not all(path.is_file() for path in (manifest, summary, ranking)):
         raise ExperimentValidationError("campaign artifacts are incomplete")
-    campaign = json.loads(manifest.read_text())
-    if not campaign.get("runs"):
+    campaign = _read_json_object(manifest, "campaign manifest")
+    if set(campaign) != {
+        "campaign_configuration",
+        "campaign_configuration_sha256",
+        "parameter_files",
+        "runs",
+        "sensitivity_ranking",
+        "summary_statistics",
+    }:
+        raise ExperimentValidationError("campaign manifest schema is malformed")
+    if campaign["summary_statistics"] != summary.name:
+        raise ExperimentValidationError("campaign manifest summary path is malformed")
+    if campaign["sensitivity_ranking"] != ranking.name:
+        raise ExperimentValidationError("campaign manifest ranking path is malformed")
+    if not _is_sha256(campaign["campaign_configuration_sha256"]):
+        raise ExperimentValidationError("campaign configuration hash is malformed")
+
+    configuration = campaign["campaign_configuration"]
+    if not isinstance(configuration, dict):
+        raise ExperimentValidationError("campaign configuration is malformed")
+    campaign_id = configuration.get("campaign_id")
+    if not isinstance(campaign_id, str) or not campaign_id.strip():
+        raise ExperimentValidationError("campaign_id is malformed")
+    if configuration.get("seeds") != list(FIXTURE_SEEDS):
+        raise ExperimentValidationError("campaign must contain three fixed seeds")
+    if configuration.get("calibration_status") != "CALIBRATION_REQUIRED":
+        raise ExperimentValidationError(
+            "campaign must preserve CALIBRATION_REQUIRED status"
+        )
+    if configuration.get("biological_parameter_files") != list(
+        BIOLOGICAL_PARAMETER_FILES
+    ):
+        raise ExperimentValidationError(
+            "campaign biological provenance is missing or mixed with fixture inputs"
+        )
+    condition_payloads = configuration.get("conditions")
+    if not isinstance(condition_payloads, list) or not condition_payloads:
+        raise ExperimentValidationError("campaign conditions are malformed")
+    conditions: dict[str, ExperimentCondition] = {}
+    try:
+        for payload in condition_payloads:
+            condition = ExperimentCondition.model_validate(payload)
+            if condition.condition_id in conditions:
+                raise ExperimentValidationError("campaign condition IDs are duplicated")
+            conditions[condition.condition_id] = condition
+    except (ValueError, TypeError) as error:
+        raise ExperimentValidationError(
+            f"campaign condition is malformed: {error}"
+        ) from error
+
+    parameter_files = _validate_parameter_file_records(campaign["parameter_files"])
+    runs = campaign["runs"]
+    if not isinstance(runs, list) or not runs:
         raise ExperimentValidationError("campaign manifest has no runs")
-    for record in campaign["runs"]:
-        run = output_directory / record["run_manifest"]
+    expected_runs = {
+        (condition_id, seed)
+        for condition_id in conditions
+        for seed in FIXTURE_SEEDS
+    }
+    observed_runs: set[tuple[str, int]] = set()
+    for record in runs:
+        if not isinstance(record, dict) or set(record) != {
+            "condition_id",
+            "run_manifest",
+            "seed",
+        }:
+            raise ExperimentValidationError("campaign run record is malformed")
+        condition_id = record["condition_id"]
+        seed = record["seed"]
+        relative_manifest = record["run_manifest"]
+        if (
+            not isinstance(condition_id, str)
+            or isinstance(seed, bool)
+            or not isinstance(seed, int)
+            or not isinstance(relative_manifest, str)
+        ):
+            raise ExperimentValidationError("campaign run identity is malformed")
+        identity = (condition_id, seed)
+        if identity not in expected_runs or identity in observed_runs:
+            raise ExperimentValidationError("campaign run matrix is malformed")
+        observed_runs.add(identity)
+        run = _safe_artifact_path(output_directory, relative_manifest)
         if not run.is_file():
             raise ExperimentValidationError("campaign references missing run manifest")
-        payload = json.loads(run.read_text())
-        raw = payload.get("raw_artifacts", [])
-        if not raw:
-            raise ExperimentValidationError("run manifest has no raw artifact hashes")
-        run_directory = run.parent
-        metadata = run_directory / "run_metadata.json"
-        if not metadata.is_file():
-            raise ExperimentValidationError("run is missing environment metadata")
-        metadata_payload = json.loads(metadata.read_text())
-        if not {
-            "commit_hash",
-            "seed",
-            "parameters",
-            "platform",
-            "python_version",
-        } <= set(metadata_payload):
+        _validate_run_artifacts(
+            run,
+            campaign_id=campaign_id,
+            condition=conditions[condition_id],
+            seed=seed,
+            parameter_files=parameter_files,
+        )
+    if observed_runs != expected_runs:
+        raise ExperimentValidationError("campaign run matrix is incomplete")
+    _validate_summary_statistics(summary, campaign_id, set(conditions))
+    _validate_sensitivity_ranking(ranking, campaign_id, conditions)
+
+
+def _validate_parameter_file_records(value: object) -> dict[str, str]:
+    if not isinstance(value, list) or not value:
+        raise ExperimentValidationError("biological parameter records are malformed")
+    records: dict[str, str] = {}
+    for item in value:
+        if not isinstance(item, dict) or set(item) != {"label", "sha256"}:
             raise ExperimentValidationError(
-                "run metadata lacks commit, seed, parameters, or environment"
+                "biological parameter record is malformed"
             )
-        for table in (
-            "summary.parquet",
-            "mass_balance.parquet",
-            "competition_summary.parquet",
+        label, sha256 = item["label"], item["sha256"]
+        if (
+            not isinstance(label, str)
+            or label not in BIOLOGICAL_PARAMETER_FILES
+            or label in records
+            or not _is_sha256(sha256)
         ):
-            try:
-                pq.read_table(run_directory / table)
-            except Exception as error:
+            raise ExperimentValidationError(
+                "biological parameter record is malformed"
+            )
+        records[label] = sha256
+    if set(records) != set(BIOLOGICAL_PARAMETER_FILES):
+        raise ExperimentValidationError("biological parameter records are incomplete")
+    return records
+
+
+def _validate_run_artifacts(
+    manifest_path: Path,
+    *,
+    campaign_id: str,
+    condition: ExperimentCondition,
+    seed: int,
+    parameter_files: dict[str, str],
+) -> None:
+    payload = _read_json_object(manifest_path, "run manifest")
+    if set(payload) != {
+        "campaign_id",
+        "condition",
+        "observations",
+        "parameter_files",
+        "raw_artifacts",
+        "seed",
+    }:
+        raise ExperimentValidationError("run manifest schema is malformed")
+    if (
+        payload["campaign_id"] != campaign_id
+        or payload["seed"] != seed
+        or payload["condition"] != condition.model_dump(mode="json")
+    ):
+        raise ExperimentValidationError("run manifest identity is malformed")
+    if _validate_parameter_file_records(payload["parameter_files"]) != parameter_files:
+        raise ExperimentValidationError("run biological provenance is inconsistent")
+    _validate_observations(payload["observations"])
+
+    run_directory = manifest_path.parent
+    raw = payload["raw_artifacts"]
+    if not isinstance(raw, list) or not raw:
+        raise ExperimentValidationError("run manifest has no raw artifact hashes")
+    recorded_paths: set[str] = set()
+    for record in raw:
+        if not isinstance(record, dict) or set(record) != {
+            "path",
+            "sha256",
+            "size_bytes",
+        }:
+            raise ExperimentValidationError("raw artifact record is malformed")
+        relative_path = record["path"]
+        size_bytes = record["size_bytes"]
+        if (
+            not isinstance(relative_path, str)
+            or relative_path in recorded_paths
+            or isinstance(size_bytes, bool)
+            or not isinstance(size_bytes, int)
+            or size_bytes < 0
+            or not _is_sha256(record["sha256"])
+        ):
+            raise ExperimentValidationError("raw artifact record is malformed")
+        recorded_paths.add(relative_path)
+        artifact = _safe_artifact_path(run_directory, relative_path)
+        if not artifact.is_file():
+            raise ExperimentValidationError(
+                f"run references missing raw artifact {relative_path}"
+            )
+        contents = artifact.read_bytes()
+        digest = hashlib.sha256(contents).hexdigest()
+        if len(contents) != size_bytes or digest != record["sha256"]:
+            raise ExperimentValidationError(
+                f"raw artifact hash or size mismatch: {relative_path}"
+            )
+    actual_paths = {
+        path.relative_to(run_directory).as_posix()
+        for path in run_directory.rglob("*")
+        if path.is_file() and path != manifest_path
+    }
+    if actual_paths != recorded_paths:
+        raise ExperimentValidationError("raw artifact manifest is incomplete")
+    if not REQUIRED_RUN_FILES <= recorded_paths:
+        raise ExperimentValidationError("run is missing required raw outputs")
+
+    metadata = _read_json_object(run_directory / "run_metadata.json", "run metadata")
+    required_metadata = {
+        "commit_hash",
+        "seed",
+        "parameters",
+        "platform",
+        "python_version",
+        "parameter_file",
+        "parameter_file_sha256",
+    }
+    if not required_metadata <= set(metadata):
+        raise ExperimentValidationError(
+            "run metadata lacks commit, seed, parameters, or environment"
+        )
+    parameter_label = metadata["parameter_file"]
+    parameters = metadata["parameters"]
+    if (
+        metadata["seed"] != seed
+        or not isinstance(metadata["commit_hash"], str)
+        or not metadata["commit_hash"].strip()
+        or not isinstance(metadata["platform"], str)
+        or not metadata["platform"].strip()
+        or not isinstance(metadata["python_version"], str)
+        or not metadata["python_version"].strip()
+        or not isinstance(parameter_label, str)
+        or parameter_label not in parameter_files
+        or metadata["parameter_file_sha256"] != parameter_files[parameter_label]
+        or not isinstance(parameters, dict)
+        or parameters.get("condition") != condition.model_dump(mode="json")
+        or parameters.get("software_fixture")
+        != "manufactured SI software validation"
+        or parameters.get("update_order") != UPDATE_ORDER
+    ):
+        raise ExperimentValidationError("run metadata provenance is malformed")
+
+    for table_name in sorted(REQUIRED_RUN_FILES - {"run_metadata.json"}):
+        try:
+            pq.read_table(run_directory / table_name)
+        except Exception as error:
+            raise ExperimentValidationError(
+                f"malformed Parquet artifact {table_name}: {error}"
+            ) from error
+    accounting = pq.read_table(run_directory / "mass_balance.parquet")
+    accounting_pairs = set(
+        zip(
+            accounting.column("quantity").to_pylist(),
+            accounting.column("unit").to_pylist(),
+            strict=True,
+        )
+    )
+    if not {
+        ("carbon", "mol"),
+        ("oxygen", "mol"),
+        ("dry_biomass", "kg"),
+        ("eps", "kg"),
+        ("quorum_signal", "mol"),
+        ("waste", "mol"),
+    } <= accounting_pairs:
+        raise ExperimentValidationError("mass-balance SI accounting is incomplete")
+
+    field_paths = sorted(
+        path for path in recorded_paths if path.startswith("fields/")
+    )
+    if not field_paths:
+        raise ExperimentValidationError("run has no NumPy field artifacts")
+    for relative_path in field_paths:
+        try:
+            with np.load(run_directory / relative_path, allow_pickle=False) as archive:
+                if not REQUIRED_FIELD_ARRAYS <= set(archive.files):
+                    raise ExperimentValidationError(
+                        f"NumPy field artifact is incomplete: {relative_path}"
+                    )
+                if any(
+                    not np.issubdtype(archive[name].dtype, np.number)
+                    or not np.all(np.isfinite(archive[name]))
+                    for name in REQUIRED_FIELD_ARRAYS
+                ):
+                    raise ExperimentValidationError(
+                        f"NumPy field artifact is malformed: {relative_path}"
+                    )
+        except (OSError, ValueError) as error:
+            raise ExperimentValidationError(
+                f"malformed NumPy artifact {relative_path}: {error}"
+            ) from error
+
+
+def _validate_observations(value: object) -> None:
+    if not isinstance(value, list) or not value:
+        raise ExperimentValidationError("run observations are malformed")
+    metric_times: dict[str, set[float]] = {
+        metric: set() for metric in REQUIRED_METRIC_UNITS
+    }
+    for row in value:
+        if not isinstance(row, dict) or set(row) != {
+            "metric",
+            "time_s",
+            "unit",
+            "value",
+        }:
+            raise ExperimentValidationError("run observation is malformed")
+        metric = row["metric"]
+        if (
+            not isinstance(metric, str)
+            or metric not in REQUIRED_METRIC_UNITS
+            or row["unit"] != REQUIRED_METRIC_UNITS[metric]
+            or not _is_finite_number(row["time_s"], minimum=0.0)
+            or not _is_finite_number(row["value"])
+        ):
+            raise ExperimentValidationError("run observation is malformed")
+        time_s = float(row["time_s"])
+        if time_s in metric_times[metric]:
+            raise ExperimentValidationError("run observations are duplicated")
+        metric_times[metric].add(time_s)
+    if any(len(times) < 2 for times in metric_times.values()):
+        raise ExperimentValidationError("run observations are incomplete")
+
+
+def _validate_summary_statistics(
+    path: Path, campaign_id: str, condition_ids: set[str]
+) -> None:
+    payload = _read_json_object(path, "summary statistics")
+    if set(payload) != {"campaign_id", "confidence_level", "statistics"}:
+        raise ExperimentValidationError("summary statistics schema is malformed")
+    rows = payload["statistics"]
+    if payload["campaign_id"] != campaign_id or not isinstance(rows, list) or not rows:
+        raise ExperimentValidationError("summary statistics are malformed")
+    coverage: dict[tuple[str, str], set[float]] = {}
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {
+            "condition_id",
+            "confidence_interval_high",
+            "confidence_interval_low",
+            "mean",
+            "metric",
+            "replicate_count",
+            "time_s",
+            "unit",
+            "variance",
+        }:
+            raise ExperimentValidationError("summary statistic row is malformed")
+        condition_id, metric = row["condition_id"], row["metric"]
+        if (
+            not isinstance(condition_id, str)
+            or condition_id not in condition_ids
+            or not isinstance(metric, str)
+            or metric not in REQUIRED_METRIC_UNITS
+            or row["unit"] != REQUIRED_METRIC_UNITS[metric]
+            or row["replicate_count"] != len(FIXTURE_SEEDS)
+            or not _is_finite_number(row["time_s"], minimum=0.0)
+            or not _is_finite_number(row["mean"])
+            or not _is_finite_number(row["variance"], minimum=0.0)
+            or not _is_finite_number(row["confidence_interval_low"])
+            or not _is_finite_number(row["confidence_interval_high"])
+            or float(row["confidence_interval_low"])
+            > float(row["mean"])
+            or float(row["confidence_interval_high"])
+            < float(row["mean"])
+        ):
+            raise ExperimentValidationError("summary statistic row is malformed")
+        key = (condition_id, metric)
+        times = coverage.setdefault(key, set())
+        time_s = float(row["time_s"])
+        if time_s in times:
+            raise ExperimentValidationError("summary statistic rows are duplicated")
+        times.add(time_s)
+    expected_keys = {
+        (condition_id, metric)
+        for condition_id in condition_ids
+        for metric in REQUIRED_METRIC_UNITS
+    }
+    if set(coverage) != expected_keys or any(
+        len(times) < 2 for times in coverage.values()
+    ):
+        raise ExperimentValidationError("summary statistic coverage is incomplete")
+
+
+def _validate_sensitivity_ranking(
+    path: Path,
+    campaign_id: str,
+    conditions: dict[str, ExperimentCondition],
+) -> None:
+    payload = _read_json_object(path, "sensitivity ranking")
+    if set(payload) != {"campaign_id", "method", "rankings"}:
+        raise ExperimentValidationError("sensitivity ranking schema is malformed")
+    rankings = payload["rankings"]
+    if payload["campaign_id"] != campaign_id or not isinstance(rankings, list):
+        raise ExperimentValidationError("sensitivity ranking is malformed")
+    family_counts: dict[str, int] = {}
+    for condition in conditions.values():
+        family_counts[condition.family] = family_counts.get(condition.family, 0) + 1
+    expected_families = {
+        family
+        for family, count in family_counts.items()
+        if family in SWEEP_PARAMETERS and count >= 2
+    }
+    if bool(rankings) != bool(expected_families):
+        raise ExperimentValidationError("sensitivity ranking coverage is incomplete")
+    for row in rankings:
+        if not isinstance(row, dict) or set(row) != {
+            "metric",
+            "ranking",
+            "time_s",
+            "unit",
+        }:
+            raise ExperimentValidationError("sensitivity ranking row is malformed")
+        metric, entries = row["metric"], row["ranking"]
+        if (
+            not isinstance(metric, str)
+            or metric not in REQUIRED_METRIC_UNITS
+            or row["unit"] != REQUIRED_METRIC_UNITS[metric]
+            or not _is_finite_number(row["time_s"], minimum=0.0)
+            or not isinstance(entries, list)
+            or {entry.get("family") for entry in entries if isinstance(entry, dict)}
+            != expected_families
+        ):
+            raise ExperimentValidationError("sensitivity ranking row is malformed")
+        for expected_rank, entry in enumerate(entries, start=1):
+            if (
+                not isinstance(entry, dict)
+                or entry.get("rank") != expected_rank
+                or not _is_finite_number(entry.get("absolute_mean_range"), minimum=0.0)
+            ):
                 raise ExperimentValidationError(
-                    f"malformed Parquet artifact {table}: {error}"
-                ) from error
+                    "sensitivity ranking entry is malformed"
+                )
+
+
+def _read_json_object(path: Path, label: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ExperimentValidationError(f"malformed {label}: {error}") from error
+    if not isinstance(payload, dict):
+        raise ExperimentValidationError(f"malformed {label}: expected an object")
+    return payload
+
+
+def _safe_artifact_path(root: Path, relative_path: str) -> Path:
+    path = Path(relative_path)
+    if path.is_absolute() or not path.parts or ".." in path.parts:
+        raise ExperimentValidationError("artifact path must be relative and contained")
+    resolved_root = root.resolve()
+    resolved_path = (root / path).resolve()
+    if not resolved_path.is_relative_to(resolved_root):
+        raise ExperimentValidationError("artifact path escapes campaign output")
+    return resolved_path
+
+
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _is_finite_number(value: object, *, minimum: float | None = None) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    converted = float(value)
+    return math.isfinite(converted) and (minimum is None or converted >= minimum)

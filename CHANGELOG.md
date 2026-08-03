@@ -72,6 +72,11 @@ All notable repository changes are documented here.
   were absent. This P2-WP06 remediation adds the deterministic runner and the
   required command paths with manufactured SI software-validation fixtures;
   P2A must be rerun independently before any Phase 2 acceptance claim.
+- P2A follow-up `P2A-002` found that the published root fixture set still
+  omitted executable paths for both inoculation patterns, both EPS-control
+  modes, and the nutrient/oxygen sweep. P2-WP06 now publishes those five
+  missing paths and validates exact one-time coverage of all 15 executable
+  campaign conditions.
 
 ### Fixed
 
@@ -81,6 +86,14 @@ All notable repository changes are documented here.
   locally with all required CLI paths, `ruff check .`, `mypy src`, and 144
   tests, then reproduced from a fresh Python 3.14 editable-install clone.
   Fixtures are manufactured software validation only, not calibration.
+- P2-WP06 – Completed the `P2A-002` release surface with 11 strict root-level
+  fixtures covering all 15 conditions at seeds 101, 202, and 303. The fixture
+  configuration hash is now distinct from the five `CALIBRATION_REQUIRED`
+  biological-parameter records. Full artifact validation rejects path escape,
+  missing or malformed Parquet/NumPy data, hash/size drift, incomplete SI
+  accounting, malformed provenance, incomplete replicate statistics, and
+  missing applicable observed-range rankings. All 11 fixture/report trees
+  replayed byte-identically.
 
 ### Fixed
 

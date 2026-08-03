@@ -4,9 +4,10 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-03 after the P2-WP06 remediation commit `8ac6551`;
-a clean Python 3.14 editable-install clone reproduced its fixture path and all
-144 tests. The historical independent P2A failure was against `d0c80c5`.
+Snapshot verified: 2026-08-03 after the P2-WP06 remediation for `P2A-002`.
+The local Python 3.14 full gate passed 145 tests, and all 11 published fixture
+and report paths replayed byte-identically. The historical independent P2A
+failure was against `d0c80c5`; P2A has not audited the current remediation.
 
 | Field | Current state |
 | --- | --- |
@@ -15,7 +16,7 @@ a clean Python 3.14 editable-install clone reproduced its fixture path and all
 | Current branch | `phase/2-colony-system` (noncanonical; the required P2 branch name is `phase-2-colony-system`) |
 | Latest accepted phase | P1 – Phase 1 – Core Model, accepted by P1A on 2026-08-02 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.1.0` (P1 merge, 2026-08-02) |
-| Current test count | 144 passed (`pytest -q`, 2026-08-03) |
+| Current test count | 145 passed (`pytest -q`, 2026-08-03) |
 | Next planned work package | P2A – Phase 2 Audit |
 
 ## Outstanding technical debt
@@ -34,11 +35,12 @@ a clean Python 3.14 editable-install clone reproduced its fixture path and all
 - P1's reference is a zero-duration, zero-cell, zero-solute software fixture,
   not a calibrated biological experiment.
 - P2-WP06 supplies a deterministic campaign adapter and required CLI surface
-  using manufactured SI-labelled software-validation fixtures. Existing
-  biological records remain provenance-complete and `CALIBRATION_REQUIRED`;
-  fixtures and their outputs are not calibration or biological evidence. P2A
-  has not independently revalidated this remediation, despite clean-clone
-  application-path reproduction. It adds no mutation or evolution.
+  using 11 manufactured SI-labelled software-validation fixtures covering all
+  15 executable conditions at three fixed seeds. Fixture configuration and the
+  five biological TOML records have separate hashes; biological records remain
+  provenance-complete and `CALIBRATION_REQUIRED`. Fixtures and their outputs
+  are not calibration or biological evidence. P2A has not independently
+  revalidated this remediation. It adds no mutation or evolution.
 - License selection is pending.
 
 ## Update policy

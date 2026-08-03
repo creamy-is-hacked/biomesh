@@ -1,0 +1,1 @@
+{"schema_version": 1, "fixture_kind": "sweep", "campaign_id": "p2-nutrient-oxygen-sweep-fixture", "condition_ids": ["resources-low", "resources-high"]}
