@@ -179,6 +179,15 @@ P2-WP06 validation evidence:
   and `CALIBRATION_REQUIRED`. Synthetic matrix, replay, statistics,
   preservation, and explicit-failure tests passed. The full required gate
   passed: 142 tests, Ruff, mypy, `git diff --check`, and module help.
+- P2A independently audited `d0c80c5` on 2026-08-03 and found the prior
+  harness had no production P2 runner or CLI path. P2-WP06 remediation adds a
+  deterministic documented update order, root-level required command fixtures,
+  actual Parquet/NumPy artifacts, run metadata, raw manifests, aggregate
+  statistics, accounting tables, observed-range descriptive rankings, and a
+  report plot. The fixtures are SI-labelled manufactured software validation,
+  not biological calibration. Local evidence: 144 tests, Ruff, mypy,
+  `git diff --check`, module help, `validate all`, all six required command
+  paths, and report passed on 2026-08-03. P2A must now rerun independently.
 
 ## P3 – Phase 3 – Desktop GUI
 
@@ -217,7 +226,8 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- P2A remains incomplete; Phase 2 is not accepted until that audit passes.
+- `P2A-001` remediation requires an independent clean-clone P2A rerun before
+  Phase 2 can be accepted; this work package does not accept or merge Phase 2.
 - The current `phase/2-colony-system` branch is noncanonical; align it with
   `phase-2-colony-system` before an accepted-phase handoff without rewriting
   history.

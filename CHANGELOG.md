@@ -65,6 +65,22 @@ All notable repository changes are documented here.
   deterministic replicate means, sample variances, confidence intervals, and
   descriptive rankings limited to the observed sweep-result ranges.
 
+### Audit findings
+
+- P2A – Independent audit of `d0c80c5` failed (`P2A-001`): the P2 production
+  campaign runner and all documented experiment, sweep, and report CLI paths
+  were absent. This P2-WP06 remediation adds the deterministic runner and the
+  required command paths with manufactured SI software-validation fixtures;
+  P2A must be rerun independently before any Phase 2 acceptance claim.
+
+### Fixed
+
+- P2-WP06 – Added the executable P2 update adapter, strict artifact checks,
+  raw Parquet/NumPy run outputs, provenance manifests, replicate statistics,
+  descriptive observed-range sensitivity rankings, and PNG reports. Verified
+  locally with all required CLI paths, `ruff check .`, `mypy src`, and 144
+  tests. Fixtures are manufactured software validation only, not calibration.
+
 ### Fixed
 
 - P1A – Corrected physical bottom-to-grid indexing so cell exchange uses the

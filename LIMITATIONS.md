@@ -115,6 +115,13 @@
 - The harness intentionally accepts a typed run executor instead of inventing
   a coupled P2 update order. Every executor must preserve the approved
   component contracts and emit the complete standard P2 raw artifact set.
+- P2-WP06 now supplies a production adapter and CLI binding for manufactured
+  software-validation fixtures only. `P2A-001` is not closed by this work:
+  an independent P2A rerun must verify clean-clone reproduction and the coupled
+  application path before Phase 2 acceptance.
+- Manufactured fixture values and outputs use SI labels but are deliberately
+  separate from biological parameter records. They are not calibration,
+  benchmark, or biological-result evidence.
 - The reported quorum-active fraction is the population summary of the
   continuous P2-WP01 Hill activation response. No binary active/inactive
   threshold is inferred.

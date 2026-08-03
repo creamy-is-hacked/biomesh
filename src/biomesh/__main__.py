@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from biomesh import __version__
+from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
 from biomesh.reference import (
     DEFAULT_REFERENCE_PARAMETER_FILE,
     default_output_directory,
@@ -27,7 +28,9 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the P1 command parser without executing simulation behavior."""
     parser = argparse.ArgumentParser(
         prog="biomesh",
-        description="BioMesh Phase 1 core-model runner and validation tools.",
+        description=(
+            "BioMesh Phase 1 core-model runner, validation, and P2 campaign tools."
+        ),
     )
     parser.add_argument(
         "--version",
@@ -61,6 +64,24 @@ def build_parser() -> argparse.ArgumentParser:
     validations.add_parser(
         "mass-balance", help="boundary-aware full-pipeline accounting"
     )
+    validations.add_parser("all", help="validate P1 checks and P2 fixture contracts")
+
+    experiment_parser = commands.add_parser(
+        "experiment", help="run one manufactured P2 software-validation fixture"
+    )
+    experiment_parser.add_argument("fixture_file", type=Path)
+    experiment_parser.add_argument("--output", type=Path)
+
+    sweep_parser = commands.add_parser(
+        "sweep", help="run one manufactured P2 software-validation sweep"
+    )
+    sweep_parser.add_argument("fixture_file", type=Path)
+    sweep_parser.add_argument("--output", type=Path)
+
+    report_parser = commands.add_parser(
+        "report", help="validate a P2 campaign and write its report plot"
+    )
+    report_parser.add_argument("output_directory", type=Path)
 
     reproduce_parser = commands.add_parser(
         "reproduce", help="recreate and byte-compare a recorded reference run"
@@ -99,6 +120,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(paths.run_directory)
             return 0
         if arguments.command == "validate":
+            if arguments.validation == "all":
+                all_result = validate_all(repository_root)
+                print(json.dumps(all_result, sort_keys=True))
+                return 0
             result = _run_validation(arguments.validation, repository_root)
             print(json.dumps(result, sort_keys=True))
             return 0 if result["passed"] else 1
@@ -124,6 +149,21 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return 0 if not mismatches else 1
+        if arguments.command in {"experiment", "sweep"}:
+            output = arguments.output
+            if output is None:
+                output = repository_root / "outputs" / (
+                    f"{arguments.fixture_file.stem}-{arguments.command}"
+                )
+            fixture_output = run_fixture_command(
+                fixture_file=arguments.fixture_file,
+                output_directory=output,
+            )
+            print(fixture_output)
+            return 0
+        if arguments.command == "report":
+            print(report_campaign(arguments.output_directory))
+            return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"biomesh: error: {error}", file=sys.stderr)
         return 2
