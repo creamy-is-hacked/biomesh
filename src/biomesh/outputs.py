@@ -7,7 +7,9 @@ cell-local exposure/activation records. P2-WP02 optionally adds EPS density
 and total-mass records. P2-WP03 optionally adds competition frequency,
 segregation, lineage, and local-fitness records without changing the P1
 artifact path. P2-WP04 optionally adds reconciled physiological state counts
-and biomass totals. Biofilm height is the greatest capsule-top elevation above
+and biomass totals. P2-WP05 optionally adds a waste concentration field and a
+simplified shear-detachment summary. Biofilm height is the greatest capsule-top
+elevation above
 the solid bottom; roughness is the population standard deviation of capsule-top
 elevations. Both are geometric summaries, not biological parameters.
 Mass-balance entries are supplied by the simulation because this layer must not
@@ -34,6 +36,7 @@ from biomesh.competition import CompetitionSnapshot
 from biomesh.eps import EPSField
 from biomesh.physiology import PhysiologySnapshot, build_physiology_snapshot
 from biomesh.quorum import CellQuorumState
+from biomesh.shear import ShearSnapshot
 from biomesh.solutes import SoluteField, SoluteFields
 
 
@@ -229,6 +232,7 @@ class OutputPaths:
     competition_strain_table: Path | None = None
     competition_cell_table: Path | None = None
     physiology_summary_table: Path | None = None
+    shear_summary_table: Path | None = None
 
 
 class SimulationOutputWriter:
@@ -263,10 +267,13 @@ class SimulationOutputWriter:
         self._competition_strain_rows: list[dict[str, object]] = []
         self._competition_cell_rows: list[dict[str, object]] = []
         self._physiology_summary_rows: list[dict[str, object]] = []
+        self._shear_summary_rows: list[dict[str, object]] = []
         self._quorum_output_enabled: bool | None = None
         self._eps_output_enabled: bool | None = None
         self._competition_output_enabled: bool | None = None
         self._physiology_output_enabled: bool | None = None
+        self._waste_output_enabled: bool | None = None
+        self._shear_output_enabled: bool | None = None
         self._field_files: list[Path] = []
         self._last_time_s: float | None = None
         self._finalized = False
@@ -289,6 +296,8 @@ class SimulationOutputWriter:
         eps_field: EPSField | None = None,
         competition_snapshot: CompetitionSnapshot | None = None,
         physiology_snapshot: PhysiologySnapshot | None = None,
+        waste_field: SoluteField | None = None,
+        shear_snapshot: ShearSnapshot | None = None,
     ) -> None:
         """Serialize a complete state snapshot and caller-reported balance.
 
@@ -326,6 +335,12 @@ class SimulationOutputWriter:
             cells=ordered_cells,
             snapshot=physiology_snapshot,
         )
+        validated_waste_field = self._validated_waste_field(solute_fields, waste_field)
+        validated_shear = self._validated_shear_snapshot(
+            time_s=time_s,
+            cells=ordered_cells,
+            snapshot=shear_snapshot,
+        )
         snapshot_index = len(self._field_files)
         field_file = self._fields_directory / f"{snapshot_index:06d}.npz"
         _write_field_archive(
@@ -333,6 +348,7 @@ class SimulationOutputWriter:
             solute_fields,
             quorum_signal_field,
             validated_eps_field,
+            validated_waste_field,
         )
         self._field_files.append(field_file)
 
@@ -497,6 +513,19 @@ class SimulationOutputWriter:
                     ),
                 }
             )
+        if validated_shear is not None:
+            self._shear_summary_rows.append(
+                {
+                    "snapshot_index": snapshot_index,
+                    "time_s": time_s,
+                    "surface_parallel_shear_stress_pa": (
+                        validated_shear.surface_parallel_shear_stress_pa
+                    ),
+                    "eligible_cell_count": validated_shear.eligible_cell_count,
+                    "detached_cell_count": validated_shear.detached_cell_count,
+                    "detachment_rate_s": validated_shear.detachment_rate_s,
+                }
+            )
         self._last_time_s = time_s
 
     def finalize(self) -> OutputPaths:
@@ -537,6 +566,11 @@ class SimulationOutputWriter:
         physiology_summary_table = (
             self._run_directory / "physiology_summary.parquet"
             if self._physiology_output_enabled is True
+            else None
+        )
+        shear_summary_table = (
+            self._run_directory / "shear_summary.parquet"
+            if self._shear_output_enabled is True
             else None
         )
         _write_parquet(cells_table, self._cell_rows, _CELL_SCHEMA)
@@ -583,6 +617,12 @@ class SimulationOutputWriter:
                 self._physiology_summary_rows,
                 _PHYSIOLOGY_SUMMARY_SCHEMA,
             )
+        if shear_summary_table is not None:
+            _write_parquet(
+                shear_summary_table,
+                self._shear_summary_rows,
+                _SHEAR_SUMMARY_SCHEMA,
+            )
         self._finalized = True
         return OutputPaths(
             run_directory=self._run_directory,
@@ -598,6 +638,7 @@ class SimulationOutputWriter:
             competition_strain_table=competition_strain_table,
             competition_cell_table=competition_cell_table,
             physiology_summary_table=physiology_summary_table,
+            shear_summary_table=shear_summary_table,
         )
 
     def _write_metadata(self) -> None:
@@ -830,6 +871,77 @@ class SimulationOutputWriter:
             )
         return snapshot
 
+    def _validated_waste_field(
+        self,
+        solute_fields: SoluteFields,
+        waste_field: SoluteField | None,
+    ) -> SoluteField | None:
+        supplied = waste_field is not None
+        if self._waste_output_enabled is None:
+            self._waste_output_enabled = supplied
+        elif self._waste_output_enabled != supplied:
+            raise OutputValidationError(
+                "waste output mode must remain consistent across snapshots"
+            )
+        if waste_field is None:
+            return None
+        carbon = solute_fields.carbon
+        if (
+            waste_field.shape != carbon.shape
+            or waste_field.width_m != carbon.width_m
+            or waste_field.height_m != carbon.height_m
+        ):
+            raise OutputValidationError(
+                "waste field must share the solute grid geometry"
+            )
+        return waste_field
+
+    def _validated_shear_snapshot(
+        self,
+        *,
+        time_s: float,
+        cells: tuple[Cell, ...],
+        snapshot: ShearSnapshot | None,
+    ) -> ShearSnapshot | None:
+        supplied = snapshot is not None
+        if self._shear_output_enabled is None:
+            self._shear_output_enabled = supplied
+        elif self._shear_output_enabled != supplied:
+            raise OutputValidationError(
+                "shear output mode must remain consistent across snapshots"
+            )
+        if snapshot is None:
+            return None
+        if not isinstance(snapshot, ShearSnapshot):
+            raise OutputValidationError(
+                "shear_snapshot must be a ShearSnapshot instance"
+            )
+        if snapshot.time_s != time_s:
+            raise OutputValidationError(
+                "shear snapshot time_s must equal output snapshot time_s"
+            )
+        state_by_id = {state.cell_id: state for state in snapshot.cell_states}
+        cell_ids = {cell.cell_id for cell in cells}
+        if (
+            len(state_by_id) != len(snapshot.cell_states)
+            or set(state_by_id) != cell_ids
+        ):
+            raise OutputValidationError(
+                "shear states must contain exactly one record for every cell"
+            )
+        if any(state.current.time_s != time_s for state in snapshot.cell_states):
+            raise OutputValidationError(
+                "current shear observation time must equal snapshot time_s"
+            )
+        observed_detachments = sum(
+            state.current.detached_by_shear for state in snapshot.cell_states
+        )
+        if observed_detachments != snapshot.detached_cell_count:
+            raise OutputValidationError(
+                "shear detached count must match cell shear observations"
+            )
+        return snapshot
+
 
 _CELL_SCHEMA = pa.schema(
     [
@@ -955,6 +1067,16 @@ _PHYSIOLOGY_SUMMARY_SCHEMA = pa.schema(
         pa.field("recycled_dead_biomass_kg", pa.float64()),
     ]
 )
+_SHEAR_SUMMARY_SCHEMA = pa.schema(
+    [
+        pa.field("snapshot_index", pa.int64()),
+        pa.field("time_s", pa.float64()),
+        pa.field("surface_parallel_shear_stress_pa", pa.float64()),
+        pa.field("eligible_cell_count", pa.int64()),
+        pa.field("detached_cell_count", pa.int64()),
+        pa.field("detachment_rate_s", pa.float64()),
+    ]
+)
 
 
 def _write_parquet(
@@ -976,6 +1098,7 @@ def _write_field_archive(
     fields: SoluteFields,
     quorum_signal_field: SoluteField | None = None,
     eps_field: EPSField | None = None,
+    waste_field: SoluteField | None = None,
 ) -> None:
     arrays: tuple[tuple[str, np.ndarray[Any, np.dtype[Any]]], ...] = (
         (
@@ -1037,6 +1160,25 @@ def _write_field_archive(
                 np.asarray(eps_field.density_kg_m3, dtype=np.float64),
             ),
             ("eps_depth_m", np.asarray(eps_field.depth_m, dtype=np.float64)),
+        )
+    if waste_field is not None:
+        arrays += (
+            (
+                "waste_concentration_mol_m3",
+                np.asarray(waste_field.concentration_mol_m3, dtype=np.float64),
+            ),
+            ("waste_name", np.asarray(waste_field.name)),
+            (
+                "waste_diffusivity_m2_s",
+                np.asarray(waste_field.diffusivity_m2_s, dtype=np.float64),
+            ),
+            (
+                "waste_top_bulk_concentration_mol_m3",
+                np.asarray(
+                    waste_field.top_bulk_concentration_mol_m3,
+                    dtype=np.float64,
+                ),
+            ),
         )
     with ZipFile(path, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for name, array in arrays:

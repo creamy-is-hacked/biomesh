@@ -93,7 +93,7 @@ Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
 | P2-WP02 | EPS model | COMPLETE |
 | P2-WP03 | Competition | COMPLETE |
 | P2-WP04 | Physiological states | COMPLETE |
-| P2-WP05 | Waste and shear | INCOMPLETE |
+| P2-WP05 | Waste and shear | COMPLETE |
 | P2-WP06 | Experiments | INCOMPLETE |
 | P2A | Phase 2 Audit | INCOMPLETE |
 
@@ -145,6 +145,23 @@ P2-WP04 validation evidence:
   `CALIBRATION_REQUIRED`. The full required gate passed: 127 tests, Ruff, mypy,
   `git diff --check`, and module help.
 
+P2-WP05 validation evidence:
+
+- Waste transport reuses the audited finite-volume geometry with configurable
+  whole-cell sources, optional physiological activity scaling, first-order
+  removal, stability validation, top-boundary transfer, and a discrete molar
+  accounting record.
+- Simplified deterministic surface-parallel shear accumulates exposure and
+  selects terminal detached-state IDs only under positive stress. The
+  configured threshold is scaled by caller-declared attachment and existing
+  local EPS attachment strength; population reconciliation remains owned by
+  the P2-WP04 ledger.
+- Controlled zero-shear, increasing-shear, EPS-resistance,
+  attachment-resistance, waste accounting, validation-failure, output, and
+  byte-replay tests passed. All seven new parameters remain configurable and
+  `CALIBRATION_REQUIRED`. The full required gate passed: 138 tests, Ruff,
+  mypy, `git diff --check`, and module help.
+
 ## P3 – Phase 3 – Desktop GUI
 
 Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
@@ -176,13 +193,13 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P2-WP05 – Waste and shear`.
+`P2-WP06 – Experiments`.
 
 ## Remaining Issues
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- P2-WP05 waste and shear, P2-WP06 experiments, and P2A remain incomplete.
+- P2-WP06 experiments and P2A remain incomplete.
 - The current `phase/2-colony-system` branch is noncanonical; align it with
   `phase-2-colony-system` before an accepted-phase handoff without rewriting
   history.

@@ -70,11 +70,21 @@ _P2_WP04_PARAMETER_UNITS: dict[str, str] = {
     "dormant_metabolic_activity_fraction": "1",
     "dead_biomass_recycling_rate": "s^-1",
 }
+_P2_WP05_PARAMETER_UNITS: dict[str, str] = {
+    "effective_waste_diffusivity": "m^2 s^-1",
+    "waste_top_bulk_concentration": "mol m^-3",
+    "waste_removal_rate": "s^-1",
+    "whole_cell_waste_production_rate": "mol s^-1",
+    "surface_parallel_shear_stress": "Pa",
+    "detachment_exposure_threshold": "Pa s",
+    "attached_detachment_resistance_multiplier": "1",
+}
 _KNOWN_PARAMETER_UNITS = (
     _P1_PARAMETER_UNITS
     | _P2_WP01_PARAMETER_UNITS
     | _P2_WP02_PARAMETER_UNITS
     | _P2_WP04_PARAMETER_UNITS
+    | _P2_WP05_PARAMETER_UNITS
 )
 _NONNEGATIVE_PARAMETERS = {
     "death_rate",
@@ -88,6 +98,10 @@ _NONNEGATIVE_PARAMETERS = {
     "eps_cohesion_sensitivity",
     "eps_attachment_strength_sensitivity",
     *_P2_WP04_PARAMETER_UNITS,
+    "waste_top_bulk_concentration",
+    "waste_removal_rate",
+    "whole_cell_waste_production_rate",
+    "surface_parallel_shear_stress",
 }
 
 
@@ -266,6 +280,33 @@ class PhysiologyParameterSet(BaseModel):
         return self
 
 
+class WasteShearParameterSet(BaseModel):
+    """The versioned P2-WP05 waste and shear parameter document."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    schema_version: Literal[1]
+    biological_parameters: list[BiologicalParameter] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_waste_shear_parameter_names(self) -> Self:
+        """Reject duplicate or incomplete P2-WP05 parameter manifests."""
+        names = [parameter.name for parameter in self.biological_parameters]
+        if len(names) != len(set(names)):
+            raise ValueError("biological parameter names must be unique")
+        unexpected = sorted(set(names) - set(_P2_WP05_PARAMETER_UNITS))
+        if unexpected:
+            raise ValueError(
+                "unexpected P2-WP05 biological parameters: " + ", ".join(unexpected)
+            )
+        missing = sorted(set(_P2_WP05_PARAMETER_UNITS) - set(names))
+        if missing:
+            raise ValueError(
+                "missing required P2-WP05 biological parameters: " + ", ".join(missing)
+            )
+        return self
+
+
 def load_parameter_file(path: Path) -> ParameterSet:
     """Load and validate a TOML parameter file with an explicit error boundary."""
     try:
@@ -337,6 +378,25 @@ def load_physiology_parameter_file(path: Path) -> PhysiologyParameterSet:
 
     try:
         return PhysiologyParameterSet.model_validate(contents)
+    except ValidationError as error:
+        message = f"invalid parameter file {path}: {error}"
+        raise ParameterValidationError(message) from error
+
+
+def load_waste_shear_parameter_file(path: Path) -> WasteShearParameterSet:
+    """Load and validate the isolated P2-WP05 waste/shear parameter file."""
+    try:
+        with path.open("rb") as parameter_file:
+            contents = tomllib.load(parameter_file)
+    except OSError as error:
+        message = f"unable to read parameter file {path}: {error.strerror or error}"
+        raise ParameterValidationError(message) from error
+    except tomllib.TOMLDecodeError as error:
+        message = f"invalid TOML in parameter file {path}: {error}"
+        raise ParameterValidationError(message) from error
+
+    try:
+        return WasteShearParameterSet.model_validate(contents)
     except ValidationError as error:
         message = f"invalid parameter file {path}: {error}"
         raise ParameterValidationError(message) from error

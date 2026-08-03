@@ -13,16 +13,19 @@ from biomesh.config import (
     ParameterValidationError,
     PhysiologyParameterSet,
     QuorumParameterSet,
+    WasteShearParameterSet,
     load_eps_parameter_file,
     load_parameter_file,
     load_physiology_parameter_file,
     load_quorum_parameter_file,
+    load_waste_shear_parameter_file,
 )
 
 PARAMETER_FILE = Path("parameters/p1_core_model.toml")
 QUORUM_PARAMETER_FILE = Path("parameters/p2_quorum_signal.toml")
 EPS_PARAMETER_FILE = Path("parameters/p2_eps_model.toml")
 PHYSIOLOGY_PARAMETER_FILE = Path("parameters/p2_physiological_states.toml")
+WASTE_SHEAR_PARAMETER_FILE = Path("parameters/p2_waste_shear.toml")
 
 
 def test_parameter_file_loads_required_provenance_records() -> None:
@@ -283,6 +286,42 @@ def test_incomplete_physiology_parameter_manifest_fails_explicitly() -> None:
 
     with pytest.raises(ValueError, match="missing required P2-WP04"):
         PhysiologyParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_waste_shear_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP05 transport and shear controls remain explicitly uncalibrated."""
+    parameters = load_waste_shear_parameter_file(WASTE_SHEAR_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 7
+    assert {parameter.value for parameter in parameters.biological_parameters} == {
+        "CALIBRATION_REQUIRED"
+    }
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "effective_waste_diffusivity",
+        "waste_top_bulk_concentration",
+        "waste_removal_rate",
+        "whole_cell_waste_production_rate",
+        "surface_parallel_shear_stress",
+        "detachment_exposure_threshold",
+        "attached_detachment_resistance_multiplier",
+    }
+
+
+def test_incomplete_waste_shear_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP05 manifest cannot silently configure detachment."""
+    parameter = BiologicalParameter(
+        name="surface_parallel_shear_stress",
+        value="CALIBRATION_REQUIRED",
+        unit="Pa",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP05"):
+        WasteShearParameterSet(schema_version=1, biological_parameters=[parameter])
 
 
 def test_eps_parameter_rejects_non_si_unit_and_invalid_fraction() -> None:

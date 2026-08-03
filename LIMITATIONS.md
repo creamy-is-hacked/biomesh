@@ -86,3 +86,23 @@
   excludes detached records from mechanics through a filter. It introduces no
   shear, force, exposure, attachment, EPS-resistance, or probability law from
   P2-WP05. The Phase 1 reference orchestrator remains unchanged.
+
+## P2-WP05 – Waste and shear
+
+- All seven waste and shear inputs remain `CALIBRATION_REQUIRED`; synthetic SI
+  controls validate direction, accounting, and replay but are not biological
+  calibration or benchmark evidence.
+- Waste production is an explicit whole-cell source optionally scaled by the
+  existing physiology activity fraction. No biomass-to-waste conversion,
+  organism-specific toxic effect, or waste-feedback state transition is
+  inferred.
+- The uniform surface-parallel stress abstraction accumulates deterministic
+  `Pa s` exposure. It is not a resolved velocity, force, hydrodynamic, or
+  stochastic detachment model.
+- Attachment and EPS only scale the configured exposure threshold through the
+  declared attached-cell multiplier and existing local relative EPS attachment
+  multiplier. No absolute adhesion force or unapproved EPS-removal rule is
+  inferred.
+- Shear selects IDs for the existing terminal physiology transition and output
+  interface; the P1 reference orchestrator remains unchanged. P2-WP06
+  experiments and sensitivity analysis remain out of scope.

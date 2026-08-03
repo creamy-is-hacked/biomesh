@@ -1,0 +1,64 @@
+schema_version = 1
+
+[[biological_parameters]]
+name = "effective_waste_diffusivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^2 s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required for the P2-WP05 waste finite-volume field; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "waste_top_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required prescribed top-boundary concentration for waste removal or inflow; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "waste_removal_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required first-order volumetric waste removal rate; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "whole_cell_waste_production_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "mol s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required whole-cell waste production rate before optional physiology activity scaling; no conversion from biomass is inferred."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "surface_parallel_shear_stress"
+value = "CALIBRATION_REQUIRED"
+unit = "Pa"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required uniform simplified surface-parallel shear stress; no resolved flow field is modeled."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "detachment_exposure_threshold"
+value = "CALIBRATION_REQUIRED"
+unit = "Pa s"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required base cumulative shear-exposure threshold before attachment and EPS multipliers; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "attached_detachment_resistance_multiplier"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required relative resistance for caller-designated surface-attached cells; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

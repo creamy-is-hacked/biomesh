@@ -52,6 +52,12 @@ All notable repository changes are documented here.
   configurable metabolic activity, dead-biomass persistence or recycling,
   reconciled population ledgers, and deterministic optional outputs. All 13
   numeric biological inputs remain configurable and `CALIBRATION_REQUIRED`.
+- P2-WP05 – Diffusing whole-cell waste production with configurable first-order
+  removal and discrete molar accounting; deterministic uniform
+  surface-parallel shear exposure whose detachment threshold scales with
+  caller-declared attachment and existing local EPS attachment strength; and
+  optional waste-map and detachment-rate outputs. All seven new inputs remain
+  configurable and `CALIBRATION_REQUIRED`.
 
 ### Fixed
 

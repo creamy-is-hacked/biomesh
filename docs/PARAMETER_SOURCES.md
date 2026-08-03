@@ -54,6 +54,15 @@ controls; and attachment mode is the categorical model choice `bottom` or
 `none`. None has a module default. Scientific runs must record the selected
 controls and the source and uncertainty of experiment-specific geometry.
 
+The isolated `parameters/p2_waste_shear.toml` manifest adds effective waste
+diffusivity in `m^2 s^-1`, top bulk concentration in `mol m^-3`, first-order
+removal in `s^-1`, and whole-cell production in `mol s^-1`. It also records
+uniform surface-parallel shear stress in `Pa`, base detachment exposure in
+`Pa s`, and a dimensionless attached-cell resistance multiplier. All seven
+values, sources, uncertainties, and calibration statuses remain
+`CALIBRATION_REQUIRED`. The implementation does not infer a biomass-to-waste
+conversion, a toxicity effect, a stochastic probability, or a fluid-flow law.
+
 ## Required parameter record
 
 | Field | Required content |
@@ -72,7 +81,8 @@ remain explicit rather than being silently defaulted.
 The P1 schema continues to require the complete P1 biological-parameter
 inventory. The separate P2-WP01 schema requires exactly the seven quorum
 records, P2-WP02 requires exactly the three EPS records, and P2-WP04 requires
-exactly the 13 physiological records. All reuse the same provenance fields,
+exactly the 13 physiological records, and P2-WP05 requires exactly the seven
+waste/shear records. All reuse the same provenance fields,
 validate canonical SI units, and reject nonphysical numeric domains before
 values reach component constructors.
 
