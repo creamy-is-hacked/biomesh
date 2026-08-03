@@ -10,3 +10,51 @@ All notable repository changes are documented here.
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase
   names, branch names, commit prefixes, and version tags.
+- P1-WP01 – Versioned TOML biological-parameter records with strict Pydantic
+  validation, explicit `CALIBRATION_REQUIRED` handling, and a provenance-only
+  P1 starter parameter file.
+- P1-WP02 – Configurable carbon and oxygen finite-volume diffusion fields with
+  explicit stability validation, prescribed transport boundaries, and
+  conservative cell exchange mapping.
+- P1-WP03 – Configurable, deterministic 2D capsule-cell state with dry
+  biomass-driven elongation, lineage-preserving division, and explicit
+  validation of geometry and inputs.
+- P1-WP04 – Deterministic dual-substrate Monod metabolism with exact biomass
+  ODE integration, explicit carbon and oxygen yields, maintenance/death loss
+  accounting, conservative local solute coupling, and closed-system balance
+  verification.
+- P1-WP05 – Deterministic 2D capsule collision relaxation with periodic sides,
+  solid-bottom enforcement, configurable initial surface attachment, explicit
+  convergence failure, and a residual-overlap error metric.
+- P1-WP06 – Deterministic, write-only exports of existing cell and solute
+  state: SI-labelled Parquet snapshots and summaries, division and
+  unit-aware mass-balance tables, compressed NumPy fields, and canonical run
+  provenance metadata.
+- P1-WP07 – Deterministic Phase 1 orchestration across metabolism, solute
+  transport, seeded division, mechanics, global accounting, and outputs;
+  executable diffusion, growth, mass-balance, run, and reproduce paths;
+  environment-complete provenance; and a calibration-gated software reference.
+
+### Fixed
+
+- P1A – Corrected physical bottom-to-grid indexing so cell exchange uses the
+  same vertical convention as the diffusion boundaries and mechanics domain.
+- P1A – Made coupled carbon/oxygen updates atomic when either solute step fails.
+- P1A – Corrected periodic capsule contact search to consider neighboring
+  segment images, preventing missed overlaps for long angled cells.
+- P1A – Enforced known P1 SI units, physical numeric domains, a complete P1
+  biological-parameter manifest, and provenance for cell radius.
+- P1A – Reject output snapshots whose supplied mass-balance residual exceeds
+  its declared tolerance.
+
+### Audit
+
+- P1A – Phase 1 Audit executed on 2026-08-02 with result `FAIL`. Component
+  defects above were repaired and 66 tests pass, but Phase 1 is not accepted:
+  it must be rerun after the subsequent P1-WP07 orchestration and reproducibility
+  remediation. P2 remains blocked until that independent audit completes.
+- P1A – Independent audit rerun completed on 2026-08-02 with result
+  `PASS WITH RECORDED LIMITATIONS`. A fresh Python 3.14.4 environment, 71 tests,
+  lint, strict typing, CLI help, diffusion, growth, boundary-aware mass balance,
+  reference generation, and zero-mismatch reproduction all passed. Phase 1 is
+  accepted; calibration and the user-owned Git handoff remain documented.

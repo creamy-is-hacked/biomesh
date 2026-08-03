@@ -1,0 +1,136 @@
+schema_version = 1
+
+[[biological_parameters]]
+name = "maximum_specific_growth_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 dual-substrate Monod growth law; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "carbon_half_saturation_constant"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 dual-substrate Monod growth law; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "oxygen_half_saturation_constant"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P1 dual-substrate Monod growth law; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "death_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required as the P1 first-order maintenance/death biomass-loss term; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "biomass_yield_on_carbon"
+value = "CALIBRATION_REQUIRED"
+unit = "kg mol^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Dry-biomass production per mole of carbon substrate consumed in P1-WP04; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "biomass_yield_on_oxygen"
+value = "CALIBRATION_REQUIRED"
+unit = "kg mol^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Dry-biomass production per mole of oxygen consumed in P1-WP04; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "effective_carbon_diffusivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^2 s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP02 carbon transport; no medium-specific value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "effective_oxygen_diffusivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^2 s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP02 oxygen transport; no medium-specific value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "carbon_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required top-boundary condition for P1-WP02 carbon transport; no experiment value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "oxygen_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required top-boundary condition for P1-WP02 oxygen transport; no experiment value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "dry_biomass_per_unit_length"
+value = "CALIBRATION_REQUIRED"
+unit = "kg m^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 to derive capsule centreline length from dry biomass; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "cell_radius"
+value = "CALIBRATION_REQUIRED"
+unit = "m"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 for 2D capsule geometry; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "division_length"
+value = "CALIBRATION_REQUIRED"
+unit = "m"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 as the strict capsule centreline-length division threshold; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "maximum_daughter_asymmetry_fraction"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP03 to bound seeded daughter biomass asymmetry; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "maximum_permitted_cell_overlap"
+value = "CALIBRATION_REQUIRED"
+unit = "m"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P1-WP05 as the maximum unresolved capsule-overlap acceptance threshold; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

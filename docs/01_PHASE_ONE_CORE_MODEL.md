@@ -17,6 +17,7 @@ Implement:
 - Deterministic seeds.
 - Structured parameter files with units and provenance.
 - Scientific outputs and validation tests.
+- Deterministic simulation orchestration and metadata-driven reproduction.
 
 Do not implement:
 - Quorum sensing.
@@ -77,7 +78,7 @@ biomesh/
 
 ## Work Packages
 
-### P1.1 Repository and configuration
+### P1-WP01 Repository and configuration
 - Create package, tests, linting, typing, and CLI entry point.
 - Use the Python version currently resolved under `STANDARDS.md` policy, plus NumPy, SciPy, Numba, Pydantic, PyArrow, Matplotlib, and Pytest.
 - Add YAML or TOML parameter files.
@@ -88,7 +89,7 @@ Acceptance:
 - `python -m biomesh --help` works.
 - Invalid parameters fail with clear errors.
 
-### P1.2 Solute fields
+### P1-WP02 Solute fields
 - Implement carbon and oxygen grids.
 - Use finite differences with explicit stability checks or an implicit sparse solver.
 - Boundary conditions: constant bulk concentration at top, no-flux at bottom, periodic sides.
@@ -99,7 +100,7 @@ Acceptance:
 - No negative concentration beyond numerical tolerance.
 - Grid refinement produces convergent results.
 
-### P1.3 Cell model
+### P1-WP03 Cell model
 - Represent cells as 2D capsules.
 - Store position, orientation, length, radius, dry biomass, age, state, strain, and parent ID.
 - Grow length from biomass.
@@ -111,7 +112,7 @@ Acceptance:
 - Fixed seeds reproduce identical lineages.
 - Cell geometry remains valid after division.
 
-### P1.4 Metabolism
+### P1-WP04 Metabolism
 - Implement dual-substrate Monod kinetics.
 - Apply explicit biomass yields and maintenance/death terms.
 - Couple local uptake to solute fields.
@@ -121,7 +122,7 @@ Acceptance:
 - Closed-system mass balance passes.
 - Growth halts when either required substrate is absent.
 
-### P1.5 Mechanics and attachment
+### P1-WP05 Mechanics and attachment
 - Prevent persistent cell overlap.
 - Attach initial cells to the bottom surface.
 - Relax positions after growth and division.
@@ -132,7 +133,7 @@ Acceptance:
 - Mechanical solver converges or fails explicitly.
 - Cells do not cross the solid boundary.
 
-### P1.6 Outputs
+### P1-WP06 Outputs
 Save:
 - Cell snapshots.
 - Solute fields.
@@ -143,6 +144,33 @@ Save:
 - Seed, parameters, version, and commit hash.
 
 Use Parquet for tables and compressed NumPy or Zarr-compatible arrays for fields.
+
+### P1-WP07 Simulation Orchestration & Reproducibility
+- Add a deterministic simulation orchestrator that composes the completed
+  configuration, solute, cell, metabolism, mechanics, and output interfaces.
+- Define and test one explicit update order; route all stochastic behavior
+  through the recorded seed.
+- Account globally for solute, biomass yield equivalents, death loss, cell
+  exchange, and transport across the prescribed top boundary. Periodic sides
+  and the no-flux bottom contribute zero boundary transfer.
+- Record the Git commit when available, package and dependency versions,
+  parameter file, seed, platform, and Python version for each run.
+- Provide the minimum P1 application paths: `run`, `validate diffusion`,
+  `validate growth`, `validate mass-balance`, and `reproduce`.
+- Provide a deterministic software reference run whose biological manifest
+  remains `CALIBRATION_REQUIRED`. It must not substitute synthetic numbers for
+  unknown biological parameters or claim calibrated scientific results.
+
+Acceptance:
+- A focused integration test executes the P1 component update order and proves
+  deterministic replay from identical inputs and seed.
+- Boundary-aware global mass accounting satisfies the configured absolute and
+  relative tolerances or fails explicitly.
+- Run metadata contains all required provenance and can drive a byte-identical
+  reproduction in the same recorded environment.
+- The five required CLI application paths execute successfully.
+- The calibration-placeholder reference run is clearly identified as
+  non-scientific and reproducible without inventing biological values.
 
 ## Required Tests
 - Parameter validation.
