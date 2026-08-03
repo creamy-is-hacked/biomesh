@@ -62,7 +62,8 @@ All notable repository changes are documented here.
   50:50 competition, inoculation patterns, EPS control modes, and quorum,
   resource, EPS-cost, and shear sweeps. It records condition/seed manifests,
   parameter and raw-artifact hashes, complete SI result metrics and maps, and
-  deterministic replicate means, sample variances, and confidence intervals.
+  deterministic replicate means, sample variances, confidence intervals, and
+  descriptive rankings limited to the observed sweep-result ranges.
 
 ### Fixed
 

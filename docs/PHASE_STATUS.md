@@ -172,8 +172,9 @@ P2-WP06 validation evidence:
 - The harness records biological-parameter hashes and one immutable raw
   condition/seed manifest per run, validates the complete P2 scalar/map output
   contract, preserves raw output hashes, and reports per-time replicate mean,
-  sample variance, and Student's t confidence intervals. It adds no sensitivity
-  ranking or coupled biological update order.
+  sample variance, Student's t confidence intervals, and descriptive rankings
+  limited to observed between-condition mean ranges. It adds no coupled
+  biological update order or global sensitivity model.
 - Unknown sweep values remain configurable, SI-labelled, provenance-complete,
   and `CALIBRATION_REQUIRED`. Synthetic matrix, replay, statistics,
   preservation, and explicit-failure tests passed. The full required gate

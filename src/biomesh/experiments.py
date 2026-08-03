@@ -288,6 +288,7 @@ class ExperimentCampaignResult:
     output_directory: Path
     campaign_manifest: Path
     summary_statistics: Path
+    sensitivity_ranking: Path
     run_manifests: tuple[Path, ...]
 
 
@@ -398,6 +399,15 @@ def run_experiment_campaign(
             "statistics": statistics,
         },
     )
+    sensitivity_path = output_directory / "sensitivity_ranking.json"
+    _write_json(
+        sensitivity_path,
+        {
+            "campaign_id": configuration.campaign_id,
+            "method": "absolute range of condition replicate means per metric and time",
+            "rankings": _sensitivity_rankings(configuration, statistics),
+        },
+    )
     campaign_manifest_path = output_directory / "campaign_manifest.json"
     _write_json(
         campaign_manifest_path,
@@ -408,6 +418,7 @@ def run_experiment_campaign(
             ).hexdigest(),
             "parameter_files": [_parameter_file_dict(item) for item in parameter_files],
             "runs": run_records,
+            "sensitivity_ranking": sensitivity_path.name,
             "summary_statistics": summary_path.name,
         },
     )
@@ -415,6 +426,7 @@ def run_experiment_campaign(
         output_directory=output_directory,
         campaign_manifest=campaign_manifest_path,
         summary_statistics=summary_path,
+        sensitivity_ranking=sensitivity_path,
         run_manifests=tuple(run_manifests),
     )
 
@@ -585,6 +597,83 @@ def _replicate_statistics(
                 }
             )
     return rows
+
+
+def _sensitivity_rankings(
+    configuration: ExperimentCampaign,
+    statistics: Sequence[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    """Rank only observed sweep effects without fitting a sensitivity model."""
+    family_by_condition = {
+        condition.condition_id: condition.family
+        for condition in configuration.conditions
+    }
+    grouped: dict[
+        tuple[str, str, float], dict[str, list[tuple[str, float]]]
+    ] = defaultdict(lambda: defaultdict(list))
+    for row in statistics:
+        condition_id = str(row["condition_id"])
+        family = family_by_condition[condition_id]
+        if family not in SWEEP_PARAMETERS:
+            continue
+        key = (
+            str(row["metric"]),
+            str(row["unit"]),
+            _result_float(row["time_s"], "time_s"),
+        )
+        grouped[key][family].append(
+            (condition_id, _result_float(row["mean"], "mean"))
+        )
+
+    rankings: list[dict[str, object]] = []
+    for (metric, unit, time_s), family_values in sorted(grouped.items()):
+        effects: list[dict[str, object]] = []
+        for sweep_family, values in sorted(family_values.items()):
+            if len(values) < 2:
+                raise ExperimentValidationError(
+                    f"sensitivity family {sweep_family} has fewer than two result "
+                    "conditions"
+                )
+            ordered = sorted(values, key=lambda item: (item[1], item[0]))
+            low_condition, low_mean = ordered[0]
+            high_condition, high_mean = ordered[-1]
+            effects.append(
+                {
+                    "absolute_mean_range": high_mean - low_mean,
+                    "family": sweep_family,
+                    "high_condition_id": high_condition,
+                    "high_mean": high_mean,
+                    "low_condition_id": low_condition,
+                    "low_mean": low_mean,
+                    "parameters": sorted(SWEEP_PARAMETERS[sweep_family]),
+                }
+            )
+        effects.sort(
+            key=lambda item: (
+                -_result_float(item["absolute_mean_range"], "absolute_mean_range"),
+                str(item["family"]),
+            )
+        )
+        for rank, effect in enumerate(effects, start=1):
+            effect["rank"] = rank
+        rankings.append(
+            {
+                "metric": metric,
+                "ranking": effects,
+                "time_s": time_s,
+                "unit": unit,
+            }
+        )
+    return rankings
+
+
+def _result_float(value: object, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ExperimentValidationError(f"result {name} must be numeric")
+    converted = float(value)
+    if not isfinite(converted):
+        raise ExperimentValidationError(f"result {name} must be finite")
+    return converted
 
 
 def _observation_dict(observation: ExperimentObservation) -> dict[str, object]:

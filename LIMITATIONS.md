@@ -121,5 +121,8 @@
 - Confidence intervals use a caller-recorded confidence level and Student's
   t interval over fixed-seed replicates. They describe replicate variation,
   not biological uncertainty or calibration quality.
-- The condition sweeps produce result statistics only. They do not introduce
-  sensitivity ranking, new biological mechanisms, a GUI, or P2A audit claims.
+- Sensitivity ranking is descriptive and limited to the absolute range of
+  replicate means across the specified sweep conditions for each metric and
+  time. It is not a global sensitivity model; the joint nutrient/oxygen sweep
+  cannot attribute effects to either resource independently.
+- P2-WP06 introduces no new biological mechanism, GUI, or P2A audit claim.

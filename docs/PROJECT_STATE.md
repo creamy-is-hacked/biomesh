@@ -34,8 +34,9 @@ Snapshot verified: 2026-08-03 for the P2-WP06 completion working tree based on
 - P2-WP06 provides a reproducible experiment harness and unresolved campaign
   definition, not calibrated biological results. It delegates the approved P2
   component update order to a typed runner, reports the continuous quorum
-  response without inventing a binary threshold, and adds no sensitivity
-  ranking, mutation, or evolution.
+  response without inventing a binary threshold, and limits sensitivity
+  ranking to descriptive observed sweep effects. It adds no mutation or
+  evolution.
 - License selection is pending.
 
 ## Update policy

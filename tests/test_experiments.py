@@ -310,6 +310,19 @@ def test_campaign_records_complete_manifests_and_replicate_statistics(
     assert row["variance"] == pytest.approx(2.0)
     assert row["confidence_interval_low"] < row["mean"]
     assert row["confidence_interval_high"] > row["mean"]
+    sensitivity = json.loads(result.sensitivity_ranking.read_text(encoding="utf-8"))
+    active_ranking = next(
+        item
+        for item in sensitivity["rankings"]
+        if item["metric"] == "active_biomass_kg" and item["time_s"] == 0.0
+    )
+    assert [entry["rank"] for entry in active_ranking["ranking"]] == [1, 2, 3, 4]
+    assert {entry["family"] for entry in active_ranking["ranking"]} == {
+        "quorum_threshold_sweep",
+        "nutrient_oxygen_sweep",
+        "eps_cost_sweep",
+        "shear_sweep",
+    }
 
 
 def test_campaign_validation_fails_explicitly_for_incomplete_inputs_and_outputs(
