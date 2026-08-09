@@ -17,6 +17,7 @@ from biomesh.reference import (
     reproduce_reference,
     run_reference,
 )
+from biomesh.runtime_resources import runtime_root
 from biomesh.validation import (
     validate_diffusion,
     validate_growth,
@@ -109,15 +110,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.print_help()
         return 0
     arguments = parser.parse_args(command_line)
-    repository_root = Path.cwd()
+    working_directory = Path.cwd().resolve()
+    repository_root = runtime_root(working_directory)
     try:
         if arguments.command is None:
             parser.print_help()
             return 0
         if arguments.command == "run":
+            parameter_file = _resolve_runtime_path(
+                arguments.parameter_file, repository_root
+            )
+            output = arguments.output
+            if output is None and repository_root != working_directory:
+                output = working_directory / "outputs" / "p1-wp07-reference-seed-42"
             paths = run_reference(
-                parameter_file=arguments.parameter_file,
-                output_directory=arguments.output,
+                parameter_file=parameter_file,
+                output_directory=output,
                 seed=arguments.seed,
                 repository_root=repository_root,
             )
@@ -134,8 +142,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         if arguments.command == "reproduce":
             run_directory = arguments.run_directory
             if run_directory is None:
+                parameter_file = _resolve_runtime_path(
+                    arguments.parameter_file, repository_root
+                )
                 run_directory = default_output_directory(
-                    parameter_file=arguments.parameter_file,
+                    parameter_file=parameter_file,
                     repository_root=repository_root,
                 )
             mismatches = reproduce_reference(
@@ -154,13 +165,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 0 if not mismatches else 1
         if arguments.command in {"experiment", "sweep"}:
+            fixture_file = _resolve_runtime_path(
+                arguments.fixture_file, repository_root
+            )
             output = arguments.output
             if output is None:
-                output = repository_root / "outputs" / (
-                    f"{arguments.fixture_file.stem}-{arguments.command}"
+                output = working_directory / "outputs" / (
+                    f"{fixture_file.stem}-{arguments.command}"
                 )
             fixture_output = run_fixture_command(
-                fixture_file=arguments.fixture_file,
+                fixture_file=fixture_file,
                 output_directory=output,
                 expected_kind=arguments.command,
             )
@@ -173,6 +187,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"biomesh: error: {error}", file=sys.stderr)
         return 2
     raise AssertionError("unhandled command")
+
+
+def _resolve_runtime_path(path: Path, repository_root: Path) -> Path:
+    """Resolve packaged defaults while preserving explicit caller paths."""
+    if path.is_absolute() or path.exists():
+        return path
+    packaged_candidate = repository_root / path
+    return packaged_candidate if packaged_candidate.exists() else path
 
 
 def _run_validation(

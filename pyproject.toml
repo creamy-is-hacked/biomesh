@@ -33,6 +33,10 @@ biomesh-gui = "biomesh.gui.__main__:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/biomesh"]
 
+[tool.hatch.build.targets.wheel.force-include]
+experiments = "biomesh/resources/experiments"
+parameters = "biomesh/resources/parameters"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

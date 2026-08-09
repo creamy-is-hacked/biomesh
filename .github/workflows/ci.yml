@@ -14,8 +14,33 @@ jobs:
         with:
           python-version: "3.14"
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]"
+      - run: python -m pip install -e ".[dev]" hatchling
       - run: python -m biomesh --help
+      - run: python -m biomesh --version
+      - run: biomesh-gui --version
+      - run: python -m biomesh validate all
+      - run: QT_QPA_PLATFORM=offscreen biomesh-gui --smoke-test
       - run: ruff check .
       - run: mypy src
       - run: pytest -q
+      - run: git diff --check
+      - name: Build wheel and sdist
+        run: python -m hatchling build --clean -d dist
+      - name: Install and smoke-test wheel and sdist outside the repository
+        run: |
+          package_root="$(mktemp -d)"
+          for package_artifact in dist/*.whl dist/*.tar.gz; do
+            package_name="$(basename "$package_artifact")"
+            package_env="$package_root/${package_name//[^A-Za-z0-9]/_}"
+            python -m venv "$package_env"
+            "$package_env/bin/python" -m pip install "$package_artifact"
+            (
+              cd "$package_root"
+              test "$("$package_env/bin/biomesh" --version)" = "biomesh 0.2.1"
+              "$package_env/bin/biomesh" validate all
+              "$package_env/bin/biomesh" experiment experiments/producer.yaml \
+                --output "$package_root/output-${package_name//[^A-Za-z0-9]/_}"
+              QT_QPA_PLATFORM=offscreen "$package_env/bin/biomesh-gui" --smoke-test
+              test "$("$package_env/bin/biomesh-gui" --version)" = "biomesh-gui 0.2.1"
+            )
+          done

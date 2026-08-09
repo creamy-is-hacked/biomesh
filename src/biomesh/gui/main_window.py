@@ -26,6 +26,7 @@ from biomesh.gui.preferences import (
     UiPreferencesStore,
 )
 from biomesh.gui.viewer import SimulationViewer
+from biomesh.runtime_resources import RuntimeResourceError, runtime_root
 
 
 class MainWindow(QMainWindow):
@@ -272,4 +273,8 @@ def _default_repository_root() -> Path:
     for candidate in (Path.cwd(), source_root):
         if (candidate / "parameters" / "p1_core_model.toml").is_file():
             return candidate
+    try:
+        return runtime_root()
+    except RuntimeResourceError:
+        pass
     return Path.cwd()
