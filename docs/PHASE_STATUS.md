@@ -317,6 +317,44 @@ P3-WP04 validation evidence:
   complete Python 3.14.4 gate passed 174 tests, Ruff, strict mypy,
   `git diff --check`, and module help.
 
+## Dedicated repository remediation after P3-WP04
+
+This is a controlled repository-hardening pass, not P3-WP05 and not a change
+to the established P3-WP04 scientific or editor behavior.
+
+- `BM-001` is fixed: SoluteField construction and candidate updates now reject
+  every negative concentration, including values within the former numerical
+  tolerance; finite-state validation and focused regressions remain explicit.
+- `BM-002` is fixed: condition IDs are restricted to safe path components,
+  campaign runs use a staged output root, and resolved output-tree checks reject
+  escapes and symlinks before publication and during report validation.
+- `BM-003` and `BM-005` are fixed: wheel/sdist builds carry the versioned
+  experiment and parameter records as package resources; source and installed
+  runtime roots are resolved explicitly; CI covers Python 3.14 versioned CLI
+  and GUI entry points, `validate all`, GUI smoke, wheel/sdist installation,
+  and external-working-directory execution.
+- `BM-004` is fixed: simulation artifacts, campaign JSON, checkpoints, exports,
+  and PNG reports use temporary sibling files/directories and atomic replace;
+  failed publication leaves no final partial result and focused retry tests
+  cover each affected surface.
+- `BM-006` is fixed: RunMetadata requires exactly 64 lowercase hexadecimal
+  characters for parameter-file SHA-256 provenance.
+- `BM-007` is fixed through the documented accepted-audit Git workflow: the
+  canonical P1A tag `v0.1.1-audit` identifies the accepted P1A commit.
+- `BM-008` and `BM-009` are deferred. The current repository contracts do not
+  establish the required behavior sufficiently to implement it without
+  inventing policy or changing completed phase behavior.
+- `BM-010` remains `ACTIVE DEVELOPMENT – RECHECK` for P3A. P3 worker and
+  cancellation implementation does not exist, so its ordering contract is not
+  currently testable.
+
+Remediation verification evidence: Python 3.14.4, 183 tests, Ruff, strict
+mypy, module and console CLI versions/help, `validate all`, offscreen GUI
+smoke, `git diff --check`, wheel and sdist builds, and separate external-prefix
+wheel/sdist resource/CLI/GUI smoke runs using the verified local runtime
+dependencies. A network-isolated clean dependency installation was not
+available in this environment; CI now performs that clean installation.
+
 ## P4 – Phase 4 – Research Platform
 
 Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
@@ -340,9 +378,8 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
-  through its approved accepted-audit workflow; P2A does not retroactively
-  create it.
+- The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
+  P2A does not retroactively change that historical audit.
 - P3-WP04 is complete. P3-WP05 is the first incomplete package; the desktop has
   no run/pause/step/stop controls, checkpoint UI, worker, cell inspection,
   analytics, additional export, project model, or later P3 behavior.

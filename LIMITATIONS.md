@@ -103,8 +103,16 @@
   execution environment. A changed parameter hash is rejected explicitly.
 - License selection is pending.
 - The historical P1A inspection used a noncanonical branch. The canonical
-  `v0.1.1-audit` tag remains outstanding and must only be created through its
+  `v0.1.1-audit` tag now identifies the accepted P1A commit through the
   approved accepted-audit workflow.
+
+## Post-P3-WP04 repository remediation
+
+- BM-008 and BM-009 remain deferred because the current repository contracts do
+  not specify their required behavior sufficiently for a safe implementation.
+- BM-010 remains `ACTIVE DEVELOPMENT – RECHECK` for P3A. The current P3
+  application service is synchronous and no worker/cancellation ordering
+  contract exists yet.
 
 ## P2-WP01 – Quorum signal
 

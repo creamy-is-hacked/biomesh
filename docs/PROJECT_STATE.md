@@ -4,10 +4,10 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-09 after P3-WP04 completed its local acceptance
-gate. P2 remains the latest audited and accepted phase at implementation commit
-`6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in progress and has not been
-audited. The Python 3.14 full gate passes 174 tests.
+Snapshot verified: 2026-08-09 after the dedicated post-P3-WP04 repository
+remediation pass. P2 remains the latest audited and accepted phase at
+implementation commit `6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in
+progress and has not been audited. The Python 3.14 full gate passes 183 tests.
 
 | Field | Current state |
 | --- | --- |
@@ -16,13 +16,12 @@ audited. The Python 3.14 full gate passes 174 tests.
 | Current branch | `phase-3-desktop-gui` |
 | Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
-| Current test count | 174 passed (`pytest -q`, 2026-08-09) |
+| Current test count | 183 passed (`pytest -q`, 2026-08-09) |
 | Next planned work package | P3-WP05 – Controls, checkpoints, and inspection |
 
 ## Outstanding technical debt
 
-- Create the canonical P1A audit tag `v0.1.1-audit` only through the approved
-  accepted-audit workflow. It is not present in the repository.
+- License selection is pending; no license was added by this remediation pass.
 
 ## Known limitations
 
@@ -52,10 +51,15 @@ audited. The Python 3.14 full gate passes 174 tests.
   additional export, project model, or scientific behavior. P3 remains
   unaudited.
 - License selection is pending.
+- The post-P3-WP04 remediation fixes BM-001, BM-002, BM-003, BM-004, BM-005,
+  BM-006, and BM-007. BM-008 and BM-009 remain deferred because their required
+  behavior is not established by the current contracts; BM-010 remains an
+  active-development recheck item for P3A because no worker/cancellation
+  implementation exists.
 
 ## Update policy
 
-Update this file whenever a work package completes, an audit completes, a
-phase is accepted, or a release tag is created. Refresh the snapshot from the
-live branch, tags, test output, and the relevant status/limitation records;
-do not infer unverified state.
+Update this file whenever a work package completes, a remediation completes,
+an audit completes, a phase is accepted, or a release tag is created. Refresh
+the snapshot from the live branch, tags, test output, and the relevant
+status/limitation records; do not infer unverified state.

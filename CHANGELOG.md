@@ -117,6 +117,16 @@ All notable repository changes are documented here.
 
 ### Fixed
 
+- Repository remediation after P3-WP04: SoluteField now rejects every
+  negative state; campaign condition IDs and all resolved outputs are
+  root-contained; artifacts, campaign records, checkpoints, exports, and
+  reports publish via retry-safe atomic staging; packaged wheels/sdists carry
+  runtime fixtures; CI covers external package installs and entry points;
+  RunMetadata enforces canonical SHA-256 provenance; and the accepted P1A
+  audit tag is recorded. BM-008/BM-009 remain deferred by contract, and
+  BM-010 remains an active P3A recheck item because workers/cancellation are
+  not implemented.
+
 - P2-WP06 – Remediated `P2A-003` by aligning README status and the documented
   command surface with all 11 published fixtures, and by documenting P2-WP05
   waste/shear plus the P2-WP06 campaign adapter, update order, artifacts,
