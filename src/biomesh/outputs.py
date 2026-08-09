@@ -250,7 +250,10 @@ class SimulationOutputWriter:
             raise OutputValidationError("metadata must be a RunMetadata instance")
         self._run_directory = Path(run_directory)
         if self._run_directory.exists():
-            raise OutputValidationError("run_directory must not already exist")
+            raise OutputValidationError(
+                f"output run directory already exists: {self._run_directory}; "
+                "choose a new path with --output"
+            )
         self._run_directory.mkdir(parents=True)
         self._metadata = metadata
         self._metadata_file = self._run_directory / "run_metadata.json"

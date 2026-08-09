@@ -257,7 +257,9 @@ def test_snapshot_input_and_lifecycle_failures_are_explicit(tmp_path: Path) -> N
             division_events=(),
             mass_balance_entries=_mass_balance(),
         )
-    with pytest.raises(OutputValidationError, match="must not already exist"):
+    with pytest.raises(
+        OutputValidationError, match="output run directory already exists"
+    ):
         SimulationOutputWriter(tmp_path / "run", _metadata())
 
 

@@ -360,7 +360,9 @@ def test_campaign_validation_fails_explicitly_for_incomplete_inputs_and_outputs(
         )
     existing = tmp_path / "existing"
     existing.mkdir()
-    with pytest.raises(ExperimentValidationError, match="must not already exist"):
+    with pytest.raises(
+        ExperimentValidationError, match="output directory already exists"
+    ):
         run_experiment_campaign(
             configuration=_campaign(),
             configuration_file=configuration_file,

@@ -104,7 +104,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     """Execute one explicit P1 application path and report failures clearly."""
     parser = build_parser()
-    arguments = parser.parse_args(argv)
+    command_line = list(sys.argv[1:] if argv is None else argv)
+    if command_line == ["help"]:
+        parser.print_help()
+        return 0
+    arguments = parser.parse_args(command_line)
     repository_root = Path.cwd()
     try:
         if arguments.command is None:

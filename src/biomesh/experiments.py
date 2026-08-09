@@ -328,7 +328,10 @@ def run_experiment_campaign(
     if not callable(runner):
         raise ExperimentValidationError("runner must be callable")
     if output_directory.exists():
-        raise ExperimentValidationError("output_directory must not already exist")
+        raise ExperimentValidationError(
+            f"output directory already exists: {output_directory}; "
+            "choose a new path with --output"
+        )
     try:
         configuration_bytes = configuration_file.read_bytes()
     except OSError as error:
