@@ -1,0 +1,1 @@
+{"schema_version": 1, "fixture_kind": "sweep", "campaign_id": "p2-eps-cost-sweep-fixture", "condition_ids": ["eps-cost-low", "eps-cost-high"]}

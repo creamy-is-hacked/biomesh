@@ -1,0 +1,233 @@
+schema_version = 1
+campaign_id = "p2-wp06-calibration-required"
+purpose = "P2-WP06 replicated experiment matrix; resolve every unknown before scientific execution"
+calibration_status = "CALIBRATION_REQUIRED"
+confidence_level = 0.95
+seeds = [101, 202, 303]
+biological_parameter_files = [
+  "../parameters/p1_core_model.toml",
+  "../parameters/p2_quorum_signal.toml",
+  "../parameters/p2_eps_model.toml",
+  "../parameters/p2_physiological_states.toml",
+  "../parameters/p2_waste_shear.toml",
+]
+
+[[conditions]]
+condition_id = "producer-monoculture"
+family = "producer_monoculture"
+producer_fraction = 1.0
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Producer-only control required by P2-WP06."
+
+[[conditions]]
+condition_id = "nonproducer-monoculture"
+family = "nonproducer_monoculture"
+producer_fraction = 0.0
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Nonproducer-only control required by P2-WP06."
+
+[[conditions]]
+condition_id = "competition-50-50"
+family = "competition_50_50"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Equal initial producer and nonproducer fraction required by P2-WP06."
+
+[[conditions]]
+condition_id = "inoculation-intermixed"
+family = "inoculation_pattern"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Intermixed categorical inoculation pattern; spatial realization is runner-owned."
+
+[[conditions]]
+condition_id = "inoculation-segregated"
+family = "inoculation_pattern"
+producer_fraction = 0.5
+inoculation_pattern = "segregated"
+eps_control = "quorum_controlled"
+notes = "Segregated categorical inoculation pattern; spatial realization is runner-owned."
+
+[[conditions]]
+condition_id = "eps-constitutive"
+family = "eps_control"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "constitutive"
+notes = "Constitutive EPS allocation control; the runner must use the approved EPS interface."
+
+[[conditions]]
+condition_id = "eps-quorum-controlled"
+family = "eps_control"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Quorum-controlled EPS allocation required by P2-WP06."
+
+[[conditions]]
+condition_id = "quorum-threshold-low"
+family = "quorum_threshold_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Lower unresolved quorum half-saturation sweep level."
+
+[[conditions.parameter_overrides]]
+name = "quorum_activation_half_saturation_constant"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Low sweep level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "low"
+
+[[conditions]]
+condition_id = "quorum-threshold-high"
+family = "quorum_threshold_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Higher unresolved quorum half-saturation sweep level."
+
+[[conditions.parameter_overrides]]
+name = "quorum_activation_half_saturation_constant"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "High sweep level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "high"
+
+[[conditions]]
+condition_id = "resources-low"
+family = "nutrient_oxygen_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Lower unresolved carbon and oxygen boundary-condition levels."
+
+[[conditions.parameter_overrides]]
+name = "carbon_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Low carbon level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "low"
+
+[[conditions.parameter_overrides]]
+name = "oxygen_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Low oxygen level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "low"
+
+[[conditions]]
+condition_id = "resources-high"
+family = "nutrient_oxygen_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Higher unresolved carbon and oxygen boundary-condition levels."
+
+[[conditions.parameter_overrides]]
+name = "carbon_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "High carbon level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "high"
+
+[[conditions.parameter_overrides]]
+name = "oxygen_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "High oxygen level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "high"
+
+[[conditions]]
+condition_id = "eps-cost-low"
+family = "eps_cost_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Lower unresolved EPS allocation-cost level."
+
+[[conditions.parameter_overrides]]
+name = "maximum_eps_allocation_fraction"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Low EPS cost level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "low"
+
+[[conditions]]
+condition_id = "eps-cost-high"
+family = "eps_cost_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Higher unresolved EPS allocation-cost level."
+
+[[conditions.parameter_overrides]]
+name = "maximum_eps_allocation_fraction"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "High EPS cost level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "high"
+
+[[conditions]]
+condition_id = "shear-low"
+family = "shear_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Lower unresolved surface-parallel shear level."
+
+[[conditions.parameter_overrides]]
+name = "surface_parallel_shear_stress"
+value = "CALIBRATION_REQUIRED"
+unit = "Pa"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Low shear level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "low"
+
+[[conditions]]
+condition_id = "shear-high"
+family = "shear_sweep"
+producer_fraction = 0.5
+inoculation_pattern = "intermixed"
+eps_control = "quorum_controlled"
+notes = "Higher unresolved surface-parallel shear level."
+
+[[conditions.parameter_overrides]]
+name = "surface_parallel_shear_stress"
+value = "CALIBRATION_REQUIRED"
+unit = "Pa"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "High shear level is unknown and must be configured before execution."
+calibration_status = "CALIBRATION_REQUIRED"
+level_id = "high"

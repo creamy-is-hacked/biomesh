@@ -8,12 +8,24 @@ import pytest
 
 from biomesh.config import (
     BiologicalParameter,
+    EPSParameterSet,
     ParameterSet,
     ParameterValidationError,
+    PhysiologyParameterSet,
+    QuorumParameterSet,
+    WasteShearParameterSet,
+    load_eps_parameter_file,
     load_parameter_file,
+    load_physiology_parameter_file,
+    load_quorum_parameter_file,
+    load_waste_shear_parameter_file,
 )
 
 PARAMETER_FILE = Path("parameters/p1_core_model.toml")
+QUORUM_PARAMETER_FILE = Path("parameters/p2_quorum_signal.toml")
+EPS_PARAMETER_FILE = Path("parameters/p2_eps_model.toml")
+PHYSIOLOGY_PARAMETER_FILE = Path("parameters/p2_physiological_states.toml")
+WASTE_SHEAR_PARAMETER_FILE = Path("parameters/p2_waste_shear.toml")
 
 
 def test_parameter_file_loads_required_provenance_records() -> None:
@@ -100,7 +112,7 @@ def test_malformed_toml_fails_with_clear_error(tmp_path: Path) -> None:
 
 def test_known_p1_parameter_rejects_non_si_unit() -> None:
     """Known P1 quantities cannot enter the model under an inconsistent unit."""
-    with pytest.raises(ValueError, match="P1 SI unit"):
+    with pytest.raises(ValueError, match="required SI unit"):
         BiologicalParameter(
             name="death_rate",
             value=1.0,
@@ -140,3 +152,197 @@ def test_incomplete_p1_parameter_manifest_fails_explicitly() -> None:
 
     with pytest.raises(ValueError, match="missing required P1"):
         ParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_quorum_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP01 inputs remain isolated, complete, and explicitly uncalibrated."""
+    parameters = load_quorum_parameter_file(QUORUM_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 7
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "effective_quorum_signal_diffusivity",
+        "quorum_signal_top_bulk_concentration",
+        "quorum_signal_degradation_rate",
+        "basal_quorum_signal_production_rate",
+        "induced_quorum_signal_production_rate",
+        "quorum_activation_half_saturation_constant",
+        "quorum_hill_coefficient",
+    }
+    assert {
+        parameter.value for parameter in parameters.biological_parameters
+    } == {"CALIBRATION_REQUIRED"}
+
+
+def test_incomplete_quorum_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP01 manifest cannot silently configure the mechanism."""
+    parameter = BiologicalParameter(
+        name="quorum_signal_degradation_rate",
+        value="CALIBRATION_REQUIRED",
+        unit="s^-1",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP01"):
+        QuorumParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_quorum_parameter_rejects_non_si_unit_and_negative_rate() -> None:
+    """P2-WP01 parameters use their canonical SI units and physical domains."""
+    with pytest.raises(ValueError, match="required SI unit"):
+        BiologicalParameter(
+            name="quorum_signal_degradation_rate",
+            value=1.0,
+            unit="h^-1",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )
+    with pytest.raises(ValueError, match="greater than or equal to zero"):
+        BiologicalParameter(
+            name="basal_quorum_signal_production_rate",
+            value=-1.0,
+            unit="mol s^-1",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )
+
+
+def test_eps_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP02 inputs remain isolated, complete, and uncalibrated."""
+    parameters = load_eps_parameter_file(EPS_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 3
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "maximum_eps_allocation_fraction",
+        "eps_cohesion_sensitivity",
+        "eps_attachment_strength_sensitivity",
+    }
+    assert {
+        parameter.value for parameter in parameters.biological_parameters
+    } == {"CALIBRATION_REQUIRED"}
+
+
+def test_incomplete_eps_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP02 manifest cannot silently configure the mechanism."""
+    parameter = BiologicalParameter(
+        name="maximum_eps_allocation_fraction",
+        value="CALIBRATION_REQUIRED",
+        unit="1",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP02"):
+        EPSParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_physiology_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP04 thresholds, delays, activities, and recycling stay uncalibrated."""
+    parameters = load_physiology_parameter_file(PHYSIOLOGY_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 13
+    assert {
+        parameter.value for parameter in parameters.biological_parameters
+    } == {"CALIBRATION_REQUIRED"}
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "carbon_slow_threshold",
+        "oxygen_slow_threshold",
+        "carbon_dormancy_threshold",
+        "oxygen_dormancy_threshold",
+        "carbon_death_threshold",
+        "oxygen_death_threshold",
+        "slow_transition_delay",
+        "dormancy_transition_delay",
+        "death_transition_delay",
+        "recovery_transition_delay",
+        "slow_metabolic_activity_fraction",
+        "dormant_metabolic_activity_fraction",
+        "dead_biomass_recycling_rate",
+    }
+
+
+def test_incomplete_physiology_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP04 manifest cannot silently configure state behavior."""
+    parameter = BiologicalParameter(
+        name="slow_transition_delay",
+        value="CALIBRATION_REQUIRED",
+        unit="s",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP04"):
+        PhysiologyParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_waste_shear_parameter_file_loads_complete_unknown_inventory() -> None:
+    """P2-WP05 transport and shear controls remain explicitly uncalibrated."""
+    parameters = load_waste_shear_parameter_file(WASTE_SHEAR_PARAMETER_FILE)
+
+    assert parameters.schema_version == 1
+    assert len(parameters.biological_parameters) == 7
+    assert {parameter.value for parameter in parameters.biological_parameters} == {
+        "CALIBRATION_REQUIRED"
+    }
+    assert {parameter.name for parameter in parameters.biological_parameters} == {
+        "effective_waste_diffusivity",
+        "waste_top_bulk_concentration",
+        "waste_removal_rate",
+        "whole_cell_waste_production_rate",
+        "surface_parallel_shear_stress",
+        "detachment_exposure_threshold",
+        "attached_detachment_resistance_multiplier",
+    }
+
+
+def test_incomplete_waste_shear_parameter_manifest_fails_explicitly() -> None:
+    """A partial P2-WP05 manifest cannot silently configure detachment."""
+    parameter = BiologicalParameter(
+        name="surface_parallel_shear_stress",
+        value="CALIBRATION_REQUIRED",
+        unit="Pa",
+        source="CALIBRATION_REQUIRED",
+        uncertainty="CALIBRATION_REQUIRED",
+        notes="No value is approved.",
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+    with pytest.raises(ValueError, match="missing required P2-WP05"):
+        WasteShearParameterSet(schema_version=1, biological_parameters=[parameter])
+
+
+def test_eps_parameter_rejects_non_si_unit_and_invalid_fraction() -> None:
+    """P2-WP02 parameters enforce canonical SI units and physical domains."""
+    with pytest.raises(ValueError, match="required SI unit"):
+        BiologicalParameter(
+            name="eps_cohesion_sensitivity",
+            value=1.0,
+            unit="kg m^-3",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )
+    with pytest.raises(ValueError, match=r"within \[0, 1\]"):
+        BiologicalParameter(
+            name="maximum_eps_allocation_fraction",
+            value=1.1,
+            unit="1",
+            source="synthetic validation input",
+            uncertainty="not applicable to synthetic validation",
+            notes="Not a biological value.",
+            calibration_status="DERIVED",
+        )

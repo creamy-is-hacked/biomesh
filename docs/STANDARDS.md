@@ -31,7 +31,8 @@ No feature should compromise a higher priority.
 * Never invent biological constants.
 * Prefer modifying existing modules over rewriting them.
 * Stop immediately after acceptance criteria are satisfied.
-* Do not automatically commit, push, merge, tag, or release.
+* Follow the canonical Git workflow in Section 11 after a work package satisfies
+  every acceptance criterion.
 
 ---
 
@@ -158,17 +159,70 @@ Audits:
 
 ---
 
-# 11. Git Rules
+# 11. Canonical Git Workflow
 
-AI must never:
+This section is the canonical project policy for Git operations. After a work
+package or phase audit reaches the applicable acceptance gate, Codex must carry
+out the matching workflow below without requiring a separate Git instruction.
+This policy does not authorize GitHub releases, pull-request creation, or any
+operation prohibited by the safety rules.
 
-* commit
-* push
-* merge
-* tag
-* create releases
+## 11.1 Work-package completion
 
-unless explicitly instructed.
+Only when the work package satisfies **all** of its acceptance criteria, run:
+
+```bash
+pytest -q
+ruff check .
+mypy src
+git diff --check
+python -m biomesh --help
+```
+
+If every command passes:
+
+1. Review `git status`.
+2. Review `git diff`.
+3. Confirm that only expected files changed.
+4. Stage only files relevant to the completed work package; never use broad
+   staging in a dirty worktree.
+5. Review the staged diff.
+6. Commit with the canonical phase prefix and the work-package ID, for example
+   `P2: P2-WP01 implement quorum signal`.
+7. Push the current branch.
+8. Report the commit SHA, branch, and files committed.
+
+If any required verification command fails, do not commit or push. Report the
+failure and preserve the working tree for repair.
+
+## 11.2 Accepted phase-audit completion
+
+Only when the phase audit is accepted:
+
+1. Review `git status`.
+2. Stage only audit-related changes and review the staged diff.
+3. Commit with the canonical audit prefix.
+4. Push the phase branch containing the accepted audit.
+5. Merge that phase branch into `main` using `git merge --no-ff`.
+6. Push `main`.
+7. Create the canonical version tag from Section 5 and push that tag.
+8. Report the merge commit SHA, tag, and current branch.
+
+Never merge a phase that has not passed its audit.
+
+## 11.3 Git safety rules
+
+Never automatically execute:
+
+* `git push --force`
+* `git reset --hard`
+* interactive rebase
+* history rewrite
+* branch deletion
+* tag deletion
+* GitHub repository-setting changes
+
+Never bypass failed verification.
 
 ---
 
@@ -220,4 +274,3 @@ A phase is complete only when:
 * remaining risks documented
 
 Only then should work proceed to the next phase.
-

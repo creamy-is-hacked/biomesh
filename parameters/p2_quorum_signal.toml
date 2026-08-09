@@ -1,0 +1,64 @@
+schema_version = 1
+
+[[biological_parameters]]
+name = "effective_quorum_signal_diffusivity"
+value = "CALIBRATION_REQUIRED"
+unit = "m^2 s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by P2-WP01 signal transport; no medium-specific value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "quorum_signal_top_bulk_concentration"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required as the P2-WP01 prescribed signal concentration at the open top boundary; no experiment value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "quorum_signal_degradation_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required by the P2-WP01 first-order signal degradation term; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "basal_quorum_signal_production_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "mol s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required as the P2-WP01 whole-cell basal signal production rate; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "induced_quorum_signal_production_rate"
+value = "CALIBRATION_REQUIRED"
+unit = "mol s^-1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required as the P2-WP01 additional whole-cell feedback production rate; zero disables feedback and no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "quorum_activation_half_saturation_constant"
+value = "CALIBRATION_REQUIRED"
+unit = "mol m^-3"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required as K_A in the P2-WP01 Hill response; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"
+
+[[biological_parameters]]
+name = "quorum_hill_coefficient"
+value = "CALIBRATION_REQUIRED"
+unit = "1"
+source = "CALIBRATION_REQUIRED"
+uncertainty = "CALIBRATION_REQUIRED"
+notes = "Required as the dimensionless exponent in the P2-WP01 Hill response; no value is approved."
+calibration_status = "CALIBRATION_REQUIRED"

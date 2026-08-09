@@ -89,13 +89,151 @@ Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
 
 | ID | Work package | Status |
 | --- | --- | --- |
-| P2-WP01 | Quorum signal | INCOMPLETE |
-| P2-WP02 | EPS model | INCOMPLETE |
-| P2-WP03 | Competition | INCOMPLETE |
-| P2-WP04 | Physiological states | INCOMPLETE |
-| P2-WP05 | Waste and shear | INCOMPLETE |
-| P2-WP06 | Experiments | INCOMPLETE |
-| P2A | Phase 2 Audit | INCOMPLETE |
+| P2-WP01 | Quorum signal | COMPLETE |
+| P2-WP02 | EPS model | COMPLETE |
+| P2-WP03 | Competition | COMPLETE |
+| P2-WP04 | Physiological states | COMPLETE |
+| P2-WP05 | Waste and shear | COMPLETE |
+| P2-WP06 | Experiments | COMPLETE |
+| P2A | Phase 2 Audit | COMPLETE |
+
+P2-WP01 validation evidence:
+
+- Quorum production supports configurable basal and Hill-scaled induced
+  whole-cell rates; signal transport reuses the audited finite-volume geometry
+  with first-order degradation and a combined stability gate.
+- Manufactured diffusion-decay, analytical Hill response, equal-count geometry,
+  degradation, signal accounting, validation-failure, history, output, and
+  byte-replay tests passed.
+- All seven quorum biological parameters remain configurable and
+  `CALIBRATION_REQUIRED`. The full required gate passed: 87 tests, Ruff, mypy,
+  `git diff --check`, and module help.
+
+P2-WP02 validation evidence:
+
+- Quorum-scaled EPS allocation splits gross anabolic production between
+  retained producer biomass and an immobile local EPS density field while
+  charging carbon and oxygen for the full biomass-equivalent production.
+- Controlled production, accumulation, isolated growth-cost, substrate-yield,
+  biomass-equivalent conservation, monotone cohesion/attachment, validation,
+  optional output, and byte-replay tests passed.
+- All three EPS biological parameters remain configurable and
+  `CALIBRATION_REQUIRED`. The full required gate passed: 102
+  tests, Ruff, mypy, `git diff --check`, and module help.
+
+P2-WP03 validation evidence:
+
+- Producer and nonproducer roles share the existing simultaneous carbon and
+  oxygen update; only producers pay quorum-scaled EPS allocation, while both
+  roles receive the same local matrix modifiers.
+- Neutral, well-mixed cost, resource competition, quorum/EPS interaction,
+  conservation, frequency, segregation, lineage, local-fitness, input-order,
+  fixed-seed, validation-failure, optional-output, and byte-replay tests passed.
+- P2-WP03 adds no numeric biological parameter. The full required gate passed:
+  112 tests, Ruff, mypy, `git diff --check`, and module help.
+
+P2-WP04 validation evidence:
+
+- A centralized explicit state model implements active, slow, dormant, dead,
+  and detached states using configurable carbon/oxygen thresholds, continuous
+  delays, immutable exposure history, and deterministic recovery.
+- Dormant activity is lower than active activity by explicit configuration and
+  flows through metabolism, EPS, and competition. Dead biomass either persists
+  or follows an explicit first-order recycled-biomass ledger; all state counts
+  and retained biomass reconcile with the population.
+- All 13 numeric biological parameters remain configurable and
+  `CALIBRATION_REQUIRED`. The full required gate passed: 127 tests, Ruff, mypy,
+  `git diff --check`, and module help.
+
+P2-WP05 validation evidence:
+
+- Waste transport reuses the audited finite-volume geometry with configurable
+  whole-cell sources, optional physiological activity scaling, first-order
+  removal, stability validation, top-boundary transfer, and a discrete molar
+  accounting record.
+- Simplified deterministic surface-parallel shear accumulates exposure and
+  selects terminal detached-state IDs only under positive stress. The
+  configured threshold is scaled by caller-declared attachment and existing
+  local EPS attachment strength; population reconciliation remains owned by
+  the P2-WP04 ledger.
+- Controlled zero-shear, increasing-shear, EPS-resistance,
+  attachment-resistance, waste accounting, validation-failure, output, and
+  byte-replay tests passed. All seven new parameters remain configurable and
+  `CALIBRATION_REQUIRED`. The full required gate passed: 138 tests, Ruff,
+  mypy, `git diff --check`, and module help.
+
+P2-WP06 validation evidence:
+
+- A strict campaign schema covers producer and nonproducer monocultures, 50:50
+  competition, two inoculation patterns, constitutive and quorum-controlled
+  EPS, and two or more levels for every required quorum, nutrient/oxygen,
+  EPS-cost, and shear sweep. Every condition has three fixed seeds in the
+  repository's unresolved campaign definition.
+- The harness records biological-parameter hashes and one immutable raw
+  condition/seed manifest per run, validates the complete P2 scalar/map output
+  contract, preserves raw output hashes, and reports per-time replicate mean,
+  sample variance, Student's t confidence intervals, and descriptive rankings
+  limited to observed between-condition mean ranges. It adds no coupled
+  biological update order or global sensitivity model.
+- Unknown sweep values remain configurable, SI-labelled, provenance-complete,
+  and `CALIBRATION_REQUIRED`. Synthetic matrix, replay, statistics,
+  preservation, and explicit-failure tests passed. The full required gate
+  passed: 142 tests, Ruff, mypy, `git diff --check`, and module help.
+- P2A independently audited `d0c80c5` on 2026-08-03 and found the prior
+  harness had no production P2 runner or CLI path. P2-WP06 remediation adds a
+  deterministic documented update order, root-level required command fixtures,
+  actual Parquet/NumPy artifacts, run metadata, raw manifests, aggregate
+  statistics, accounting tables, observed-range descriptive rankings, and a
+  report plot. The fixtures are SI-labelled manufactured software validation,
+  not biological calibration. Local evidence: 144 tests, Ruff, mypy,
+  `git diff --check`, module help, `validate all`, all six required command
+  paths, and report passed on 2026-08-03. A clean clone created a fresh Python
+  3.14 environment, installed `.[dev]`, passed `validate all`, ran the
+  competition fixture and report, and passed all 144 tests. P2A must now rerun
+  independently.
+- P2A follow-up finding `P2A-002` identified that the six published fixtures
+  still omitted root-level CLI coverage for the two inoculation patterns, both
+  EPS-control modes, and the nutrient/oxygen sweep. The remediation now
+  publishes 11 strict fixtures covering all 15 executable conditions exactly
+  once, each at fixed seeds 101, 202, and 303, and keeps manufactured fixture
+  configuration hashes separate from the five `CALIBRATION_REQUIRED`
+  biological-parameter records.
+- Pre-commit application-path evidence passed all 11 experiment/sweep commands
+  and all 11 report paths twice with byte-identical directory trees: 45 runs,
+  675 verified raw artifact hashes, 630 mean/sample-variance/Student-t rows,
+  168 applicable observed-range ranking rows, and maximum absolute accounting
+  residual `4.199134257027165e-30`. Strict report validation and focused tests
+  reject missing Parquet and malformed NumPy artifacts. The full required gate
+  passed with 145 tests. P2A must rerun independently; no audit, P3, mutation,
+  evolution, or biological-calibration claim is included.
+- `P2A-003` documentation remediation updates README status and the complete
+  11-fixture CLI surface, and extends `docs/ARCHITECTURE.md` through P2-WP06
+  with waste/shear, campaign update order, artifacts, statistics, reports, and
+  calibration boundaries. Module help, `validate all`, Ruff, mypy,
+  `git diff --check`, and all 145 tests passed. At that remediation checkpoint,
+  P2A remained `INCOMPLETE` pending the fresh audit recorded below.
+
+P2A independent audit evidence (2026-08-08):
+
+- Audit result: `PASS WITH RECORDED LIMITATIONS`; Phase 2 is accepted at
+  implementation commit `6adb5def6f094762cb79ba3a2eddeede6007a2f5`.
+- A fresh clone of `origin/phase-2-colony-system` and fresh Python 3.14.4
+  `.[dev]` environment passed module help, Ruff, strict mypy,
+  `git diff --check`, 145 tests, all P1 validators and zero-mismatch reference
+  replay, and `validate all`. A focused P2 rerun passed 64 tests.
+- All 11 published fixture and report paths ran twice in separate trees. The
+  764 files replayed byte-identically across 45 fixed-seed runs. Independent
+  inspection verified 675 raw SHA-256/size records, 495 Parquet files, 135
+  NumPy archives, 630 recomputed mean/sample-variance/Student-t rows, and 168
+  applicable observed-range ranking rows. Maximum absolute accounting residual
+  was `4.199134257027165e-30` and maximum relative accounting error was
+  `2.9056583757232816e-16`.
+- Gates A-H passed. All 45 biological records and 10 unresolved campaign
+  overrides remain SI-labelled, provenance-complete, and
+  `CALIBRATION_REQUIRED`; manufactured executable overrides remain separately
+  labelled and are not calibration evidence. Recorded limitations are the
+  uncalibrated parameters, immobile-field EPS abstraction, simplified non-CFD
+  shear, and descriptive rather than global sensitivity analysis.
 
 ## P3 – Phase 3 – Desktop GUI
 
@@ -128,11 +266,13 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P2-WP01 – Quorum signal`. Phase 2 may begin.
+`P3-WP01 – Stable application API`.
 
 ## Remaining Issues
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- The branch name is noncanonical and the user-owned commit/tag handoff remains;
-  Git was intentionally unchanged by P1A.
+- The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
+  through its approved accepted-audit workflow; P2A does not retroactively
+  create it.
+- P3 – Phase 3 – Desktop GUI has not started. Its first package is P3-WP01.
