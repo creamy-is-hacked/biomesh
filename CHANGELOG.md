@@ -64,6 +64,11 @@ All notable repository changes are documented here.
   parameter and raw-artifact hashes, complete SI result metrics and maps, and
   deterministic replicate means, sample variances, confidence intervals, and
   descriptive rankings limited to the observed sweep-result ranges.
+- P3-WP01 – A typed synchronous application service exposing run, pause, one
+  solver-boundary step, hash-verified checkpoint/resume, immutable snapshot and
+  cell inspection, and canonical raw-artifact export operations. The service
+  reuses the accepted P2 fixture adapter and exposes no mutable engine state,
+  GUI toolkit, worker, viewer, or new scientific behavior.
 
 ### Audit findings
 

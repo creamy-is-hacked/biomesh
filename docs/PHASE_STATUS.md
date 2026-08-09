@@ -241,13 +241,27 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 
 | ID | Work package | Status |
 | --- | --- | --- |
-| P3-WP01 | Stable application API | INCOMPLETE |
+| P3-WP01 | Stable application API | COMPLETE |
 | P3-WP02 | Desktop shell | INCOMPLETE |
 | P3-WP03 | Simulation viewer | INCOMPLETE |
 | P3-WP04 | Experiment editor | INCOMPLETE |
 | P3-WP05 | Controls, checkpoints, and inspection | INCOMPLETE |
 | P3-WP06 | Analytics and export | INCOMPLETE |
 | P3A | Phase 3 Audit | INCOMPLETE |
+
+P3-WP01 validation evidence:
+
+- `biomesh.application.ApplicationService` exposes typed run, pause, one-boundary
+  step, hash-verified checkpoint/resume, immutable snapshot/inspection, and
+  completed canonical-artifact export operations over the existing P2 fixture
+  path. Mutable solver state remains private; no GUI or worker dependency was
+  added.
+- Pause/step/resume and checkpoint reconstruction produce equal final snapshots.
+  Snapshot arrays are immutable byte-backed read-only views. The CLI/API
+  equivalence test compares every raw artifact byte-for-byte for the same
+  fixture condition and seed.
+- Focused application/P2 validation passed 9 tests. The complete Python 3.14.4
+  gate passed 151 tests, Ruff, strict mypy, `git diff --check`, and module help.
 
 ## P4 – Phase 4 – Research Platform
 
@@ -266,7 +280,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3-WP01 – Stable application API`.
+`P3-WP02 – Desktop shell`.
 
 ## Remaining Issues
 
@@ -275,4 +289,5 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 - The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
   through its approved accepted-audit workflow; P2A does not retroactively
   create it.
-- P3 – Phase 3 – Desktop GUI has not started. Its first package is P3-WP01.
+- P3-WP01 is complete. P3-WP02 is the first incomplete package; no desktop
+  shell, viewer, editor, worker, or other P3-WP02+ behavior is implemented yet.

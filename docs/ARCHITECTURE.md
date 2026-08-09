@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P2-WP06
+## Current architecture through P3-WP01
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -15,6 +15,8 @@ metabolism boundary, and state-ledger output without changing the P1 path.
 P2-WP05 adds waste transport and deterministic shear-exposure detachment.
 P2-WP06 supplies the replicated campaign harness and the manufactured P2
 application adapter exposed through the CLI.
+P3-WP01 adds a synchronous application-service boundary that controls that
+same adapter at accepted solver boundaries and returns only immutable values.
 
 Dependency direction is intentionally simple:
 
@@ -34,6 +36,7 @@ waste           -> cells + solutes + optional physiology activity
 experiments     -> campaign schema + caller-supplied run executor + aggregation
 P2 campaign     -> approved P2 interfaces + experiments + outputs
 CLI entry point -> P1 paths + P2 validation/experiment/sweep/report paths
+application     -> private P2 adapter state + immutable snapshots/checkpoints/exports
 tests           -> public component interfaces
 ```
 
@@ -337,3 +340,37 @@ biological TOML records remain separately hashed and CALIBRATION_REQUIRED
 The rankings characterize only the manufactured conditions supplied to each
 sweep. They are not a global sensitivity analysis, biological uncertainty
 estimate, or calibrated scientific result.
+
+## P3-WP01 stable application API
+
+`biomesh.application.ApplicationService` starts one condition/seed selected by
+an existing P2 fixture, pauses and resumes only at accepted solver boundaries,
+and advances exactly one interval per `step` call. The P2 adapter initializer,
+single-step operation, and finalizer are shared with the unchanged CLI campaign
+path, so both surfaces use the recorded scientific update order, fixed seed,
+accounting, output writer, and parameter provenance.
+
+The service owns all mutable cells, fields, histories, solver controls, and the
+output writer in a private temporary run. Callers receive frozen cell, metric,
+accounting, provenance, and inspection records. Field snapshots are copied to
+immutable byte buffers and exposed as read-only NumPy views, so later GUI code
+cannot mutate live arrays.
+
+Checkpoints record the absolute fixture identity, fixture SHA-256, biological
+parameter labels and SHA-256 values, condition, seed, calibration status, and
+accepted step index. Resume verifies those inputs and deterministically replays
+to the recorded boundary. It neither invents scientific values nor serializes
+mutable solver internals. Export is limited to copying the completed canonical
+P2 raw artifact set; additional formats remain P3-WP06.
+
+```text
+CLI campaign ----\
+                  -> shared P2 initialize/step/finalize -> approved P2 components
+application API -/                    |
+                                       -> canonical outputs and provenance
+private engine state -> immutable snapshot/checkpoint/inspection -> future GUI
+```
+
+P3-WP01 remains synchronous and headless. It adds no PySide, desktop shell,
+renderer, experiment editor, worker, cancellation, live analytics, or new
+biology.

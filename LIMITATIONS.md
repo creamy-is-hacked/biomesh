@@ -1,5 +1,20 @@
 # Limitations
 
+## P3-WP01 – Stable application API
+
+- The application service controls only the accepted manufactured P2 fixture
+  path. It does not turn unresolved `CALIBRATION_REQUIRED` biological campaign
+  definitions into executable science or add any calibrated value.
+- Pause, step, checkpoint, and resume operate only at the three existing P2
+  solver boundaries. Checkpoints store hashes and a deterministic replay
+  position rather than serialized mutable solver arrays; changed fixture or
+  biological-parameter bytes are rejected.
+- Export preserves the existing completed raw Parquet, NumPy, and provenance
+  artifacts. Additional formats, live export, and analytics belong to later P3
+  work packages.
+- P3-WP01 is synchronous and headless. It adds no PySide dependency, desktop
+  shell, renderer, editor, worker, cancellation, or UI preference behavior.
+
 ## P2A – Phase 2 Audit
 
 - The independent 2026-08-08 clean-clone rerun accepted Phase 2 with recorded

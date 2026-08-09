@@ -4,21 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-08 after the independent P2A clean-clone audit
-accepted P2 – Phase 2 – Colony System at implementation commit
-`6adb5def6f094762cb79ba3a2eddeede6007a2f5` with recorded limitations. The
-Python 3.14 full gate passes 145 tests; every required campaign and report path
-reproduces byte-identically.
+Snapshot verified: 2026-08-09 after P3-WP01 completed its local acceptance
+gate. P2 remains the latest audited and accepted phase at implementation commit
+`6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in progress and has not been
+audited. The Python 3.14 full gate passes 151 tests.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P3 – Phase 3 – Desktop GUI (not started) |
-| Current work package | P3-WP01 – Stable application API is the first `INCOMPLETE` item |
-| Current branch | `main` after the accepted-audit workflow |
+| Current phase | P3 – Phase 3 – Desktop GUI (in progress) |
+| Current work package | P3-WP02 – Desktop shell is the first `INCOMPLETE` item |
+| Current branch | `phase-3-desktop-gui` |
 | Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
-| Current test count | 145 passed (`pytest -q`, 2026-08-08) |
-| Next planned work package | P3-WP01 – Stable application API |
+| Current test count | 151 passed (`pytest -q`, 2026-08-09) |
+| Next planned work package | P3-WP02 – Desktop shell |
 
 ## Outstanding technical debt
 
@@ -40,6 +39,10 @@ reproduces byte-identically.
   their outputs are not calibration or biological evidence. The sensitivity
   rankings are descriptive observed ranges, EPS is an immobile field, shear is
   a non-CFD exposure abstraction, and P2 adds no mutation or evolution.
+- P3-WP01 controls only the existing manufactured P2 fixture path. It is
+  synchronous and headless; checkpoints are hash-verified deterministic replay
+  positions, and export preserves the existing completed raw artifact set.
+  P3 remains unaudited, and no desktop shell or later P3 behavior is present.
 - License selection is pending.
 
 ## Update policy

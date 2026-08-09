@@ -6,9 +6,10 @@ development and a future Linux desktop research platform.
 ## Status
 
 The independent 2026-08-08 P2A – Phase 2 Audit accepted Phase 2 with recorded
-limitations. P3 – Phase 3 – Desktop GUI has not started; P3-WP01 is the next
-work package. The default P1 reference and all published P2 fixtures are
-manufactured software-validation evidence: every biological parameter remains
+limitations. P3-WP01 provides a typed, headless application-service boundary
+over the accepted P2 fixture runner; P3-WP02 – Desktop shell is next. The
+default P1 reference and all published P2 fixtures are manufactured
+software-validation evidence: every biological parameter remains
 `CALIBRATION_REQUIRED`, and no calibrated scientific result is claimed. See
 [the phase status](docs/PHASE_STATUS.md) for the current state.
 
