@@ -67,6 +67,13 @@ All notable repository changes are documented here.
 
 ### Audit findings
 
+- P2A – Independent clean-clone audit of
+  `6adb5def6f094762cb79ba3a2eddeede6007a2f5` passed with recorded limitations.
+  Python 3.14.4 installation, all 145 tests, P1 validators and replay, all 11
+  campaign/report paths, byte-identical full replay, artifact hashes and
+  schemas, accounting, replicate Student-t statistics, descriptive rankings,
+  documentation, provenance, and output hygiene passed. Phase 2 is accepted;
+  manufactured fixtures remain distinct from biological calibration.
 - P2A – Independent audit of
   `88386fab116976ebae4b6a9a5a53bb1511053e86` found `P2A-003`: the implemented
   P2-WP05/P2-WP06 release behavior was absent from `docs/ARCHITECTURE.md`, and

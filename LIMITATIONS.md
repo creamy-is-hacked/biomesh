@@ -1,5 +1,22 @@
 # Limitations
 
+## P2A – Phase 2 Audit
+
+- The independent 2026-08-08 clean-clone rerun accepted Phase 2 with recorded
+  limitations; no Critical or Major finding remains.
+- All 45 biological parameter records and the 10 unresolved biological
+  campaign overrides remain SI-labelled, provenance-complete, and
+  `CALIBRATION_REQUIRED`. The executable numeric fixtures are manufactured
+  software validation and provide no calibrated biological result.
+- EPS remains an immobile density field with relative cohesion and attachment
+  multipliers rather than explicit polymer mechanics or an absolute force law.
+- Shear remains a deterministic uniform exposure abstraction rather than CFD,
+  resolved hydrodynamics, or a stochastic erosion model.
+- Sensitivity rankings are descriptive observed ranges over three fixed-seed
+  manufactured conditions. They are not global sensitivity analysis,
+  biological uncertainty, or calibration evidence, and the joint
+  nutrient/oxygen sweep cannot attribute effects to either resource alone.
+
 ## P1A – Phase 1 Audit
 
 - The independent 2026-08-02 rerun accepted Phase 1 with the limitations below.
@@ -13,8 +30,9 @@
 - Byte-identical reproduction is gated to the recorded parameter file and
   execution environment. A changed parameter hash is rejected explicitly.
 - License selection is pending.
-- The inspected branch name is noncanonical under `docs/STANDARDS.md`, and the
-  audited worktree still requires the user-owned commit and audit-tag handoff.
+- The historical P1A inspection used a noncanonical branch. The canonical
+  `v0.1.1-audit` tag remains outstanding and must only be created through its
+  approved accepted-audit workflow.
 
 ## P2-WP01 – Quorum signal
 
@@ -115,15 +133,15 @@
 - The harness intentionally accepts a typed run executor instead of inventing
   a coupled P2 update order. Every executor must preserve the approved
   component contracts and emit the complete standard P2 raw artifact set.
-- P2-WP06 now supplies a production adapter and CLI binding for manufactured
-  software-validation fixtures only. `P2A-001` is not closed by this work:
-  a clean-clone application-path reproduction passed, but an independent P2A
-  rerun must still review coupled behavior before Phase 2 acceptance.
+- P2-WP06 supplies a production adapter and CLI binding for manufactured
+  software-validation fixtures only. This remediated `P2A-001`; the independent
+  2026-08-08 P2A rerun subsequently accepted the coupled application path.
 - The published adapter has 11 strict root-level fixtures that expose all 15
   executable conditions exactly once, including separate intermixed and
   segregated inoculation paths, separate constitutive and quorum-controlled EPS
   paths, and the joint nutrient/oxygen sweep. This closes the P2-WP06 release
-  surface identified by `P2A-002`; it does not close the independent P2A gate.
+  surface identified by `P2A-002`; the independent 2026-08-08 P2A rerun
+  subsequently accepted that release surface.
 - Manufactured fixture values and outputs use SI labels but are deliberately
   separate from biological parameter records. They are not calibration,
   benchmark, or biological-result evidence. Fixture bytes are hashed as the

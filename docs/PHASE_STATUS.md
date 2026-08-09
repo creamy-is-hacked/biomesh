@@ -95,7 +95,7 @@ Source: `docs/03_PHASE_TWO_COLONY_SYSTEM.md`.
 | P2-WP04 | Physiological states | COMPLETE |
 | P2-WP05 | Waste and shear | COMPLETE |
 | P2-WP06 | Experiments | COMPLETE |
-| P2A | Phase 2 Audit | INCOMPLETE |
+| P2A | Phase 2 Audit | COMPLETE |
 
 P2-WP01 validation evidence:
 
@@ -210,8 +210,30 @@ P2-WP06 validation evidence:
   11-fixture CLI surface, and extends `docs/ARCHITECTURE.md` through P2-WP06
   with waste/shear, campaign update order, artifacts, statistics, reports, and
   calibration boundaries. Module help, `validate all`, Ruff, mypy,
-  `git diff --check`, and all 145 tests passed. P2A remains `INCOMPLETE` until
-  a fresh clean-checkout audit accepts this remediation.
+  `git diff --check`, and all 145 tests passed. At that remediation checkpoint,
+  P2A remained `INCOMPLETE` pending the fresh audit recorded below.
+
+P2A independent audit evidence (2026-08-08):
+
+- Audit result: `PASS WITH RECORDED LIMITATIONS`; Phase 2 is accepted at
+  implementation commit `6adb5def6f094762cb79ba3a2eddeede6007a2f5`.
+- A fresh clone of `origin/phase-2-colony-system` and fresh Python 3.14.4
+  `.[dev]` environment passed module help, Ruff, strict mypy,
+  `git diff --check`, 145 tests, all P1 validators and zero-mismatch reference
+  replay, and `validate all`. A focused P2 rerun passed 64 tests.
+- All 11 published fixture and report paths ran twice in separate trees. The
+  764 files replayed byte-identically across 45 fixed-seed runs. Independent
+  inspection verified 675 raw SHA-256/size records, 495 Parquet files, 135
+  NumPy archives, 630 recomputed mean/sample-variance/Student-t rows, and 168
+  applicable observed-range ranking rows. Maximum absolute accounting residual
+  was `4.199134257027165e-30` and maximum relative accounting error was
+  `2.9056583757232816e-16`.
+- Gates A-H passed. All 45 biological records and 10 unresolved campaign
+  overrides remain SI-labelled, provenance-complete, and
+  `CALIBRATION_REQUIRED`; manufactured executable overrides remain separately
+  labelled and are not calibration evidence. Recorded limitations are the
+  uncalibrated parameters, immobile-field EPS abstraction, simplified non-CFD
+  shear, and descriptive rather than global sensitivity analysis.
 
 ## P3 – Phase 3 – Desktop GUI
 
@@ -244,11 +266,13 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P2A – Phase 2 Audit`.
+`P3-WP01 – Stable application API`.
 
 ## Remaining Issues
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- `P2A-003` remediation requires an independent clean-clone P2A rerun before
-  Phase 2 can be accepted; this work package does not accept or merge Phase 2.
+- The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
+  through its approved accepted-audit workflow; P2A does not retroactively
+  create it.
+- P3 – Phase 3 – Desktop GUI has not started. Its first package is P3-WP01.

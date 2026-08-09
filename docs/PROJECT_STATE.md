@@ -4,27 +4,26 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-03 after the P2-WP06 documentation remediation for
-`P2A-003`. README and architecture now match the implemented P2-WP05/P2-WP06
-release surface, and the Python 3.14 full gate passes 145 tests. P2A has not
-independently audited this remediation.
+Snapshot verified: 2026-08-08 after the independent P2A clean-clone audit
+accepted P2 – Phase 2 – Colony System at implementation commit
+`6adb5def6f094762cb79ba3a2eddeede6007a2f5` with recorded limitations. The
+Python 3.14 full gate passes 145 tests; every required campaign and report path
+reproduces byte-identically.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P2 – Phase 2 – Colony System |
-| Current work package | P2-WP06 – Experiments is `COMPLETE`; P2A is the first `INCOMPLETE` item and must rerun independently |
-| Current branch | `phase-2-colony-system` |
-| Latest accepted phase | P1 – Phase 1 – Core Model, accepted by P1A on 2026-08-02 as `PASS WITH RECORDED LIMITATIONS` |
-| Latest version tag | `v0.1.0` (P1 merge, 2026-08-02) |
-| Current test count | 145 passed (`pytest -q`, 2026-08-03) |
-| Next planned work package | P2A – Phase 2 Audit |
+| Current phase | P3 – Phase 3 – Desktop GUI (not started) |
+| Current work package | P3-WP01 – Stable application API is the first `INCOMPLETE` item |
+| Current branch | `main` after the accepted-audit workflow |
+| Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
+| Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
+| Current test count | 145 passed (`pytest -q`, 2026-08-08) |
+| Next planned work package | P3-WP01 – Stable application API |
 
 ## Outstanding technical debt
 
 - Create the canonical P1A audit tag `v0.1.1-audit` only through the approved
   accepted-audit workflow. It is not present in the repository.
-- Rerun P2A independently against the `P2A-003` remediation; do not infer audit
-  acceptance from implementation-path or documentation-edit evidence.
 
 ## Known limitations
 
@@ -36,10 +35,11 @@ independently audited this remediation.
   using 11 manufactured SI-labelled software-validation fixtures covering all
   15 executable conditions at three fixed seeds. Fixture configuration and the
   five biological TOML records have separate hashes; biological records remain
-  provenance-complete and `CALIBRATION_REQUIRED`. Fixtures and their outputs
-  are not calibration or biological evidence. The prior P2A technical evidence
-  passed but its documentation-match gate failed; the remediation still needs
-  independent audit. It adds no mutation or evolution.
+  provenance-complete and `CALIBRATION_REQUIRED`. P2A accepted the application
+  path after two complete byte-identical campaign/report runs. Fixtures and
+  their outputs are not calibration or biological evidence. The sensitivity
+  rankings are descriptive observed ranges, EPS is an immobile field, shear is
+  a non-CFD exposure abstraction, and P2 adds no mutation or evolution.
 - License selection is pending.
 
 ## Update policy

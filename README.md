@@ -5,13 +5,12 @@ development and a future Linux desktop research platform.
 
 ## Status
 
-The independent 2026-08-02 P1A – Phase 1 Audit accepted Phase 1 with recorded
-limitations. All six P2 – Phase 2 – Colony System implementation packages are
-complete; the independent P2A release audit remains the current gate before
-Phase 3 may begin. The default P1 reference and all published P2 fixtures are
+The independent 2026-08-08 P2A – Phase 2 Audit accepted Phase 2 with recorded
+limitations. P3 – Phase 3 – Desktop GUI has not started; P3-WP01 is the next
+work package. The default P1 reference and all published P2 fixtures are
 manufactured software-validation evidence: every biological parameter remains
 `CALIBRATION_REQUIRED`, and no calibrated scientific result is claimed. See
-[the phase status](docs/PHASE_STATUS.md) for the current audit state.
+[the phase status](docs/PHASE_STATUS.md) for the current state.
 
 ## Development
 
