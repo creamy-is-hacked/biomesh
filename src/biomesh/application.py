@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
+import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Self
@@ -165,7 +167,7 @@ class ApplicationService:
         """Write a new hash-bound replay checkpoint at a stable boundary."""
         if self._status not in {RunStatus.PAUSED, RunStatus.COMPLETED}:
             raise ApplicationError("checkpoint requires a paused or completed session")
-        if checkpoint_file.exists():
+        if checkpoint_file.exists() or checkpoint_file.is_symlink():
             raise ApplicationError("checkpoint_file must not already exist")
         if not checkpoint_file.parent.is_dir():
             raise ApplicationError("checkpoint_file parent directory must exist")
@@ -188,7 +190,7 @@ class ApplicationService:
         }
         contents = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode()
         try:
-            checkpoint_file.write_bytes(contents)
+            _atomic_write_bytes(checkpoint_file, contents)
         except OSError as error:
             raise ApplicationError(f"unable to write checkpoint: {error}") from error
         return CheckpointResult(
@@ -219,16 +221,33 @@ class ApplicationService:
     def export(self, output_directory: Path) -> ExportResult:
         """Export the complete existing P2 raw artifact set without conversion."""
         self._require_status(RunStatus.COMPLETED, operation="export")
-        if output_directory.exists():
+        if output_directory.exists() or output_directory.is_symlink():
             raise ApplicationError("output_directory must not already exist")
         if not output_directory.parent.is_dir():
             raise ApplicationError("output_directory parent directory must exist")
         engine = self._require_engine()
         if engine.finalized_paths is None:
             raise ApplicationError("completed run has no finalized output paths")
+        source_directory = engine.finalized_paths.run_directory
         try:
-            shutil.copytree(engine.finalized_paths.run_directory, output_directory)
+            output_directory.resolve().relative_to(source_directory.resolve())
+        except ValueError:
+            pass
+        else:
+            raise ApplicationError("output_directory must be outside the source run")
+        temporary_directory: Path | None = None
+        try:
+            temporary_directory = Path(
+                tempfile.mkdtemp(
+                    prefix=f".{output_directory.name}.",
+                    dir=output_directory.parent,
+                )
+            )
+            shutil.copytree(source_directory, temporary_directory, dirs_exist_ok=True)
+            os.replace(temporary_directory, output_directory)
         except OSError as error:
+            if temporary_directory is not None:
+                shutil.rmtree(temporary_directory, ignore_errors=True)
             raise ApplicationError(f"unable to export run: {error}") from error
         files = tuple(
             sorted(
@@ -434,3 +453,20 @@ def _integer(payload: dict[str, Any], key: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ApplicationError(f"checkpoint {key} must be an integer")
     return value
+
+
+def _atomic_write_bytes(path: Path, contents: bytes) -> None:
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", dir=path.parent
+    )
+    temporary_path = Path(temporary_name)
+    os.close(descriptor)
+    try:
+        with temporary_path.open("wb") as stream:
+            stream.write(contents)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise

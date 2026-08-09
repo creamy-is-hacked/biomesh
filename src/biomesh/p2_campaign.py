@@ -17,9 +17,11 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import platform
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, replace
 from importlib.metadata import version
 from pathlib import Path
@@ -399,7 +401,17 @@ def report_campaign(output_directory: Path) -> Path:
     axis.legend(fontsize="x-small")
     figure.tight_layout()
     report = output_directory / "report.png"
-    figure.savefig(report, dpi=120)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{report.name}.", suffix=".png", dir=output_directory
+    )
+    temporary_report = Path(temporary_name)
+    os.close(descriptor)
+    try:
+        figure.savefig(temporary_report, dpi=120, format="png")
+        os.replace(temporary_report, report)
+    except Exception:
+        temporary_report.unlink(missing_ok=True)
+        raise
     plt.close(figure)
     return report
 
@@ -1007,6 +1019,7 @@ def _commit_hash() -> str:
 
 def _validate_campaign_artifacts(output_directory: Path) -> None:
     """Validate the complete immutable campaign and raw-artifact contract."""
+    _assert_output_tree_contained(output_directory)
     manifest = output_directory / "campaign_manifest.json"
     summary = output_directory / "summary_statistics.json"
     ranking = output_directory / "sensitivity_ranking.json"
@@ -1453,6 +1466,22 @@ def _safe_artifact_path(root: Path, relative_path: str) -> Path:
     if not resolved_path.is_relative_to(resolved_root):
         raise ExperimentValidationError("artifact path escapes campaign output")
     return resolved_path
+
+
+def _assert_output_tree_contained(root: Path) -> None:
+    """Reject symlinks and paths resolving outside a campaign output root."""
+    resolved_root = root.resolve()
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise ExperimentValidationError(
+                f"campaign output must not contain symlinks: {path}"
+            )
+        try:
+            path.resolve(strict=False).relative_to(resolved_root)
+        except ValueError as error:
+            raise ExperimentValidationError(
+                f"campaign output escapes requested output root: {path}"
+            ) from error
 
 
 def _is_sha256(value: object) -> bool:

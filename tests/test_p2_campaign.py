@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
+import pytest
 
 from biomesh.__main__ import main
 from biomesh.experiments import REQUIRED_FIELD_ARRAYS, REQUIRED_RUN_FILES
@@ -15,6 +16,7 @@ from biomesh.p2_campaign import (
     BIOLOGICAL_PARAMETER_FILES,
     FIXTURE_SEEDS,
     load_fixture_command,
+    report_campaign,
     validate_all,
 )
 
@@ -196,3 +198,32 @@ def test_malformed_fixture_and_artifact_are_rejected(tmp_path: Path) -> None:
         json.dumps(raw_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     assert main(["report", str(output)]) == 2
+
+
+def test_report_publication_failure_is_atomic_and_retryable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed report render preserves no partial report target."""
+    output = tmp_path / "report-output"
+    assert (
+        main(
+            [
+                "experiment",
+                "experiments/producer.yaml",
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    from matplotlib.figure import Figure
+
+    def fail(*_args: object, **_kwargs: object) -> None:
+        raise OSError("synthetic report failure")
+
+    monkeypatch.setattr(Figure, "savefig", fail)
+    with pytest.raises(OSError, match="synthetic report failure"):
+        report_campaign(output)
+    assert not (output / "report.png").exists()
+    monkeypatch.undo()
+    assert report_campaign(output).is_file()

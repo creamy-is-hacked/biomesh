@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
 import tempfile
 import tomllib
 from pathlib import Path
@@ -200,8 +199,12 @@ def run_reference(
         ),
     )
     writer = SimulationOutputWriter(run_directory, metadata)
-    shutil.copyfile(parameter_file, run_directory / "reference_parameters.toml")
-    shutil.copyfile(biological_file, run_directory / "biological_parameters.toml")
+    writer.write_auxiliary_file(
+        "reference_parameters.toml", parameter_file.read_bytes()
+    )
+    writer.write_auxiliary_file(
+        "biological_parameters.toml", biological_file.read_bytes()
+    )
     zero_balance = (
         MassBalanceEntry(
             quantity="carbon_field",

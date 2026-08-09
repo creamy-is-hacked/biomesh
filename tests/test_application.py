@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import biomesh.application as application_module
 from biomesh.__main__ import main
 from biomesh.application import (
     ApplicationError,
@@ -146,6 +147,28 @@ def test_checkpoint_rejects_configuration_drift(tmp_path: Path) -> None:
             restored.resume(checkpoint_file)
 
 
+def test_checkpoint_failure_is_atomic_and_retryable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed checkpoint leaves no partial target and permits a retry."""
+    checkpoint_file = tmp_path / "run.checkpoint.json"
+    with ApplicationService() as service:
+        service.run(_request())
+        service.pause()
+        original = application_module._atomic_write_bytes
+
+        def fail(_path: Path, _contents: bytes) -> None:
+            raise OSError("synthetic checkpoint failure")
+
+        monkeypatch.setattr(application_module, "_atomic_write_bytes", fail)
+        with pytest.raises(ApplicationError, match="synthetic checkpoint failure"):
+            service.checkpoint(checkpoint_file)
+        assert not checkpoint_file.exists()
+        monkeypatch.setattr(application_module, "_atomic_write_bytes", original)
+        service.checkpoint(checkpoint_file)
+        assert checkpoint_file.is_file()
+
+
 def test_cli_and_application_export_are_byte_equivalent(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -194,3 +217,24 @@ def test_invalid_request_and_export_targets_fail_explicitly(tmp_path: Path) -> N
         existing.mkdir()
         with pytest.raises(ApplicationError, match="must not already exist"):
             service.export(existing)
+
+
+def test_export_failure_is_atomic_and_retryable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed directory export leaves no partial target and permits a retry."""
+    output = tmp_path / "export"
+    with ApplicationService() as service:
+        _complete(service)
+        original = application_module.shutil.copytree
+
+        def fail(*_args: object, **_kwargs: object) -> None:
+            raise OSError("synthetic export failure")
+
+        monkeypatch.setattr(application_module.shutil, "copytree", fail)
+        with pytest.raises(ApplicationError, match="synthetic export failure"):
+            service.export(output)
+        assert not output.exists()
+        monkeypatch.setattr(application_module.shutil, "copytree", original)
+        service.export(output)
+        assert output.is_dir()
