@@ -10,13 +10,15 @@ into a Linux desktop research platform.
 The latest accepted phase is **P2 – Phase 2 – Colony System**. Its independent
 2026-08-08 audit passed with recorded limitations and is represented by the
 `v0.2.1-audit` tag. **P3 – Phase 3 – Desktop GUI** is in progress: P3-WP01
-through P3-WP03 are complete locally, and P3-WP04 – Experiment editor is next.
+through P3-WP04 are complete locally, and P3-WP05 – Controls, checkpoints, and
+inspection is next.
 P3 has not been audited.
 
 The current desktop GUI has menus, docks, status, recent project references, an
-error console, separate UI preferences, and a snapshot-only simulation viewer.
-The application API remains synchronous and controls the existing manufactured
-P2 fixture path independently.
+error console, separate UI preferences, a snapshot-only simulation viewer, and
+a schema-generated biological-parameter editor with templates and read-only
+audited presets. The application API remains synchronous and controls the
+existing manufactured P2 fixture path independently.
 
 See [the authoritative phase tracker](docs/PHASE_STATUS.md) and the
 [current project state](docs/PROJECT_STATE.md) for the live status.
@@ -39,7 +41,11 @@ The repository currently provides:
 - the P3-WP02 PySide6 desktop shell with menus, dockable project/error panels,
   status reporting, recent file references, and UI-only XDG preferences; and
 - the P3-WP03 PyQtGraph viewer for immutable cell geometry and scalar fields,
-  with zoom, pan, fit, layer visibility/opacity, legends, and frame limiting.
+  with zoom, pan, fit, layer visibility/opacity, legends, and frame limiting;
+  and
+- the P3-WP04 editor for the existing validated biological-parameter schemas,
+  with provenance display, explicit validation, semantic TOML round-trip,
+  editable templates, and hash-bound read-only audited presets.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -116,8 +122,12 @@ headless startup check is available for development and CI:
 QT_QPA_PLATFORM=offscreen python -m biomesh.gui --smoke-test
 ```
 
-The shell does not yet display or control a simulation. Recent project entries
-are UI-only references, not parsed experiment or scientific configuration.
+The shell does not yet connect the viewer/editor to simulation controls. The
+Experiment Editor dock can load editable copies of the five repository
+parameter templates, open hash-verified P2A presets read-only, and save/reload
+validated TOML configurations. Documents retaining `CALIBRATION_REQUIRED`
+values or provenance remain explicitly run-ineligible. Recent project entries
+remain separate UI-only references, not parsed experiment configuration.
 
 ## Experiment fixtures
 
@@ -158,11 +168,11 @@ boundaries.
 
 ## Roadmap
 
-At a high level, the remaining P3 work is the experiment editor,
-controls/checkpoints/inspection, worker, and analytics/export surface, followed
-by the P3A audit. P4 then covers the broader research platform. These are
-roadmap items, not completed functionality. BioMesh is not called v1; no v1
-milestone has been reached.
+At a high level, the remaining P3 work is controls/checkpoints/inspection,
+worker integration, and the analytics/export surface, followed by the P3A
+audit. P4 then covers the broader research platform. These are roadmap items,
+not completed functionality. BioMesh is not called v1; no v1 milestone has
+been reached.
 
 ## License
 

@@ -244,7 +244,7 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 | P3-WP01 | Stable application API | COMPLETE |
 | P3-WP02 | Desktop shell | COMPLETE |
 | P3-WP03 | Simulation viewer | COMPLETE |
-| P3-WP04 | Experiment editor | INCOMPLETE |
+| P3-WP04 | Experiment editor | COMPLETE |
 | P3-WP05 | Controls, checkpoints, and inspection | INCOMPLETE |
 | P3-WP06 | Analytics and export | INCOMPLETE |
 | P3A | Phase 3 Audit | INCOMPLETE |
@@ -297,6 +297,26 @@ P3-WP03 validation evidence:
   162 tests, Ruff, strict mypy, `git diff --check`, module help, and the
   offscreen GUI smoke path.
 
+P3-WP04 validation evidence:
+
+- `biomesh.gui.experiment_editor.ExperimentEditor` generates one form from
+  each of the five existing frozen biological-parameter schemas. Every record
+  displays value, SI unit, source, uncertainty, notes, calibration status, and
+  explicit field or record validation errors; names and required units remain
+  read-only.
+- Mutable draft text is structurally separate from immutable validated
+  configurations. All five schemas save atomically to TOML and reload with
+  equal Pydantic semantics. Invalid drafts cannot save or become run-eligible,
+  and schema-valid unresolved provenance remains explicitly
+  `CALIBRATION_REQUIRED` and run-ineligible.
+- Repository templates create unsaved editable copies. P2A-accepted presets
+  are SHA-256-bound to implementation revision
+  `6adb5def6f094762cb79ba3a2eddeede6007a2f5`, open read-only, and cannot be
+  overwritten even from an editable clone. Twelve focused tests, including the
+  offscreen editor path, and the offscreen application smoke path passed. The
+  complete Python 3.14.4 gate passed 174 tests, Ruff, strict mypy,
+  `git diff --check`, and module help.
+
 ## P4 – Phase 4 – Research Platform
 
 Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
@@ -314,7 +334,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3-WP04 – Experiment editor`.
+`P3-WP05 – Controls, checkpoints, and inspection`.
 
 ## Remaining Issues
 
@@ -323,6 +343,6 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 - The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
   through its approved accepted-audit workflow; P2A does not retroactively
   create it.
-- P3-WP03 is complete. P3-WP04 is the first incomplete package; the desktop has
-  no experiment editor, run controls, worker, inspection, analytics, additional
-  export, or later P3 behavior.
+- P3-WP04 is complete. P3-WP05 is the first incomplete package; the desktop has
+  no run/pause/step/stop controls, checkpoint UI, worker, cell inspection,
+  analytics, additional export, project model, or later P3 behavior.

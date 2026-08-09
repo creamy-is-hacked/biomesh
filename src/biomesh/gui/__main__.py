@@ -1,4 +1,4 @@
-"""Executable entry point for the P3-WP03 desktop shell and viewer."""
+"""Executable entry point for the P3-WP04 desktop shell."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the independent desktop-GUI command parser."""
     parser = argparse.ArgumentParser(
         prog="biomesh-gui",
-        description="BioMesh P3-WP03 Linux desktop shell and snapshot viewer.",
+        description="BioMesh P3-WP04 Linux desktop viewer and experiment editor.",
     )
     parser.add_argument(
         "--version",

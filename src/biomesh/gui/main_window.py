@@ -1,4 +1,4 @@
-"""P3 desktop shell with the snapshot-only P3-WP03 viewer."""
+"""P3 desktop shell with the viewer and P3-WP04 experiment editor."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from biomesh.gui.experiment_editor import ExperimentEditor
 from biomesh.gui.preferences import (
     UiPreferences,
     UiPreferencesError,
@@ -28,14 +29,21 @@ from biomesh.gui.viewer import SimulationViewer
 
 
 class MainWindow(QMainWindow):
-    """Desktop chrome and viewer; neither owns mutable scientific state."""
+    """Desktop chrome around snapshot viewing and validated parameter editing."""
 
-    def __init__(self, preferences_store: UiPreferencesStore | None = None) -> None:
+    def __init__(
+        self,
+        preferences_store: UiPreferencesStore | None = None,
+        repository_root: Path | None = None,
+    ) -> None:
         super().__init__()
         self.setObjectName("biomeshMainWindow")
         self.setWindowTitle("BioMesh")
         self.resize(1100, 720)
         self._preferences_store = preferences_store or UiPreferencesStore()
+        self._repository_root = (
+            repository_root or _default_repository_root()
+        ).resolve()
         self._preferences = UiPreferences()
         self._preferences_load_failed = False
         self._current_project: Path | None = None
@@ -142,6 +150,17 @@ class MainWindow(QMainWindow):
         self._project_dock.setWidget(project_widget)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self._project_dock)
 
+        self._experiment_dock = QDockWidget("Experiment Editor", self)
+        self._experiment_dock.setObjectName("experimentEditorDock")
+        self._experiment_editor = ExperimentEditor(
+            self._repository_root, self._experiment_dock
+        )
+        self._experiment_editor.error_reported.connect(self.report_error)
+        self._experiment_dock.setWidget(self._experiment_editor)
+        self.addDockWidget(
+            Qt.DockWidgetArea.RightDockWidgetArea, self._experiment_dock
+        )
+
         self._error_dock = QDockWidget("Error Console", self)
         self._error_dock.setObjectName("errorConsoleDock")
         self._error_console = QPlainTextEdit(self._error_dock)
@@ -172,6 +191,7 @@ class MainWindow(QMainWindow):
         view_menu = self.menuBar().addMenu("&View")
         view_menu.setObjectName("viewMenu")
         view_menu.addAction(self._project_dock.toggleViewAction())
+        view_menu.addAction(self._experiment_dock.toggleViewAction())
         view_menu.addAction(self._error_dock.toggleViewAction())
 
         help_menu = self.menuBar().addMenu("&Help")
@@ -240,6 +260,16 @@ class MainWindow(QMainWindow):
         QMessageBox.about(
             self,
             "About BioMesh",
-            "BioMesh P3-WP03 desktop viewer. Scientific behavior remains owned "
-            "by the immutable application API; rendering consumes snapshots only.",
+            "BioMesh P3-WP04 desktop viewer and schema-generated experiment "
+            "editor. Scientific behavior remains owned by the immutable "
+            "application API; editing uses existing validated parameter schemas.",
         )
+
+
+def _default_repository_root() -> Path:
+    """Find source-repository templates without depending on launch directory."""
+    source_root = Path(__file__).resolve().parents[3]
+    for candidate in (Path.cwd(), source_root):
+        if (candidate / "parameters" / "p1_core_model.toml").is_file():
+            return candidate
+    return Path.cwd()

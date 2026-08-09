@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P3-WP03
+## Current architecture through P3-WP04
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -19,6 +19,8 @@ P3-WP01 adds a synchronous application-service boundary that controls that
 same adapter at accepted solver boundaries and returns only immutable values.
 P3-WP02 adds UI-only desktop chrome, and P3-WP03 adds a PyQtGraph viewer that
 consumes those immutable snapshots without constructing or mutating the engine.
+P3-WP04 adds a schema-generated biological-parameter editor whose mutable
+draft state can yield only existing immutable validated configuration models.
 
 Dependency direction is intentionally simple:
 
@@ -40,6 +42,7 @@ P2 campaign     -> approved P2 interfaces + experiments + outputs
 CLI entry point -> P1 paths + P2 validation/experiment/sweep/report paths
 application     -> private P2 adapter state + immutable snapshots/checkpoints/exports
 GUI viewer      -> immutable application snapshot value types + PyQtGraph
+GUI editor      -> existing parameter schemas + isolated draft/persistence state
 tests           -> public component interfaces
 ```
 
@@ -443,5 +446,51 @@ viewer       -X-> application service, solver controls, inspection, or export
 
 Headless acceptance tests use the real P2 application path at its reference
 scale and compare each displayed scalar image to the canonical exported NumPy
-array. P3-WP03 adds no experiment editor, simulation controls, checkpoint UI,
-cell inspection, worker, analytics, new export, or scientific behavior.
+array. P3-WP03 adds no simulation controls, checkpoint UI, cell inspection,
+worker, analytics, new export, or scientific behavior.
+
+## P3-WP04 experiment editor
+
+`biomesh.gui.experiment_document` registers the five existing frozen Pydantic
+biological-parameter schemas without copying their field rules or creating a
+new scientific schema. `ExperimentEditorSession` holds mutable field text and
+explicit validation errors separately from `ParameterDocument`, which contains
+only an immutable validated schema instance. Invalid draft text has no
+validated document and cannot save or become eligible for later run controls.
+Schema-valid records retaining unresolved value or provenance fields remain
+explicitly `CALIBRATION_REQUIRED` and run-ineligible.
+
+`biomesh.gui.experiment_editor.ExperimentEditor` builds controls from
+`BiologicalParameter.model_fields` and the parameter records accepted by the
+selected schema. Names and validated SI units are read-only; value, source,
+uncertainty, notes, and calibration status remain editable only in draft
+sessions. Every validation error is displayed at its field, parameter, or
+document boundary. UI preferences stay in their separate versioned JSON store.
+
+Repository parameter files support two explicit modes. Templates create
+unsaved editable copies without supplying values. Audited presets verify the
+exact SHA-256 values accepted at P2A implementation revision
+`6adb5def6f094762cb79ba3a2eddeede6007a2f5`, open read-only, and remain protected
+from both direct save and editable-clone overwrite. Valid saves use a temporary
+file in the target directory, reload through the same schema to verify equal
+semantics, and then replace atomically. Existing user files require explicit
+overwrite intent.
+
+```text
+existing parameter schema -> immutable ParameterDocument
+                                     |
+                                     v
+                         isolated editable field text
+                                     |
+                            strict revalidation
+                                     |
+                 valid -> atomic TOML semantic round-trip
+               invalid -> errors + no save/run eligibility
+
+UI preferences -X-> parameter document or editor scientific configuration
+GUI editor     -X-> application service, solver, worker, or run controls
+```
+
+P3-WP04 changes no biological equation, parameter schema, application request,
+fixture, update order, output, or snapshot. Run controls, checkpoint UI,
+inspection, workers, analytics, and additional export remain P3-WP05/P3-WP06.

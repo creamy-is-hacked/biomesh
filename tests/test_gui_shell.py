@@ -102,6 +102,7 @@ def test_gui_module_starts_headlessly(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=environment,
+        cwd=tmp_path,
     )
 
     assert result.returncode == 0, result.stderr

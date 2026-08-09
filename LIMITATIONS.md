@@ -1,5 +1,25 @@
 # Limitations
 
+## P3-WP04 – Experiment editor
+
+- The editor covers only the five existing biological-parameter TOML schemas.
+  It does not define a P4 project/campaign model, change the immutable P3-WP01
+  request type, or make arbitrary edited parameters executable through the
+  accepted manufactured fixture path.
+- Repository templates preserve all unresolved values and provenance exactly;
+  no defaults, constants, sources, uncertainties, citations, or calibration
+  results are supplied. A schema-valid document containing any
+  `CALIBRATION_REQUIRED` value or provenance remains run-ineligible.
+- P2A presets are SHA-256-bound to the accepted implementation revision and
+  read-only. Users may create editable copies, but neither direct preset views
+  nor copies may overwrite the protected repository records.
+- Editor text and validation errors are UI state. Only an immutable existing
+  Pydantic schema instance is accepted as scientific configuration. Saves are
+  atomic, require a valid draft, and are reloaded before replacement to prove
+  semantic round-trip; overwriting other user files requires explicit intent.
+- P3-WP04 adds no run/pause/step/stop controls, checkpoint UI, cell inspection,
+  worker, analytics, additional export, or scientific behavior.
+
 ## P3-WP03 – Simulation viewer
 
 - The PyQtGraph viewer consumes only immutable P3-WP01 snapshots; it does not
@@ -15,14 +35,14 @@
 - Frame limiting retains only the newest pending immutable snapshot. It does
   not create a worker or simulation speed control. Hidden layers remain in the
   scene but skip per-snapshot cell-path rebuilds and field-image uploads.
-- Experiment editing, run controls, checkpoint interaction, inspection,
-  workers, analytics, and additional export remain later P3 work packages.
+- Run controls, checkpoint interaction, inspection, workers, analytics, and
+  additional export remain later P3 work packages.
 
 ## P3-WP02 – Desktop shell
 
 - The PySide6 shell supplies desktop chrome around the P3-WP03 viewer.
-  Experiment editing, simulation controls, checkpoints, inspection, workers,
-  analytics, and additional exports remain later P3 work packages.
+  Simulation controls, checkpoints, inspection, workers, analytics, and
+  additional exports remain later P3 work packages.
 - Recent projects are opaque readable-file references because P3-WP02 defines
   no project schema. Selecting one updates only the shell label, status, recent
   menu, and UI preference record; it does not load or alter scientific state.
@@ -48,8 +68,9 @@
   artifacts. Additional formats, live export, and analytics belong to later P3
   work packages.
 - P3-WP01 remains synchronous and independent of PySide. P3-WP03 provides only
-  a snapshot consumer; the shell does not yet connect an editor, worker,
-  cancellation, or simulation controls.
+  a snapshot consumer, and P3-WP04 does not alter the application request or
+  execution path; the shell does not yet connect a worker, cancellation, or
+  simulation controls.
 
 ## P2A – Phase 2 Audit
 

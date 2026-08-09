@@ -81,6 +81,14 @@ All notable repository changes are documented here.
   Hidden layers skip cell-path rebuilds and field-image uploads; headless
   application-path tests compare displayed fields with canonical exported
   NumPy arrays without changing the immutable application API or simulation.
+- P3-WP04 – A schema-generated editor for all five existing validated
+  biological-parameter documents. It displays complete SI provenance and
+  explicit validation errors, keeps mutable draft/UI state separate from
+  immutable validated configurations, atomically saves and semantically
+  reloads TOML, rejects invalid or unresolved run eligibility, and provides
+  editable templates plus SHA-256-bound read-only P2A presets that cannot be
+  overwritten. It adds no run controls, worker, project model, export, or
+  scientific behavior.
 
 ### Audit findings
 
