@@ -1,4 +1,4 @@
-"""P3-WP02 Qt Widgets shell around the immutable application boundary."""
+"""P3 desktop shell with the snapshot-only P3-WP03 viewer."""
 
 from __future__ import annotations
 
@@ -24,10 +24,11 @@ from biomesh.gui.preferences import (
     UiPreferencesError,
     UiPreferencesStore,
 )
+from biomesh.gui.viewer import SimulationViewer
 
 
 class MainWindow(QMainWindow):
-    """Desktop chrome only; it never reads or mutates scientific state."""
+    """Desktop chrome and viewer; neither owns mutable scientific state."""
 
     def __init__(self, preferences_store: UiPreferencesStore | None = None) -> None:
         super().__init__()
@@ -45,7 +46,7 @@ class MainWindow(QMainWindow):
             self._preferences_load_failed = True
             preference_error = str(error)
 
-        self._build_central_placeholder()
+        self._build_central_viewer()
         self._build_docks()
         self._build_menus()
         self.setStatusBar(QStatusBar(self))
@@ -123,21 +124,9 @@ class MainWindow(QMainWindow):
         self.save_ui_preferences()
         event.accept()
 
-    def _build_central_placeholder(self) -> None:
-        placeholder = QWidget(self)
-        placeholder.setObjectName("desktopShellPlaceholder")
-        layout = QVBoxLayout(placeholder)
-        heading = QLabel("BioMesh Desktop", placeholder)
-        heading.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        detail = QLabel(
-            "The simulation viewer is introduced in P3-WP03.", placeholder
-        )
-        detail.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addStretch()
-        layout.addWidget(heading)
-        layout.addWidget(detail)
-        layout.addStretch()
-        self.setCentralWidget(placeholder)
+    def _build_central_viewer(self) -> None:
+        self._viewer = SimulationViewer(self)
+        self.setCentralWidget(self._viewer)
 
     def _build_docks(self) -> None:
         self._project_dock = QDockWidget("Project", self)
@@ -251,6 +240,6 @@ class MainWindow(QMainWindow):
         QMessageBox.about(
             self,
             "About BioMesh",
-            "BioMesh P3-WP02 desktop shell. Scientific behavior remains owned "
-            "by the immutable application API.",
+            "BioMesh P3-WP03 desktop viewer. Scientific behavior remains owned "
+            "by the immutable application API; rendering consumes snapshots only.",
         )

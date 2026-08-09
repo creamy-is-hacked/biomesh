@@ -243,7 +243,7 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 | --- | --- | --- |
 | P3-WP01 | Stable application API | COMPLETE |
 | P3-WP02 | Desktop shell | COMPLETE |
-| P3-WP03 | Simulation viewer | INCOMPLETE |
+| P3-WP03 | Simulation viewer | COMPLETE |
 | P3-WP04 | Experiment editor | INCOMPLETE |
 | P3-WP05 | Controls, checkpoints, and inspection | INCOMPLETE |
 | P3-WP06 | Analytics and export | INCOMPLETE |
@@ -280,6 +280,23 @@ P3-WP02 validation evidence:
   passed 161 tests, Ruff, strict mypy, `git diff --check`, module help, and the
   offscreen `python -m biomesh.gui --smoke-test` application path.
 
+P3-WP03 validation evidence:
+
+- `biomesh.gui.viewer.SimulationViewer` renders immutable snapshot capsules in
+  SI coordinates and the five immutable scalar arrays in explicit grid-index
+  coordinates through PyQtGraph. Separate canvases avoid inventing a physical
+  field extent absent from the frozen P3-WP01 snapshot contract.
+- Mouse navigation and explicit zoom, pan, and fit operations are available.
+  Each layer has visibility, opacity, and a unit/range legend. A newest-frame
+  limiter bounds presentation rate; focused work counters verify that hidden
+  cells skip path rebuilds and hidden fields skip image uploads.
+- The focused offscreen shell/viewer gate passed 7 tests. Its real P2
+  application-path probe rendered the reference-scale final snapshot in under
+  one second and matched all five displayed fields to canonical exported NumPy
+  arrays at `rtol=1e-12`, `atol=1e-15`. The complete Python 3.14.4 gate passed
+  162 tests, Ruff, strict mypy, `git diff --check`, module help, and the
+  offscreen GUI smoke path.
+
 ## P4 – Phase 4 – Research Platform
 
 Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
@@ -297,7 +314,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3-WP03 – Simulation viewer`.
+`P3-WP04 – Experiment editor`.
 
 ## Remaining Issues
 
@@ -306,6 +323,6 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 - The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
   through its approved accepted-audit workflow; P2A does not retroactively
   create it.
-- P3-WP02 is complete. P3-WP03 is the first incomplete package; the shell has
-  no simulation viewer, experiment editor, run controls, worker, analytics, or
-  later P3 behavior.
+- P3-WP03 is complete. P3-WP04 is the first incomplete package; the desktop has
+  no experiment editor, run controls, worker, inspection, analytics, additional
+  export, or later P3 behavior.

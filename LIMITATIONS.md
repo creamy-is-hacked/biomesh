@@ -1,11 +1,28 @@
 # Limitations
 
+## P3-WP03 – Simulation viewer
+
+- The PyQtGraph viewer consumes only immutable P3-WP01 snapshots; it does not
+  read live solver arrays, construct an application service, or change any
+  scientific parameter or update path.
+- The frozen snapshot contract contains cell coordinates in metres and scalar
+  array shapes/values, but no physical field width or height. Cells and fields
+  therefore use separate coordinate-faithful canvases rather than an invented
+  overlay transform. Fields are labelled by row and column index.
+- Layer legends report the exact displayed minimum, maximum, and snapshot unit.
+  A uniform field receives a display-only color-range margin; its image values
+  remain unchanged. No interpolation or scientific normalization is applied.
+- Frame limiting retains only the newest pending immutable snapshot. It does
+  not create a worker or simulation speed control. Hidden layers remain in the
+  scene but skip per-snapshot cell-path rebuilds and field-image uploads.
+- Experiment editing, run controls, checkpoint interaction, inspection,
+  workers, analytics, and additional export remain later P3 work packages.
+
 ## P3-WP02 – Desktop shell
 
-- The PySide6 shell supplies desktop chrome only. Its central area is an
-  explicit placeholder; rendering, experiment editing, simulation controls,
-  checkpoints, inspection, workers, analytics, and additional exports remain
-  later P3 work packages.
+- The PySide6 shell supplies desktop chrome around the P3-WP03 viewer.
+  Experiment editing, simulation controls, checkpoints, inspection, workers,
+  analytics, and additional exports remain later P3 work packages.
 - Recent projects are opaque readable-file references because P3-WP02 defines
   no project schema. Selecting one updates only the shell label, status, recent
   menu, and UI preference record; it does not load or alter scientific state.
@@ -30,8 +47,9 @@
 - Export preserves the existing completed raw Parquet, NumPy, and provenance
   artifacts. Additional formats, live export, and analytics belong to later P3
   work packages.
-- P3-WP01 remains synchronous and independent of PySide. The P3-WP02 shell does
-  not yet connect it to a renderer, editor, worker, cancellation, or controls.
+- P3-WP01 remains synchronous and independent of PySide. P3-WP03 provides only
+  a snapshot consumer; the shell does not yet connect an editor, worker,
+  cancellation, or simulation controls.
 
 ## P2A – Phase 2 Audit
 

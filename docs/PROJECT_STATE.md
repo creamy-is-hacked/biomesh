@@ -4,20 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-09 after P3-WP02 completed its local acceptance
+Snapshot verified: 2026-08-09 after P3-WP03 completed its local acceptance
 gate. P2 remains the latest audited and accepted phase at implementation commit
 `6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in progress and has not been
-audited. The Python 3.14 full gate passes 161 tests.
+audited. The Python 3.14 full gate passes 162 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P3 – Phase 3 – Desktop GUI (in progress) |
-| Current work package | P3-WP03 – Simulation viewer is the first `INCOMPLETE` item |
+| Current work package | P3-WP04 – Experiment editor is the first `INCOMPLETE` item |
 | Current branch | `phase-3-desktop-gui` |
 | Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
-| Current test count | 161 passed (`pytest -q`, 2026-08-09) |
-| Next planned work package | P3-WP03 – Simulation viewer |
+| Current test count | 162 passed (`pytest -q`, 2026-08-09) |
+| Next planned work package | P3-WP04 – Experiment editor |
 
 ## Outstanding technical debt
 
@@ -42,11 +42,11 @@ audited. The Python 3.14 full gate passes 161 tests.
 - P3-WP01 controls only the existing manufactured P2 fixture path. It is
   synchronous and headless; checkpoints are hash-verified deterministic replay
   positions, and export preserves the existing completed raw artifact set.
-- P3-WP02 is desktop chrome only. Recent projects are opaque readable-file
-  references, and separately persisted UI preferences contain only window
-  layout and recent paths. The shell has no viewer, editor, run controls,
-  worker, analytics, additional export, or scientific behavior. P3 remains
-  unaudited.
+- P3-WP03 renders immutable snapshots only. Cells retain SI coordinates in a
+  separate canvas from grid-indexed fields because P3-WP01 exposes no physical
+  field extent. Recent projects remain opaque readable-file references; there
+  is no editor, run controls, worker, inspection, analytics, additional export,
+  or scientific behavior. P3 remains unaudited.
 - License selection is pending.
 
 ## Update policy

@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QApplication, QDockWidget, QMenu, QPlainTextEdit
 
 from biomesh.gui.main_window import MainWindow
 from biomesh.gui.preferences import UiPreferences, UiPreferencesStore
+from biomesh.gui.viewer import SimulationViewer
 
 
 def main(root: Path) -> int:
@@ -26,6 +27,7 @@ def main(root: Path) -> int:
     window = MainWindow(UiPreferencesStore(preferences_file))
     window.show()
     application.processEvents()
+    assert isinstance(window.centralWidget(), SimulationViewer)
     assert window.menuBar().findChild(QMenu, "fileMenu") is not None
     assert window.menuBar().findChild(QMenu, "viewMenu") is not None
     assert window.menuBar().findChild(QMenu, "helpMenu") is not None

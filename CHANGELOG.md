@@ -75,6 +75,12 @@ All notable repository changes are documented here.
   user's configuration directory. Qt runs independently of the scientific
   application service; no viewer, editor, worker, analytics, controls, export,
   or scientific behavior was added.
+- P3-WP03 – A PyQtGraph-backed, snapshot-only simulation viewer with separate
+  coordinate-faithful cell and scalar-field canvases, zoom, pan, fit, per-layer
+  visibility and opacity, value legends, and newest-frame rate limiting.
+  Hidden layers skip cell-path rebuilds and field-image uploads; headless
+  application-path tests compare displayed fields with canonical exported
+  NumPy arrays without changing the immutable application API or simulation.
 
 ### Audit findings
 

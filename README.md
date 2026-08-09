@@ -9,15 +9,14 @@ into a Linux desktop research platform.
 
 The latest accepted phase is **P2 – Phase 2 – Colony System**. Its independent
 2026-08-08 audit passed with recorded limitations and is represented by the
-`v0.2.1-audit` tag. **P3 – Phase 3 – Desktop GUI** is in progress: P3-WP01,
-the stable headless application API, is complete locally, and P3-WP02 – Desktop
-shell is complete locally. P3-WP03 – Simulation viewer is next. P3 has not
-been audited.
+`v0.2.1-audit` tag. **P3 – Phase 3 – Desktop GUI** is in progress: P3-WP01
+through P3-WP03 are complete locally, and P3-WP04 – Experiment editor is next.
+P3 has not been audited.
 
-The current desktop GUI is shell-only: menus, docks, status, recent project
-references, an error console, and separate UI preferences. Its central viewer
-area is intentionally a placeholder. The application API remains synchronous
-and controls the existing manufactured P2 fixture path independently.
+The current desktop GUI has menus, docks, status, recent project references, an
+error console, separate UI preferences, and a snapshot-only simulation viewer.
+The application API remains synchronous and controls the existing manufactured
+P2 fixture path independently.
 
 See [the authoritative phase tracker](docs/PHASE_STATUS.md) and the
 [current project state](docs/PROJECT_STATE.md) for the live status.
@@ -38,7 +37,9 @@ The repository currently provides:
 - the P3-WP01 typed, synchronous application-service boundary for run, pause,
   step, checkpoint/resume, inspection, snapshots, and canonical export; and
 - the P3-WP02 PySide6 desktop shell with menus, dockable project/error panels,
-  status reporting, recent file references, and UI-only XDG preferences.
+  status reporting, recent file references, and UI-only XDG preferences; and
+- the P3-WP03 PyQtGraph viewer for immutable cell geometry and scalar fields,
+  with zoom, pan, fit, layer visibility/opacity, legends, and frame limiting.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -157,11 +158,11 @@ boundaries.
 
 ## Roadmap
 
-At a high level, the remaining P3 work is the simulation viewer, experiment
-editor, controls/checkpoints/inspection, worker, and analytics/export surface,
-followed by the P3A audit. P4 then covers the broader research platform. These
-are roadmap items, not completed functionality. BioMesh is not called v1; no
-v1 milestone has been reached.
+At a high level, the remaining P3 work is the experiment editor,
+controls/checkpoints/inspection, worker, and analytics/export surface, followed
+by the P3A audit. P4 then covers the broader research platform. These are
+roadmap items, not completed functionality. BioMesh is not called v1; no v1
+milestone has been reached.
 
 ## License
 

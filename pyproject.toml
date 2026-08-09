@@ -13,6 +13,7 @@ dependencies = [
   "numba",
   "numpy",
   "pyarrow",
+  "pyqtgraph>=0.14.0",
   "PySide6>=6.10.1",
   "pydantic",
   "scipy",

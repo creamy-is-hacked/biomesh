@@ -1,5 +1,5 @@
-"""Thin P3-WP02 desktop shell with no scientific behavior.
+"""Thin P3-WP03 desktop shell and snapshot viewer with no scientific behavior.
 
-Qt imports stay in the executable and window modules so non-GUI BioMesh
-processes do not load Qt's bundled graphics libraries.
+Qt imports stay in GUI modules so non-GUI BioMesh processes do not load Qt's
+bundled graphics libraries.
 """

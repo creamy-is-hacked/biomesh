@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P3-WP01
+## Current architecture through P3-WP03
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -17,6 +17,8 @@ P2-WP06 supplies the replicated campaign harness and the manufactured P2
 application adapter exposed through the CLI.
 P3-WP01 adds a synchronous application-service boundary that controls that
 same adapter at accepted solver boundaries and returns only immutable values.
+P3-WP02 adds UI-only desktop chrome, and P3-WP03 adds a PyQtGraph viewer that
+consumes those immutable snapshots without constructing or mutating the engine.
 
 Dependency direction is intentionally simple:
 
@@ -37,6 +39,7 @@ experiments     -> campaign schema + caller-supplied run executor + aggregation
 P2 campaign     -> approved P2 interfaces + experiments + outputs
 CLI entry point -> P1 paths + P2 validation/experiment/sweep/report paths
 application     -> private P2 adapter state + immutable snapshots/checkpoints/exports
+GUI viewer      -> immutable application snapshot value types + PyQtGraph
 tests           -> public component interfaces
 ```
 
@@ -407,3 +410,38 @@ Qt imports are confined to GUI modules. Headless widget tests launch them in
 offscreen subprocesses, so the non-GUI scientific and reporting process does
 not load Qt's bundled graphics libraries. P3-WP02 adds no viewer, editor,
 worker, controls, inspection, analytics, or export behavior.
+
+## P3-WP03 simulation viewer
+
+`biomesh.gui.viewer.SimulationViewer` is the central desktop widget. It accepts
+only complete immutable `RunSnapshot` values and retains at most the newest
+pending snapshot when the configured frame-rate ceiling delays presentation.
+It never imports `ApplicationService`, reads private solver state, advances a
+simulation, or writes output.
+
+PyQtGraph image items receive the five read-only `FieldSnapshot` arrays without
+interpolation or scientific normalization. Capsule paths are rebuilt from the
+frozen `CellSnapshot` geometry. Layer visibility is checked before either work
+operation, and showing a formerly hidden layer uploads only that layer from the
+latest immutable snapshot. Opacity changes affect graphics items only.
+
+The P3-WP01 contract exposes cell geometry in metres and field array shape,
+unit, and values, but no physical domain extent. The viewer therefore uses two
+separate canvases: SI axes for cells and row/column axes for fields. This avoids
+inventing a spatial alignment. Both canvases support mouse zoom and pan plus
+explicit zoom, pan, and fit operations; layer controls provide value/unit
+legends.
+
+```text
+immutable RunSnapshot -> frame limiter -> newest accepted snapshot
+                                 |-> visible cells -> SI capsule path
+                                 `-> visible fields -> exact grid image values
+
+hidden layer -X-> per-frame path rebuild or image upload
+viewer       -X-> application service, solver controls, inspection, or export
+```
+
+Headless acceptance tests use the real P2 application path at its reference
+scale and compare each displayed scalar image to the canonical exported NumPy
+array. P3-WP03 adds no experiment editor, simulation controls, checkpoint UI,
+cell inspection, worker, analytics, new export, or scientific behavior.

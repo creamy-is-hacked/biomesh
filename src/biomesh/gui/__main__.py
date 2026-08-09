@@ -1,4 +1,4 @@
-"""Executable entry point for the P3-WP02 desktop shell."""
+"""Executable entry point for the P3-WP03 desktop shell and viewer."""
 
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ from biomesh.gui.preferences import UiPreferencesStore
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the independent desktop-shell command parser."""
+    """Build the independent desktop-GUI command parser."""
     parser = argparse.ArgumentParser(
         prog="biomesh-gui",
-        description="BioMesh P3-WP02 Linux desktop shell.",
+        description="BioMesh P3-WP03 Linux desktop shell and snapshot viewer.",
     )
     parser.add_argument(
         "--version",
@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Start the desktop shell or perform its headless startup smoke test."""
+    """Start the desktop GUI or perform its headless startup smoke test."""
     arguments = build_parser().parse_args(argv)
     application = QApplication.instance()
     if application is None:
