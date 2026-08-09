@@ -13,6 +13,7 @@ dependencies = [
   "numba",
   "numpy",
   "pyarrow",
+  "PySide6>=6.10.1",
   "pydantic",
   "scipy",
 ]
@@ -26,6 +27,7 @@ dev = [
 
 [project.scripts]
 biomesh = "biomesh.__main__:main"
+biomesh-gui = "biomesh.gui.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/biomesh"]

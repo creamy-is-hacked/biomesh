@@ -1,5 +1,23 @@
 # Limitations
 
+## P3-WP02 – Desktop shell
+
+- The PySide6 shell supplies desktop chrome only. Its central area is an
+  explicit placeholder; rendering, experiment editing, simulation controls,
+  checkpoints, inspection, workers, analytics, and additional exports remain
+  later P3 work packages.
+- Recent projects are opaque readable-file references because P3-WP02 defines
+  no project schema. Selecting one updates only the shell label, status, recent
+  menu, and UI preference record; it does not load or alter scientific state.
+- UI preferences are strict versioned JSON containing only recent absolute
+  paths and base64-encoded Qt window geometry/dock state. A missing file uses
+  first-run defaults; invalid state is shown in the error console. Preferences
+  are not biological parameters, experiment definitions, or provenance.
+- Widget tests run in offscreen subprocesses so Qt's bundled graphics
+  libraries do not enter the scientific/reporting test process. Supported
+  interactive Linux display environments still require a functioning Qt
+  platform plugin.
+
 ## P3-WP01 – Stable application API
 
 - The application service controls only the accepted manufactured P2 fixture
@@ -12,8 +30,8 @@
 - Export preserves the existing completed raw Parquet, NumPy, and provenance
   artifacts. Additional formats, live export, and analytics belong to later P3
   work packages.
-- P3-WP01 is synchronous and headless. It adds no PySide dependency, desktop
-  shell, renderer, editor, worker, cancellation, or UI preference behavior.
+- P3-WP01 remains synchronous and independent of PySide. The P3-WP02 shell does
+  not yet connect it to a renderer, editor, worker, cancellation, or controls.
 
 ## P2A – Phase 2 Audit
 

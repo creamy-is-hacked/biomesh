@@ -1,0 +1,256 @@
+"""P3-WP02 Qt Widgets shell around the immutable application boundary."""
+
+from __future__ import annotations
+
+import base64
+from pathlib import Path
+
+from PySide6.QtCore import QByteArray, Qt, Slot
+from PySide6.QtGui import QAction, QCloseEvent
+from PySide6.QtWidgets import (
+    QDockWidget,
+    QFileDialog,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPlainTextEdit,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
+
+from biomesh.gui.preferences import (
+    UiPreferences,
+    UiPreferencesError,
+    UiPreferencesStore,
+)
+
+
+class MainWindow(QMainWindow):
+    """Desktop chrome only; it never reads or mutates scientific state."""
+
+    def __init__(self, preferences_store: UiPreferencesStore | None = None) -> None:
+        super().__init__()
+        self.setObjectName("biomeshMainWindow")
+        self.setWindowTitle("BioMesh")
+        self.resize(1100, 720)
+        self._preferences_store = preferences_store or UiPreferencesStore()
+        self._preferences = UiPreferences()
+        self._preferences_load_failed = False
+        self._current_project: Path | None = None
+        preference_error: str | None = None
+        try:
+            self._preferences = self._preferences_store.load()
+        except UiPreferencesError as error:
+            self._preferences_load_failed = True
+            preference_error = str(error)
+
+        self._build_central_placeholder()
+        self._build_docks()
+        self._build_menus()
+        self.setStatusBar(QStatusBar(self))
+        self.statusBar().showMessage("Ready")
+        self._restore_window_layout()
+        self._rebuild_recent_projects_menu()
+        if preference_error is not None:
+            self.report_error(preference_error)
+
+    @property
+    def preferences(self) -> UiPreferences:
+        """Expose immutable UI-only preferences for shell integration tests."""
+        return self._preferences
+
+    @property
+    def current_project(self) -> Path | None:
+        """Return the current opaque UI project reference, if any."""
+        return self._current_project
+
+    def open_project_reference(self, project_file: Path) -> bool:
+        """Record an existing readable file without interpreting its contents."""
+        try:
+            resolved = project_file.expanduser().resolve(strict=True)
+            if not resolved.is_file():
+                raise OSError("path is not a regular file")
+            with resolved.open("rb") as stream:
+                stream.read(1)
+        except FileNotFoundError:
+            self.report_error(
+                f"Unable to open project reference {project_file}: file does not exist"
+            )
+            return False
+        except OSError as error:
+            self.report_error(
+                f"Unable to open project reference {project_file}: {error}"
+            )
+            return False
+
+        self._current_project = resolved
+        self._preferences = self._preferences.with_recent_project(resolved)
+        self._project_path.setText(str(resolved))
+        self.statusBar().showMessage(f"Project reference: {resolved}")
+        self._rebuild_recent_projects_menu()
+        return True
+
+    def report_error(self, message: str) -> None:
+        """Display a clear shell error without hiding it in a transient dialog."""
+        self._error_console.appendPlainText(f"ERROR: {message}")
+        self._error_dock.show()
+        self.statusBar().showMessage("Error - see Error Console")
+
+    def save_ui_preferences(self) -> bool:
+        """Persist window chrome separately from scientific configuration."""
+        if self._preferences_load_failed:
+            self.report_error(
+                "Invalid UI preferences were not overwritten; remove or repair "
+                f"{self._preferences_store.path}"
+            )
+            return False
+        geometry = bytes(self.saveGeometry().toBase64().data()).decode("ascii")
+        state = bytes(self.saveState().toBase64().data()).decode("ascii")
+        self._preferences = self._preferences.with_window_state(
+            geometry=geometry,
+            state=state,
+        )
+        try:
+            self._preferences_store.save(self._preferences)
+        except UiPreferencesError as error:
+            self.report_error(str(error))
+            return False
+        return True
+
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
+        """Save only UI state when closing the desktop shell."""
+        self.save_ui_preferences()
+        event.accept()
+
+    def _build_central_placeholder(self) -> None:
+        placeholder = QWidget(self)
+        placeholder.setObjectName("desktopShellPlaceholder")
+        layout = QVBoxLayout(placeholder)
+        heading = QLabel("BioMesh Desktop", placeholder)
+        heading.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        detail = QLabel(
+            "The simulation viewer is introduced in P3-WP03.", placeholder
+        )
+        detail.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addStretch()
+        layout.addWidget(heading)
+        layout.addWidget(detail)
+        layout.addStretch()
+        self.setCentralWidget(placeholder)
+
+    def _build_docks(self) -> None:
+        self._project_dock = QDockWidget("Project", self)
+        self._project_dock.setObjectName("projectDock")
+        project_widget = QWidget(self._project_dock)
+        project_layout = QVBoxLayout(project_widget)
+        project_layout.addWidget(QLabel("Current project reference", project_widget))
+        self._project_path = QLabel("No project reference selected", project_widget)
+        self._project_path.setObjectName("currentProjectPath")
+        self._project_path.setWordWrap(True)
+        project_layout.addWidget(self._project_path)
+        project_layout.addStretch()
+        self._project_dock.setWidget(project_widget)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self._project_dock)
+
+        self._error_dock = QDockWidget("Error Console", self)
+        self._error_dock.setObjectName("errorConsoleDock")
+        self._error_console = QPlainTextEdit(self._error_dock)
+        self._error_console.setObjectName("errorConsole")
+        self._error_console.setReadOnly(True)
+        self._error_console.setPlaceholderText("Desktop shell errors appear here.")
+        self._error_dock.setWidget(self._error_console)
+        self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self._error_dock)
+
+    def _build_menus(self) -> None:
+        file_menu = self.menuBar().addMenu("&File")
+        file_menu.setObjectName("fileMenu")
+        open_action = QAction("&Open Project Reference...", self)
+        open_action.setObjectName("openProjectAction")
+        open_action.setShortcut("Ctrl+O")
+        open_action.triggered.connect(self._choose_project_reference)
+        file_menu.addAction(open_action)
+
+        self._recent_menu = file_menu.addMenu("Recent Projects")
+        self._recent_menu.setObjectName("recentProjectsMenu")
+        file_menu.addSeparator()
+        exit_action = QAction("E&xit", self)
+        exit_action.setObjectName("exitAction")
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        view_menu = self.menuBar().addMenu("&View")
+        view_menu.setObjectName("viewMenu")
+        view_menu.addAction(self._project_dock.toggleViewAction())
+        view_menu.addAction(self._error_dock.toggleViewAction())
+
+        help_menu = self.menuBar().addMenu("&Help")
+        help_menu.setObjectName("helpMenu")
+        about_action = QAction("&About BioMesh", self)
+        about_action.setObjectName("aboutAction")
+        about_action.triggered.connect(self._show_about)
+        help_menu.addAction(about_action)
+
+    def _restore_window_layout(self) -> None:
+        geometry = self._preferences.window_geometry
+        if geometry is not None:
+            restored = self.restoreGeometry(
+                QByteArray(base64.b64decode(geometry, validate=True))
+            )
+            if not restored:
+                self.report_error("Stored UI window geometry is invalid")
+        state = self._preferences.window_state
+        if state is not None:
+            restored = self.restoreState(
+                QByteArray(base64.b64decode(state, validate=True))
+            )
+            if not restored:
+                self.report_error("Stored UI dock state is invalid")
+
+    def _rebuild_recent_projects_menu(self) -> None:
+        self._recent_menu.clear()
+        if not self._preferences.recent_projects:
+            empty = self._recent_menu.addAction("No Recent Projects")
+            empty.setEnabled(False)
+            return
+        for path in self._preferences.recent_projects:
+            action = self._recent_menu.addAction(path)
+            action.setData(path)
+            action.triggered.connect(
+                lambda _checked=False, project=path: self.open_project_reference(
+                    Path(project)
+                )
+            )
+        self._recent_menu.addSeparator()
+        clear_action = self._recent_menu.addAction("Clear Recent Projects")
+        clear_action.triggered.connect(self._clear_recent_projects)
+
+    @Slot()
+    def _choose_project_reference(self) -> None:
+        selected, _filter = QFileDialog.getOpenFileName(
+            self,
+            "Open Project Reference",
+            "",
+            "All files (*)",
+        )
+        if selected:
+            self.open_project_reference(Path(selected))
+
+    @Slot()
+    def _clear_recent_projects(self) -> None:
+        self._preferences = UiPreferences(
+            window_geometry=self._preferences.window_geometry,
+            window_state=self._preferences.window_state,
+        )
+        self._rebuild_recent_projects_menu()
+        self.statusBar().showMessage("Recent projects cleared")
+
+    @Slot()
+    def _show_about(self) -> None:
+        QMessageBox.about(
+            self,
+            "About BioMesh",
+            "BioMesh P3-WP02 desktop shell. Scientific behavior remains owned "
+            "by the immutable application API.",
+        )

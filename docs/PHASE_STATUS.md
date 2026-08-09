@@ -242,7 +242,7 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 | ID | Work package | Status |
 | --- | --- | --- |
 | P3-WP01 | Stable application API | COMPLETE |
-| P3-WP02 | Desktop shell | INCOMPLETE |
+| P3-WP02 | Desktop shell | COMPLETE |
 | P3-WP03 | Simulation viewer | INCOMPLETE |
 | P3-WP04 | Experiment editor | INCOMPLETE |
 | P3-WP05 | Controls, checkpoints, and inspection | INCOMPLETE |
@@ -263,6 +263,23 @@ P3-WP01 validation evidence:
 - Focused application/P2 validation passed 9 tests. The complete Python 3.14.4
   gate passed 151 tests, Ruff, strict mypy, `git diff --check`, and module help.
 
+P3-WP02 validation evidence:
+
+- `biomesh.gui.main_window.MainWindow` provides File/View/Help menus, two
+  dockable panels,
+  a read-only persistent error console, a status bar, and an intentionally
+  empty central placeholder. Project entries are opaque readable-file
+  references only; no project schema, scientific load, viewer, editor,
+  controls, worker, analytics, or export behavior is present.
+- Versioned UI preferences contain only recent paths and Qt window geometry/
+  dock state. They are strictly validated, atomically written to a separate
+  XDG configuration file, and never read or write biological parameters.
+- Six focused headless tests cover startup, shell chrome, recent projects,
+  missing/invalid file errors, corrupt preferences, round-trip persistence,
+  and unchanged biological-parameter hashes. The complete Python 3.14.4 gate
+  passed 161 tests, Ruff, strict mypy, `git diff --check`, module help, and the
+  offscreen `python -m biomesh.gui --smoke-test` application path.
+
 ## P4 – Phase 4 – Research Platform
 
 Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
@@ -280,7 +297,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3-WP02 – Desktop shell`.
+`P3-WP03 – Simulation viewer`.
 
 ## Remaining Issues
 
@@ -289,5 +306,6 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 - The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
   through its approved accepted-audit workflow; P2A does not retroactively
   create it.
-- P3-WP01 is complete. P3-WP02 is the first incomplete package; no desktop
-  shell, viewer, editor, worker, or other P3-WP02+ behavior is implemented yet.
+- P3-WP02 is complete. P3-WP03 is the first incomplete package; the shell has
+  no simulation viewer, experiment editor, run controls, worker, analytics, or
+  later P3 behavior.

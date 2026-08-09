@@ -371,6 +371,39 @@ application API -/                    |
 private engine state -> immutable snapshot/checkpoint/inspection -> future GUI
 ```
 
-P3-WP01 remains synchronous and headless. It adds no PySide, desktop shell,
-renderer, experiment editor, worker, cancellation, live analytics, or new
-biology.
+The P3-WP01 boundary remains synchronous and headless. It imports no PySide,
+desktop shell, renderer, experiment editor, worker, cancellation, live
+analytics, or new biology.
+
+## P3-WP02 desktop shell
+
+`biomesh.gui` is a PySide6 Qt Widgets shell kept outside the application and
+scientific modules. The main window owns only desktop chrome: File, View, and
+Help menus; dockable project and error-console panels; a status bar; and an
+explicit central placeholder for P3-WP03. It neither constructs an
+`ApplicationService` nor imports scientific components.
+
+Project menu entries are opaque absolute paths to existing readable files.
+P3-WP02 records and displays these references but does not define a project
+format, parse experiments, select parameters, or start a run. Missing files,
+directories, unreadable paths, corrupt preferences, and invalid stored Qt
+layout bytes produce visible error-console messages instead of fallback
+scientific behavior.
+
+The UI preference store uses versioned JSON at
+`$XDG_CONFIG_HOME/biomesh/ui-preferences.json` (or the standard `~/.config`
+fallback). It strictly permits only recent paths, window geometry, and dock
+state, and writes atomically. It is structurally and physically separate from
+`parameters/`, experiments, checkpoints, and run artifacts.
+
+```text
+desktop shell -> opaque recent paths + UI-only preferences
+              -> error console + status bar + dock layout
+
+desktop shell -X-> scientific core or mutable application state
+```
+
+Qt imports are confined to GUI modules. Headless widget tests launch them in
+offscreen subprocesses, so the non-GUI scientific and reporting process does
+not load Qt's bundled graphics libraries. P3-WP02 adds no viewer, editor,
+worker, controls, inspection, analytics, or export behavior.

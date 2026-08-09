@@ -69,6 +69,12 @@ All notable repository changes are documented here.
   cell inspection, and canonical raw-artifact export operations. The service
   reuses the accepted P2 fixture adapter and exposes no mutable engine state,
   GUI toolkit, worker, viewer, or new scientific behavior.
+- P3-WP02 – A PySide6 Linux desktop shell with a main window, File/View/Help
+  menus, dockable project and error-console panels, a status bar, opaque recent
+  project references, and strict atomic UI-preference persistence under the
+  user's configuration directory. Qt runs independently of the scientific
+  application service; no viewer, editor, worker, analytics, controls, export,
+  or scientific behavior was added.
 
 ### Audit findings
 
