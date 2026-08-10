@@ -7,11 +7,10 @@ into a Linux desktop research platform.
 
 ## Current status
 
-The latest accepted phase is **P2 – Phase 2 – Colony System**. Its independent
-2026-08-08 audit passed with recorded limitations and is represented by the
-`v0.2.1-audit` tag. **P3 – Phase 3 – Desktop GUI** implementation packages
-P3-WP01 through P3-WP06 are complete locally. P3 has not been audited; P3A –
-Phase 3 Audit is next.
+The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
+2026-08-10 audit passed with recorded limitations and is represented by the
+`v0.3.1-audit` tag. P4-WP01 – Project and campaign model is the next incomplete
+work package; no P4 behavior is implemented yet.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -212,8 +211,8 @@ boundaries.
 
 ## Roadmap
 
-At a high level, the remaining P3 work is the independent P3A audit. P4 then
-covers the broader research platform. These are roadmap items, not completed
+P3 is accepted. P4 covers the broader research platform and begins with
+P4-WP01 – Project and campaign model. These are roadmap items, not completed
 functionality. BioMesh is not called v1; no v1 milestone has been reached.
 
 ## License

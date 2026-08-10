@@ -1,6 +1,12 @@
 # Limitations
 
-## P3 pre-audit verification remediation
+## P3A – Phase 3 Audit
+
+- The independent 2026-08-10 clean-clone rerun accepted Phase 3 with recorded
+  limitations; no Critical or Major finding remains.
+- Real desktop, worker, export, checkpoint, package, provenance, keyboard, and
+  minimum-display application paths passed. This is software validation, not
+  evidence of biological calibration or experimental validity.
 
 - `parameters/phase2_reference.yaml` is a strict selector for the existing
   manufactured producer fixture. Seed 42 is an independent deterministic
@@ -12,7 +18,9 @@
   Checkpoints remain hash-bound replay positions rather than serialized mutable
   solver state. Passing these commands proves software equivalence and replay,
   not biological validity.
-- P3 remains unaudited until every independent P3A condition passes.
+- P3A accepts the frontend-equivalence and deterministic checkpoint-replay
+  contracts at implementation commit
+  `ed062935552c6a5df639c56474c7854cac91bd69`.
 - The minimum supported desktop display is 1024×720. At that size, dock
   contents may require their local scroll bars; smaller displays are not
   claimed usable. Keyboard focus follows explicit lifecycle-control order and
@@ -36,10 +44,10 @@
 - Export runs on the existing worker thread and accepts cancellation before
   atomic directory publication. It is a single completed-run operation, not a
   persistent queue, campaign/project model, plugin exporter, or live-streaming
-  export service.
+  export service. P3A accepted these as recorded scope limitations.
 - Biological parameters and campaign inputs remain `CALIBRATION_REQUIRED`.
   Plots and exports are software representations, not calibration evidence or
-  biological validation. P3 remains unaudited pending P3A.
+  biological validation. P3A accepted this bounded representation contract.
 
 ## P3-WP05 – Controls, checkpoints, and inspection
 
@@ -59,7 +67,7 @@
 - P3-WP05 itself added no analytics, live plots, new export format,
   project/campaign model, persistent run queue, plugin, acceleration,
   calibration, or biology. P3-WP06 adds only the bounded analytics/export
-  surface described above; P3 remains unaudited.
+  surface described above; P3A accepted this scope boundary.
 
 ## P3-WP04 – Experiment editor
 
@@ -171,9 +179,9 @@
 
 - BM-008 and BM-009 remain deferred because the current repository contracts do
   not specify their required behavior sufficiently for a safe implementation.
-- BM-010 remains an active-development recheck for P3A. P3-WP05 now supplies a
-  worker/cancellation ordering contract and focused stop/error tests, but only
-  the future independent phase audit can close the recheck.
+- BM-010 is closed by P3A. Direct clean-clone worker, stop, export-cancellation,
+  responsiveness, and actionable-error probes passed without a Critical or
+  Major finding.
 
 ## P2-WP01 – Quorum signal
 

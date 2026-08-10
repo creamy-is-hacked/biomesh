@@ -247,7 +247,7 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 | P3-WP04 | Experiment editor | COMPLETE |
 | P3-WP05 | Controls, checkpoints, and inspection | COMPLETE |
 | P3-WP06 | Analytics and export | COMPLETE |
-| P3A | Phase 3 Audit | INCOMPLETE |
+| P3A | Phase 3 Audit | COMPLETE |
 
 P3-WP01 validation evidence:
 
@@ -371,13 +371,44 @@ P3A pre-audit blocker remediation evidence:
   P2 campaign and desktop selectors remain fixed at 101, 202, and 303.
 - Local Python 3.14.4 evidence passed 195 tests, Ruff, strict mypy,
   `git diff --check`, module help, offscreen GUI smoke, exact zero-mismatch
-  frontend comparison, and zero-mismatch checkpoint replay. P3A remains
-  `INCOMPLETE` pending a clean independent rerun.
+  frontend comparison, and zero-mismatch checkpoint replay. These were
+  pre-audit remediation results; the independent result is recorded below.
 - Display-usability prequalification reproduced a 1327×1173 implicit minimum,
   larger than the former 1100×720 default. The focused remediation contains
   rich dock content in local scroll areas, declares 1024×720 as the minimum
   supported display, and verifies both that exact composed size and keyboard
   traversal of primary controls. This changes presentation only.
+
+P3A independent audit evidence (2026-08-10):
+
+- Audit result: `PASS WITH RECORDED LIMITATIONS`; Phase 3 is accepted at pushed
+  implementation commit `ed062935552c6a5df639c56474c7854cac91bd69`. The
+  requested prerequisite `c2de0acfc1f025492069923f7594443b933e5acd` was
+  verified as an ancestor before the clean-clone audit.
+- A fresh Python 3.14.4 editable `.[dev]` install passed all mandatory commands
+  in document order: 195 full-suite tests, 2 audit-collection tests, GUI smoke,
+  zero-mismatch CLI/application equivalence, and zero-mismatch replay of all
+  15 checkpoint files. Ruff, strict mypy, `git diff --check`, module help, P1
+  validators/replay, and P2 fixture validation also passed.
+- Real application probes verified solver-boundary run, pause, step, stop,
+  checkpoint and resume; equal resumed/uninterrupted snapshots; immutable
+  visualization and inspection accuracy; schema-generated forms; explicit
+  validation and worker errors; analytics equality with stored metrics;
+  atomic cancellation; canonical artifact preservation; and complete export
+  provenance.
+- The exact 1024×720 window remained usable with local dock scrolling and
+  explicit keyboard traversal. A normal manufactured reference completed in
+  0.323156294063665 s with 239 event-loop iterations and a maximum observed
+  gap of 0.023815248045139015 s. Reference screenshots are retained under
+  `validation/p3a/`.
+- Fresh external Python 3.14.4 environments installed both wheel and sdist,
+  launched GUI smoke, reproduced zero frontend mismatches, and replayed the
+  packaged checkpoint without mismatch. Generated outputs remained ignored.
+- No Critical or Major finding remains. BM-010 is closed by direct worker,
+  cancellation, responsiveness, and actionable-error evidence. Biological
+  inputs remain SI-labelled, provenance-complete, and
+  `CALIBRATION_REQUIRED`; manufactured fixtures remain distinct from
+  biological evidence.
 
 ## Dedicated repository remediation after P3-WP04
 
@@ -406,9 +437,9 @@ to the established P3-WP04 scientific or editor behavior.
 - `BM-008` and `BM-009` are deferred. The current repository contracts do not
   establish the required behavior sufficiently to implement it without
   inventing policy or changing completed phase behavior.
-- `BM-010` remains `ACTIVE DEVELOPMENT – RECHECK` for P3A. P3-WP05 now supplies
-  a worker/cancellation ordering contract and focused stop/error tests; the
-  future independent phase audit must recheck it.
+- `BM-010` is closed by P3A. The independent clean-clone audit directly
+  exercised worker ordering, stop, export cancellation, responsiveness, and
+  propagated actionable errors without finding a Critical or Major defect.
 
 Remediation verification evidence: Python 3.14.4, 183 tests, Ruff, strict
 mypy, module and console CLI versions/help, `validate all`, offscreen GUI
@@ -434,7 +465,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3A – Phase 3 Audit`.
+`P4-WP01 – Project and campaign model`.
 
 ## Remaining Issues
 
@@ -442,6 +473,6 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3-WP06 is complete. P3A is the first incomplete item. The desktop has no
+- P3A accepted Phase 3. P4-WP01 is the first incomplete item. The desktop has no
   project/campaign model, persistent queue, plugin system, acceleration,
   calibration behavior, or P4 feature.

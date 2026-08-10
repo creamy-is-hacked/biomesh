@@ -4,20 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-10 after P3 pre-audit blocker remediation. P2
-remains the latest audited and accepted phase at
-implementation commit `6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in
-progress and has not been audited. The Python 3.14 full gate passes 195 tests.
+Snapshot verified: 2026-08-10 after the accepted P3A clean-clone audit. P3 is
+the latest audited and accepted phase at implementation commit
+`ed062935552c6a5df639c56474c7854cac91bd69`. The Python 3.14 full gate passes
+195 tests.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P3 – Phase 3 – Desktop GUI (in progress) |
-| Current work package | P3A – Phase 3 Audit is the first `INCOMPLETE` item |
-| Current branch | `phase-3-desktop-gui` |
-| Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
-| Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
+| Current phase | P4 – Phase 4 – Research Platform (not started) |
+| Current work package | P4-WP01 – Project and campaign model is the first `INCOMPLETE` item |
+| Current branch | `main` after the accepted-audit merge |
+| Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
+| Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
 | Current test count | 195 passed (`pytest -q`, 2026-08-10) |
-| Next planned work package | P3A – Phase 3 Audit |
+| Next planned work package | P4-WP01 – Project and campaign model |
 
 ## Outstanding technical debt
 
@@ -64,14 +64,15 @@ progress and has not been audited. The Python 3.14 full gate passes 195 tests.
   CSV/Parquet and PNG representations, and publishes atomically through the
   existing cancellable worker. Fresh-session checkpoint resume does not invent
   unseen earlier plot history. Project models, persistent queues, plugins,
-  acceleration, calibration behavior, and new biology remain absent. P3
-  remains unaudited.
+  acceleration, calibration behavior, and new biology remain absent. P3A
+  accepted these boundaries after zero-mismatch frontend and checkpoint
+  verification, direct desktop probes, and clean wheel/sdist application paths.
 - License selection is pending.
 - The post-P3-WP04 remediation fixes BM-001, BM-002, BM-003, BM-004, BM-005,
   BM-006, and BM-007. BM-008 and BM-009 remain deferred because their required
-  behavior is not established by the current contracts; BM-010 remains an
-  active-development recheck item for P3A; P3-WP05 now makes its
-  worker/cancellation ordering contract independently testable.
+  behavior is not established by the current contracts. P3A closes BM-010:
+  direct worker, stop, export-cancellation, responsiveness, and error probes
+  passed without adding scientific or P4 behavior.
 
 ## Update policy
 

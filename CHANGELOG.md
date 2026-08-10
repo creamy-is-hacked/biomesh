@@ -108,6 +108,17 @@ All notable repository changes are documented here.
 
 ### Audit findings
 
+- P3A – Independent clean-clone audit of pushed implementation commit
+  `ed062935552c6a5df639c56474c7854cac91bd69` passed with recorded
+  limitations. Python 3.14.4 installation, all 195 tests, the two audit
+  collections, Ruff, strict mypy, module help, GUI smoke, P1/P2 preservation,
+  zero-mismatch frontend comparison, 15-file checkpoint replay, real desktop
+  controls/inspection/analytics/export probes, 1024×720 responsiveness,
+  keyboard traversal, canonical artifacts, provenance, output hygiene, and
+  fresh wheel/sdist application paths passed. No Critical or Major finding
+  remains; manufactured fixtures remain separate from biological evidence and
+  all biological parameters remain `CALIBRATION_REQUIRED`.
+
 - P3A – The first independent audit attempt against
   `c2de0acfc1f025492069923f7594443b933e5acd` stopped with `FAIL`: the mandatory
   `compare-frontends` and `verify-checkpoint` CLI paths, reference selector,
@@ -146,7 +157,8 @@ All notable repository changes are documented here.
   selector remain fixed at 101, 202, and 303; audit seed 42 is isolated to the
   P3 application verification surface. Python 3.14.4, 195 tests, Ruff, strict
   mypy, module help, `git diff --check`, both mandatory CLI paths, and offscreen
-  GUI smoke passed locally. P3A remains incomplete pending a clean audit.
+  GUI smoke passed locally. The subsequent clean audit accepted P3 with the
+  recorded limitations above.
 - P3 display-usability remediation contains rich dock contents within local
   scroll areas, declares and verifies a 1024×720 supported minimum, and adds
   explicit logical keyboard focus order for run, lifecycle, speed, and
@@ -158,9 +170,9 @@ All notable repository changes are documented here.
   reports publish via retry-safe atomic staging; packaged wheels/sdists carry
   runtime fixtures; CI covers external package installs and entry points;
   RunMetadata enforces canonical SHA-256 provenance; and the accepted P1A
-  audit tag is recorded. BM-008/BM-009 remain deferred by contract, and
-  BM-010 remains an active P3A recheck item because workers/cancellation are
-  not implemented.
+  audit tag is recorded. BM-008/BM-009 remain deferred by contract. P3A closes
+  BM-010 after direct worker, stop, cancellation, responsiveness, and
+  actionable-error probes passed.
 
 - P2-WP06 – Remediated `P2A-003` by aligning README status and the documented
   command surface with all 11 published fixtures, and by documenting P2-WP05
