@@ -1,4 +1,4 @@
-"""P3 desktop shell with the viewer and P3-WP04 experiment editor."""
+"""P3-WP05 desktop shell with viewer, editor, controls, and inspection."""
 
 from __future__ import annotations
 
@@ -19,12 +19,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from biomesh.application_types import CellInspection, RunSnapshot
+from biomesh.gui.cell_inspector import CellInspector
 from biomesh.gui.experiment_editor import ExperimentEditor
 from biomesh.gui.preferences import (
     UiPreferences,
     UiPreferencesError,
     UiPreferencesStore,
 )
+from biomesh.gui.run_controls import SimulationControls
+from biomesh.gui.simulation_worker import SimulationWorker
 from biomesh.gui.viewer import SimulationViewer
 from biomesh.runtime_resources import RuntimeResourceError, runtime_root
 
@@ -57,6 +61,7 @@ class MainWindow(QMainWindow):
 
         self._build_central_viewer()
         self._build_docks()
+        self._build_worker()
         self._build_menus()
         self.setStatusBar(QStatusBar(self))
         self.statusBar().showMessage("Ready")
@@ -129,7 +134,14 @@ class MainWindow(QMainWindow):
         return True
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        """Save only UI state when closing the desktop shell."""
+        """Cancel worker activity, then save only UI state."""
+        self._worker.request_shutdown()
+        if self._worker.isRunning() and not self._worker.wait(10_000):
+            self.report_error(
+                "Simulation worker did not stop at an accepted solver boundary"
+            )
+            event.ignore()
+            return
         self.save_ui_preferences()
         event.accept()
 
@@ -162,6 +174,24 @@ class MainWindow(QMainWindow):
             Qt.DockWidgetArea.RightDockWidgetArea, self._experiment_dock
         )
 
+        self._controls_dock = QDockWidget("Simulation Controls", self)
+        self._controls_dock.setObjectName("simulationControlsDock")
+        self._controls = SimulationControls(
+            self._repository_root, self._controls_dock
+        )
+        self._controls_dock.setWidget(self._controls)
+        self.addDockWidget(
+            Qt.DockWidgetArea.LeftDockWidgetArea, self._controls_dock
+        )
+
+        self._inspector_dock = QDockWidget("Cell Inspector", self)
+        self._inspector_dock.setObjectName("cellInspectorDock")
+        self._inspector = CellInspector(self._inspector_dock)
+        self._inspector_dock.setWidget(self._inspector)
+        self.addDockWidget(
+            Qt.DockWidgetArea.RightDockWidgetArea, self._inspector_dock
+        )
+
         self._error_dock = QDockWidget("Error Console", self)
         self._error_dock.setObjectName("errorConsoleDock")
         self._error_console = QPlainTextEdit(self._error_dock)
@@ -170,6 +200,38 @@ class MainWindow(QMainWindow):
         self._error_console.setPlaceholderText("Desktop shell errors appear here.")
         self._error_dock.setWidget(self._error_console)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self._error_dock)
+
+    def _build_worker(self) -> None:
+        self._worker = SimulationWorker(self)
+        self._controls.run_requested.connect(self._worker.start_run)
+        self._controls.pause_requested.connect(self._worker.request_pause)
+        self._controls.step_requested.connect(self._worker.request_step)
+        self._controls.resume_requested.connect(self._worker.request_resume)
+        self._controls.stop_requested.connect(self._worker.request_stop)
+        self._controls.speed_target_requested.connect(
+            self._worker.set_speed_target
+        )
+        self._controls.checkpoint_requested.connect(
+            self._worker.create_checkpoint
+        )
+        self._controls.checkpoint_resume_requested.connect(
+            self._worker.resume_checkpoint
+        )
+        self._worker.snapshot_ready.connect(self._accept_snapshot)
+        self._worker.inspection_ready.connect(self._accept_inspection)
+        self._worker.checkpoint_created.connect(self._controls.accept_checkpoint)
+        self._worker.state_changed.connect(self._controls.accept_state)
+        self._worker.error_reported.connect(self.report_error)
+        self._worker.stopped.connect(
+            lambda: self.statusBar().showMessage("Simulation stopped")
+        )
+        self._viewer.cell_clicked.connect(self._inspect_cell)
+        self._experiment_editor.run_eligibility_changed.connect(
+            self._controls.set_editor_run_eligible
+        )
+        self._controls.set_editor_run_eligible(
+            self._experiment_editor.session.run_eligible
+        )
 
     def _build_menus(self) -> None:
         file_menu = self.menuBar().addMenu("&File")
@@ -193,6 +255,8 @@ class MainWindow(QMainWindow):
         view_menu.setObjectName("viewMenu")
         view_menu.addAction(self._project_dock.toggleViewAction())
         view_menu.addAction(self._experiment_dock.toggleViewAction())
+        view_menu.addAction(self._controls_dock.toggleViewAction())
+        view_menu.addAction(self._inspector_dock.toggleViewAction())
         view_menu.addAction(self._error_dock.toggleViewAction())
 
         help_menu = self.menuBar().addMenu("&Help")
@@ -261,9 +325,38 @@ class MainWindow(QMainWindow):
         QMessageBox.about(
             self,
             "About BioMesh",
-            "BioMesh P3-WP04 desktop viewer and schema-generated experiment "
-            "editor. Scientific behavior remains owned by the immutable "
-            "application API; editing uses existing validated parameter schemas.",
+            "BioMesh P3-WP05 desktop viewer, experiment editor, deterministic "
+            "controls, checkpoints, and immutable cell inspection. Scientific "
+            "behavior remains owned by the frozen application API.",
+        )
+
+    @Slot(object)
+    def _accept_snapshot(self, snapshot: RunSnapshot) -> None:
+        if not isinstance(snapshot, RunSnapshot):
+            self.report_error("Worker returned an invalid simulation snapshot")
+            return
+        self._viewer.present_snapshot(snapshot)
+        self.statusBar().showMessage(
+            f"{snapshot.status.value.title()} · step "
+            f"{snapshot.step_index}/{snapshot.step_count} · {snapshot.time_s:.6g} s"
+        )
+
+    @Slot(object)
+    def _accept_inspection(self, inspection: CellInspection) -> None:
+        if not isinstance(inspection, CellInspection):
+            self.report_error("Worker returned an invalid cell inspection")
+            return
+        self._inspector.present_inspection(inspection)
+        self._inspector_dock.show()
+
+    @Slot(str)
+    def _inspect_cell(self, cell_id: str) -> None:
+        snapshot = self._viewer.latest_snapshot
+        if snapshot is None:
+            self.report_error("Cell inspection requires an immutable snapshot")
+            return
+        self._worker.inspect_cell(
+            cell_id, expected_step_index=snapshot.step_index
         )
 
 

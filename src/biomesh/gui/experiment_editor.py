@@ -342,8 +342,8 @@ class ExperimentEditor(QWidget):
                 "Configuration is valid under the existing parameter schema."
             )
             self._run_eligibility.setText(
-                "Run eligibility: ELIGIBLE for future controls "
-                "(no run control exists in P3-WP04)"
+                "Run eligibility: ELIGIBLE as a controls gate — the editor "
+                "document is not an executable RunRequest"
             )
         else:
             self._validation_summary.setText(

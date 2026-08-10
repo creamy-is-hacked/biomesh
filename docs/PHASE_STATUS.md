@@ -245,7 +245,7 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 | P3-WP02 | Desktop shell | COMPLETE |
 | P3-WP03 | Simulation viewer | COMPLETE |
 | P3-WP04 | Experiment editor | COMPLETE |
-| P3-WP05 | Controls, checkpoints, and inspection | INCOMPLETE |
+| P3-WP05 | Controls, checkpoints, and inspection | COMPLETE |
 | P3-WP06 | Analytics and export | INCOMPLETE |
 | P3A | Phase 3 Audit | INCOMPLETE |
 
@@ -317,6 +317,27 @@ P3-WP04 validation evidence:
   complete Python 3.14.4 gate passed 174 tests, Ruff, strict mypy,
   `git diff --check`, and module help.
 
+P3-WP05 validation evidence:
+
+- `biomesh.gui.simulation_worker.SimulationWorker` exclusively owns the frozen
+  public `ApplicationService` on one background thread. Its ordered command
+  boundary supports continuous run, pause, deterministic one-boundary step,
+  stop through public close, finite positive speed targets, hash-verified
+  checkpoint/resume, stale-safe public inspection, and error propagation.
+- Desktop selectors cover exactly the 15 existing P2 fixture/condition pairs
+  and fixed seeds 101, 202, and 303. Invalid or unresolved editor state cannot
+  enable run or checkpoint resume. Editor documents are never placed in
+  `RunRequest`, and no configuration-to-engine bridge or scientific change is
+  claimed.
+- Cell clicks hit-test immutable snapshot capsules. The inspector matches the
+  public `CellInspection` record for lineage identity/parent, strain, biomass,
+  state, local solutes, quorum activation, and local EPS density. The frozen
+  record has no per-cell EPS rate, which is reported as unavailable rather than
+  inferred from private state.
+- The focused application/GUI gate passed 18 tests. The complete Python 3.14.4
+  gate passed 185 tests, Ruff, strict mypy, `git diff --check`, module help, and
+  the offscreen GUI smoke path.
+
 ## Dedicated repository remediation after P3-WP04
 
 This is a controlled repository-hardening pass, not P3-WP05 and not a change
@@ -344,9 +365,9 @@ to the established P3-WP04 scientific or editor behavior.
 - `BM-008` and `BM-009` are deferred. The current repository contracts do not
   establish the required behavior sufficiently to implement it without
   inventing policy or changing completed phase behavior.
-- `BM-010` remains `ACTIVE DEVELOPMENT – RECHECK` for P3A. P3 worker and
-  cancellation implementation does not exist, so its ordering contract is not
-  currently testable.
+- `BM-010` remains `ACTIVE DEVELOPMENT – RECHECK` for P3A. P3-WP05 now supplies
+  a worker/cancellation ordering contract and focused stop/error tests; the
+  future independent phase audit must recheck it.
 
 Remediation verification evidence: Python 3.14.4, 183 tests, Ruff, strict
 mypy, module and console CLI versions/help, `validate all`, offscreen GUI
@@ -372,7 +393,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3-WP05 – Controls, checkpoints, and inspection`.
+`P3-WP06 – Analytics and export`.
 
 ## Remaining Issues
 
@@ -380,6 +401,6 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3-WP04 is complete. P3-WP05 is the first incomplete package; the desktop has
-  no run/pause/step/stop controls, checkpoint UI, worker, cell inspection,
-  analytics, additional export, project model, or later P3 behavior.
+- P3-WP05 is complete. P3-WP06 is the first incomplete package; the desktop has
+  no analytics, live plots, additional export formats, project model, or later
+  P3/P4 behavior.

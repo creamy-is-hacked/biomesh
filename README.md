@@ -10,15 +10,16 @@ into a Linux desktop research platform.
 The latest accepted phase is **P2 – Phase 2 – Colony System**. Its independent
 2026-08-08 audit passed with recorded limitations and is represented by the
 `v0.2.1-audit` tag. **P3 – Phase 3 – Desktop GUI** is in progress: P3-WP01
-through P3-WP04 are complete locally, and P3-WP05 – Controls, checkpoints, and
-inspection is next.
+through P3-WP05 are complete locally, and P3-WP06 – Analytics and export is
+next.
 P3 has not been audited.
 
 The current desktop GUI has menus, docks, status, recent project references, an
-error console, separate UI preferences, a snapshot-only simulation viewer, and
-a schema-generated biological-parameter editor with templates and read-only
-audited presets. The application API remains synchronous and controls the
-existing manufactured P2 fixture path independently.
+error console, separate UI preferences, a snapshot-only simulation viewer, a
+schema-generated biological-parameter editor, solver-boundary controls,
+checkpoint interaction, and immutable cell inspection. A small background
+worker owns the synchronous application API and controls only the existing
+manufactured P2 fixture path.
 
 See [the authoritative phase tracker](docs/PHASE_STATUS.md) and the
 [current project state](docs/PROJECT_STATE.md) for the live status.
@@ -45,7 +46,10 @@ The repository currently provides:
   and
 - the P3-WP04 editor for the existing validated biological-parameter schemas,
   with provenance display, explicit validation, semantic TOML round-trip,
-  editable templates, and hash-bound read-only audited presets.
+  editable templates, and hash-bound read-only audited presets; and
+- the P3-WP05 worker, exact P2 fixture/condition/seed controls, deterministic
+  pause/step/stop behavior, speed target, checkpoint/resume interaction, and
+  snapshot-based cell inspection.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -122,12 +126,15 @@ headless startup check is available for development and CI:
 QT_QPA_PLATFORM=offscreen python -m biomesh.gui --smoke-test
 ```
 
-The shell does not yet connect the viewer/editor to simulation controls. The
-Experiment Editor dock can load editable copies of the five repository
-parameter templates, open hash-verified P2A presets read-only, and save/reload
-validated TOML configurations. Documents retaining `CALIBRATION_REQUIRED`
-values or provenance remain explicitly run-ineligible. Recent project entries
-remain separate UI-only references, not parsed experiment configuration.
+The Simulation Controls dock selects only the 15 existing manufactured P2
+fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
+remain disabled while the Experiment Editor document is invalid or retains
+`CALIBRATION_REQUIRED` values or provenance. The editor document is a UI
+eligibility gate only: it is not passed to the frozen application API and no
+configuration-to-engine bridge is implied. Pause, step, stop, speed target,
+checkpoint, and resume operate at accepted solver boundaries. Clicking a cell
+shows its immutable public inspection record; values unavailable from that
+record are not inferred from private state.
 
 ## Experiment fixtures
 
@@ -168,11 +175,10 @@ boundaries.
 
 ## Roadmap
 
-At a high level, the remaining P3 work is controls/checkpoints/inspection,
-worker integration, and the analytics/export surface, followed by the P3A
-audit. P4 then covers the broader research platform. These are roadmap items,
-not completed functionality. BioMesh is not called v1; no v1 milestone has
-been reached.
+At a high level, the remaining P3 work is the analytics/export surface,
+followed by the P3A audit. P4 then covers the broader research platform. These
+are roadmap items, not completed functionality. BioMesh is not called v1; no
+v1 milestone has been reached.
 
 ## License
 

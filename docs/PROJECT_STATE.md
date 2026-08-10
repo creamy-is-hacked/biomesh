@@ -4,20 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-09 after the dedicated post-P3-WP04 repository
-remediation pass. P2 remains the latest audited and accepted phase at
+Snapshot verified: 2026-08-10 after P3-WP05 implementation and validation. P2
+remains the latest audited and accepted phase at
 implementation commit `6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in
-progress and has not been audited. The Python 3.14 full gate passes 183 tests.
+progress and has not been audited. The Python 3.14 full gate passes 185 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P3 – Phase 3 – Desktop GUI (in progress) |
-| Current work package | P3-WP05 – Controls, checkpoints, and inspection is the first `INCOMPLETE` item |
+| Current work package | P3-WP06 – Analytics and export is the first `INCOMPLETE` item |
 | Current branch | `phase-3-desktop-gui` |
 | Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
-| Current test count | 183 passed (`pytest -q`, 2026-08-09) |
-| Next planned work package | P3-WP05 – Controls, checkpoints, and inspection |
+| Current test count | 185 passed (`pytest -q`, 2026-08-10) |
+| Next planned work package | P3-WP06 – Analytics and export |
 
 ## Outstanding technical debt
 
@@ -47,15 +47,21 @@ progress and has not been audited. The Python 3.14 full gate passes 183 tests.
   only; unresolved records remain `CALIBRATION_REQUIRED` and run-ineligible.
   Audited presets are hash-bound and read-only, while editable configurations
   are separate from UI preferences and round-trip through strict TOML
-  validation. There are no run controls, workers, inspection, analytics,
-  additional export, project model, or scientific behavior. P3 remains
+  validation.
+- P3-WP05 controls only the exact existing P2 fixture/condition/seed surface.
+  The editor is an eligibility gate but its parameter document is not executed.
+  One worker serializes public application-service calls; stop completes any
+  in-flight accepted boundary before closing and schedules no later advance.
+  Inspection uses immutable public records; local EPS density is exposed but a
+  per-cell EPS production rate is not, so the UI does not infer one. Analytics,
+  additional export, project models, and new biology remain absent. P3 remains
   unaudited.
 - License selection is pending.
 - The post-P3-WP04 remediation fixes BM-001, BM-002, BM-003, BM-004, BM-005,
   BM-006, and BM-007. BM-008 and BM-009 remain deferred because their required
   behavior is not established by the current contracts; BM-010 remains an
-  active-development recheck item for P3A because no worker/cancellation
-  implementation exists.
+  active-development recheck item for P3A; P3-WP05 now makes its
+  worker/cancellation ordering contract independently testable.
 
 ## Update policy
 

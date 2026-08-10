@@ -11,11 +11,12 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore[import-untyped]
 from numpy.typing import NDArray
-from PySide6.QtCore import QRectF, Qt, QTimer
+from PySide6.QtCore import QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainterPath, QPen, QTransform
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -65,6 +66,8 @@ _FIELD_STYLES = {
 
 class SimulationViewer(QWidget):
     """Render immutable cells and scalar fields without owning solver state."""
+
+    cell_clicked = Signal(str)
 
     def __init__(
         self,
@@ -242,6 +245,38 @@ class SimulationViewer(QWidget):
         """Pan the field canvas by explicit array-index distances."""
         self._pan(self._fields_plot, columns, rows)
 
+    def select_cell_at(self, x_m: float, y_m: float) -> str | None:
+        """Select a capsule from the latest immutable snapshot in SI space."""
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            for value in (x_m, y_m)
+        ):
+            raise ViewerError("cell selection coordinates must be finite numbers")
+        if not self._layer_visibility["cells"] or self._latest_snapshot is None:
+            return None
+        matches: list[tuple[float, str]] = []
+        for cell in self._latest_snapshot.cells:
+            dx = float(x_m) - cell.x_m
+            dy = float(y_m) - cell.y_m
+            cosine = math.cos(cell.orientation_rad)
+            sine = math.sin(cell.orientation_rad)
+            local_x = cosine * dx + sine * dy
+            local_y = -sine * dx + cosine * dy
+            half_length = cell.length_m / 2.0
+            nearest_x = min(half_length, max(-half_length, local_x))
+            distance_squared = (local_x - nearest_x) ** 2 + local_y**2
+            if distance_squared <= cell.radius_m**2:
+                matches.append(
+                    (distance_squared / cell.radius_m**2, cell.cell_id)
+                )
+        if not matches:
+            return None
+        _distance, cell_id = min(matches, key=lambda item: (item[0], item[1]))
+        self.cell_clicked.emit(cell_id)
+        return cell_id
+
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
         toolbar = QHBoxLayout()
@@ -270,6 +305,7 @@ class SimulationViewer(QWidget):
 
         graphics = pg.GraphicsLayoutWidget(self)
         graphics.setObjectName("viewerGraphics")
+        graphics.scene().sigMouseClicked.connect(self._scene_clicked)
         self._cells_plot = graphics.addPlot(row=0, col=0, title="Cells")
         self._cells_plot.setLabel("bottom", "x", units="m")
         self._cells_plot.setLabel("left", "y", units="m")
@@ -400,6 +436,15 @@ class SimulationViewer(QWidget):
             return
         self._pending_snapshot = None
         self._render_snapshot(snapshot, now_ns=time.monotonic_ns())
+
+    def _scene_clicked(self, event: Any) -> None:
+        if event.button() is not Qt.MouseButton.LeftButton:
+            return
+        scene_position = event.scenePos()
+        if not self._cells_plot.sceneBoundingRect().contains(scene_position):
+            return
+        view_position = self._cells_plot.getViewBox().mapSceneToView(scene_position)
+        self.select_cell_at(float(view_position.x()), float(view_position.y()))
 
     def _validate_snapshot(self, snapshot: RunSnapshot) -> None:
         if not isinstance(snapshot, RunSnapshot):

@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P3-WP04
+## Current architecture through P3-WP05
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -21,6 +21,9 @@ P3-WP02 adds UI-only desktop chrome, and P3-WP03 adds a PyQtGraph viewer that
 consumes those immutable snapshots without constructing or mutating the engine.
 P3-WP04 adds a schema-generated biological-parameter editor whose mutable
 draft state can yield only existing immutable validated configuration models.
+P3-WP05 adds one background owner for the synchronous service, exact accepted
+P2 run selectors, boundary controls, checkpoint interaction, and immutable
+cell-click inspection without changing the application or scientific layers.
 
 Dependency direction is intentionally simple:
 
@@ -43,6 +46,9 @@ CLI entry point -> P1 paths + P2 validation/experiment/sweep/report paths
 application     -> private P2 adapter state + immutable snapshots/checkpoints/exports
 GUI viewer      -> immutable application snapshot value types + PyQtGraph
 GUI editor      -> existing parameter schemas + isolated draft/persistence state
+GUI controls    -> exact P2 RunRequest values + worker command queue
+GUI worker      -> public ApplicationService operations only
+GUI inspector   -> immutable CellInspection records only
 tests           -> public component interfaces
 ```
 
@@ -492,5 +498,52 @@ GUI editor     -X-> application service, solver, worker, or run controls
 ```
 
 P3-WP04 changes no biological equation, parameter schema, application request,
-fixture, update order, output, or snapshot. Run controls, checkpoint UI,
-inspection, workers, analytics, and additional export remain P3-WP05/P3-WP06.
+fixture, update order, output, or snapshot.
+
+## P3-WP05 controls, checkpoints, and inspection
+
+`biomesh.gui.simulation_worker.SimulationWorker` is the smallest asynchronous
+boundary around the frozen synchronous service. One worker thread exclusively
+owns one `ApplicationService`; every command calls only its public `run`,
+`pause`, `step`, `resume`, `checkpoint`, `inspect`, or `close` operation. The
+queue gives commands deterministic order, prioritizes stop over queued work,
+and schedules continuous advancement only when neither pause nor stop is
+pending. An interval already executing completes at its accepted solver
+boundary before stop is accepted; after the worker publishes the stopped state,
+no later interval is scheduled. A positive finite speed target changes only the
+wall-clock delay between boundaries, never solver time or update order.
+
+`SimulationControls` contains the exact 15 existing P2 fixture/condition pairs
+and seeds 101, 202, and 303. `ApplicationService.run` remains the final strict
+validator. Run and checkpoint-resume buttons additionally require the current
+P3-WP04 document to be valid and fully resolved. That editor document is never
+placed in `RunRequest`, so eligibility does not claim that arbitrary parameter
+TOML is executable or establish a configuration-to-engine bridge.
+
+The viewer performs deterministic capsule hit-testing against its latest
+immutable `RunSnapshot` and emits only a cell ID. The worker verifies that the
+selected step is still current through public inspection calls; a stale frame
+fails explicitly instead of mixing boundaries. `CellInspector` displays the
+returned immutable cell identity/parent, strain, dry biomass in kg,
+physiological state, local carbon/oxygen/quorum/waste values, quorum activation,
+and local EPS density. The frozen P3-WP01 record exposes no per-cell EPS
+production rate, so the UI states that limitation instead of deriving one or
+reading private solver state.
+
+```text
+exact P2 fixture + condition + seed -> RunRequest -> worker queue
+                                                 -> ApplicationService
+accepted boundary -> immutable RunSnapshot -> viewer -> cell ID
+cell ID + expected step -> public inspect -> immutable CellInspection -> inspector
+
+editor draft -> validation/run-eligibility gate only
+editor draft -X-> RunRequest or engine configuration
+GUI worker   -X-> private solver state
+```
+
+Focused offscreen tests cover button state transitions, deterministic
+pause/single-step, stop/cancellation ordering, speed targeting, checkpoint
+round-trip, worker error propagation, stale-frame rejection, and exact
+inspection-record presentation. Analytics, live plots, new export formats,
+campaign/project models, queues, acceleration, plugins, and new biology remain
+outside P3-WP05.

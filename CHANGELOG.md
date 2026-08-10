@@ -89,6 +89,14 @@ All notable repository changes are documented here.
   editable templates plus SHA-256-bound read-only P2A presets that cannot be
   overwritten. It adds no run controls, worker, project model, export, or
   scientific behavior.
+- P3-WP05 – A smallest-scope background worker and desktop controls for exact
+  existing P2 fixture/condition/seed requests, solver-boundary run, pause,
+  single-step, stop, speed targets, hash-verified checkpoint/resume, and
+  immutable cell-click inspection. Invalid or unresolved editor state cannot
+  enable run or checkpoint resume, editor documents are never passed to the
+  engine, stale-frame inspection fails explicitly, and accepted stop prevents
+  any later advancement. No scientific behavior, analytics, additional export,
+  campaign/project model, or future-phase behavior was added.
 
 ### Audit findings
 

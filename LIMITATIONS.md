@@ -1,5 +1,24 @@
 # Limitations
 
+## P3-WP05 – Controls, checkpoints, and inspection
+
+- Desktop runs remain limited to the 15 existing manufactured P2 fixture
+  conditions and fixed seeds 101, 202, and 303. The editor document gates UI
+  eligibility but is never passed to `RunRequest`; arbitrary edited parameter
+  documents are not executable and no configuration-to-engine bridge exists.
+- The worker serializes only public `ApplicationService` operations. Stop waits
+  for an already executing interval to finish at an accepted solver boundary,
+  then closes the service; no further boundary is scheduled after stop is
+  accepted. Speed target affects wall-clock pacing only.
+- Cell selection uses the latest immutable snapshot. Inspection is rejected if
+  that frame is stale, and displayed values come only from immutable public
+  records. P3-WP01 exposes local EPS density but no per-cell EPS production
+  rate, so the inspector reports the value and explicitly marks the rate as
+  unavailable rather than reading or deriving private state.
+- P3-WP05 adds no analytics, live plots, new export format, project/campaign
+  model, persistent run queue, plugin, acceleration, calibration, or biology.
+  P3 remains unaudited.
+
 ## P3-WP04 – Experiment editor
 
 - The editor covers only the five existing biological-parameter TOML schemas.
@@ -69,8 +88,8 @@
   work packages.
 - P3-WP01 remains synchronous and independent of PySide. P3-WP03 provides only
   a snapshot consumer, and P3-WP04 does not alter the application request or
-  execution path; the shell does not yet connect a worker, cancellation, or
-  simulation controls.
+  execution path. P3-WP05 wraps the unchanged service in a GUI worker without
+  adding a configuration-to-engine bridge.
 
 ## P2A – Phase 2 Audit
 
@@ -110,9 +129,9 @@
 
 - BM-008 and BM-009 remain deferred because the current repository contracts do
   not specify their required behavior sufficiently for a safe implementation.
-- BM-010 remains `ACTIVE DEVELOPMENT – RECHECK` for P3A. The current P3
-  application service is synchronous and no worker/cancellation ordering
-  contract exists yet.
+- BM-010 remains an active-development recheck for P3A. P3-WP05 now supplies a
+  worker/cancellation ordering contract and focused stop/error tests, but only
+  the future independent phase audit can close the recheck.
 
 ## P2-WP01 – Quorum signal
 
