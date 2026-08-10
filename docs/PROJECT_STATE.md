@@ -4,20 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-10 after P3-WP05 implementation and validation. P2
+Snapshot verified: 2026-08-10 after P3-WP06 implementation and validation. P2
 remains the latest audited and accepted phase at
 implementation commit `6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in
-progress and has not been audited. The Python 3.14 full gate passes 185 tests.
+progress and has not been audited. The Python 3.14 full gate passes 190 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P3 – Phase 3 – Desktop GUI (in progress) |
-| Current work package | P3-WP06 – Analytics and export is the first `INCOMPLETE` item |
+| Current work package | P3A – Phase 3 Audit is the first `INCOMPLETE` item |
 | Current branch | `phase-3-desktop-gui` |
 | Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
-| Current test count | 185 passed (`pytest -q`, 2026-08-10) |
-| Next planned work package | P3-WP06 – Analytics and export |
+| Current test count | 190 passed (`pytest -q`, 2026-08-10) |
+| Next planned work package | P3A – Phase 3 Audit |
 
 ## Outstanding technical debt
 
@@ -53,9 +53,14 @@ progress and has not been audited. The Python 3.14 full gate passes 185 tests.
   One worker serializes public application-service calls; stop completes any
   in-flight accepted boundary before closing and schedules no later advance.
   Inspection uses immutable public records; local EPS density is exposed but a
-  per-cell EPS production rate is not, so the UI does not infer one. Analytics,
-  additional export, project models, and new biology remain absent. P3 remains
-  unaudited.
+  per-cell EPS production rate is not, so the UI does not infer one. P3-WP06
+  plots only received immutable stored metrics. Its completed-run
+  bundle preserves canonical field/table/metadata bytes, adds exact
+  CSV/Parquet and PNG representations, and publishes atomically through the
+  existing cancellable worker. Fresh-session checkpoint resume does not invent
+  unseen earlier plot history. Project models, persistent queues, plugins,
+  acceleration, calibration behavior, and new biology remain absent. P3
+  remains unaudited.
 - License selection is pending.
 - The post-P3-WP04 remediation fixes BM-001, BM-002, BM-003, BM-004, BM-005,
   BM-006, and BM-007. BM-008 and BM-009 remain deferred because their required

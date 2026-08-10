@@ -9,17 +9,20 @@ into a Linux desktop research platform.
 
 The latest accepted phase is **P2 – Phase 2 – Colony System**. Its independent
 2026-08-08 audit passed with recorded limitations and is represented by the
-`v0.2.1-audit` tag. **P3 – Phase 3 – Desktop GUI** is in progress: P3-WP01
-through P3-WP05 are complete locally, and P3-WP06 – Analytics and export is
-next.
-P3 has not been audited.
+`v0.2.1-audit` tag. **P3 – Phase 3 – Desktop GUI** implementation packages
+P3-WP01 through P3-WP06 are complete locally. P3 has not been audited; P3A –
+Phase 3 Audit is next.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
 schema-generated biological-parameter editor, solver-boundary controls,
 checkpoint interaction, and immutable cell inspection. A small background
 worker owns the synchronous application API and controls only the existing
-manufactured P2 fixture path.
+manufactured P2 fixture path. Snapshot-only live plots show the existing
+population, biomass, producer-frequency, EPS, quorum-response, thickness,
+roughness, and penetration-depth metrics. Completed runs export atomically as
+PNG plots, exact CSV/Parquet analytics, canonical Parquet tables and NumPy
+fields, and a provenance-complete run manifest.
 
 See [the authoritative phase tracker](docs/PHASE_STATUS.md) and the
 [current project state](docs/PROJECT_STATE.md) for the live status.
@@ -49,7 +52,10 @@ The repository currently provides:
   editable templates, and hash-bound read-only audited presets; and
 - the P3-WP05 worker, exact P2 fixture/condition/seed controls, deterministic
   pause/step/stop behavior, speed target, checkpoint/resume interaction, and
-  snapshot-based cell inspection.
+  snapshot-based cell inspection; and
+- the P3-WP06 immutable-snapshot analytics panel and cancellable background
+  export bundle with PNG, CSV, Parquet, canonical fields/tables, hashes,
+  calibration status, seed, commit, and software-version provenance.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -136,6 +142,14 @@ checkpoint, and resume operate at accepted solver boundaries. Clicking a cell
 shows its immutable public inspection record; values unavailable from that
 record are not inferred from private state.
 
+The Analytics dock plots only immutable public snapshots and their existing
+stored metrics. “Strain ratio” is explicitly the stored dimensionless producer
+cell frequency; penetration depth retains the separate stored carbon and oxygen
+series. File → Export Completed Run creates a new directory containing plot
+PNGs, exact long-form CSV and Parquet tables, byte-preserved canonical fields
+and tables, canonical run metadata, and a hash-indexed run manifest. Export can
+be cancelled before atomic publication; failures leave no partial target.
+
 ## Experiment fixtures
 
 The root `experiments/` directory contains the executable manufactured fixture
@@ -175,10 +189,9 @@ boundaries.
 
 ## Roadmap
 
-At a high level, the remaining P3 work is the analytics/export surface,
-followed by the P3A audit. P4 then covers the broader research platform. These
-are roadmap items, not completed functionality. BioMesh is not called v1; no
-v1 milestone has been reached.
+At a high level, the remaining P3 work is the independent P3A audit. P4 then
+covers the broader research platform. These are roadmap items, not completed
+functionality. BioMesh is not called v1; no v1 milestone has been reached.
 
 ## License
 

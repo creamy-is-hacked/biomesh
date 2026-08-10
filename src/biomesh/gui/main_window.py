@@ -1,4 +1,4 @@
-"""P3-WP05 desktop shell with viewer, editor, controls, and inspection."""
+"""P3 desktop shell through P3-WP06 analytics and export."""
 
 from __future__ import annotations
 
@@ -19,7 +19,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from biomesh.application_types import CellInspection, RunSnapshot
+from biomesh.application_types import CellInspection, RunSnapshot, RunStatus
+from biomesh.gui.analytics import AnalyticsPanel
+from biomesh.gui.analytics_export import AnalyticsExportResult
 from biomesh.gui.cell_inspector import CellInspector
 from biomesh.gui.experiment_editor import ExperimentEditor
 from biomesh.gui.preferences import (
@@ -192,6 +194,14 @@ class MainWindow(QMainWindow):
             Qt.DockWidgetArea.RightDockWidgetArea, self._inspector_dock
         )
 
+        self._analytics_dock = QDockWidget("Analytics", self)
+        self._analytics_dock.setObjectName("analyticsDock")
+        self._analytics = AnalyticsPanel(self._analytics_dock)
+        self._analytics_dock.setWidget(self._analytics)
+        self.addDockWidget(
+            Qt.DockWidgetArea.BottomDockWidgetArea, self._analytics_dock
+        )
+
         self._error_dock = QDockWidget("Error Console", self)
         self._error_dock.setObjectName("errorConsoleDock")
         self._error_console = QPlainTextEdit(self._error_dock)
@@ -221,10 +231,14 @@ class MainWindow(QMainWindow):
         self._worker.inspection_ready.connect(self._accept_inspection)
         self._worker.checkpoint_created.connect(self._controls.accept_checkpoint)
         self._worker.state_changed.connect(self._controls.accept_state)
-        self._worker.error_reported.connect(self.report_error)
+        self._worker.state_changed.connect(self._accept_worker_state)
+        self._worker.error_reported.connect(self._accept_worker_error)
         self._worker.stopped.connect(
             lambda: self.statusBar().showMessage("Simulation stopped")
         )
+        self._worker.export_started.connect(self._accept_export_started)
+        self._worker.export_completed.connect(self._accept_export_completed)
+        self._worker.export_cancelled.connect(self._accept_export_cancelled)
         self._viewer.cell_clicked.connect(self._inspect_cell)
         self._experiment_editor.run_eligibility_changed.connect(
             self._controls.set_editor_run_eligible
@@ -245,6 +259,18 @@ class MainWindow(QMainWindow):
         self._recent_menu = file_menu.addMenu("Recent Projects")
         self._recent_menu.setObjectName("recentProjectsMenu")
         file_menu.addSeparator()
+        self._export_action = QAction("Export Completed Run...", self)
+        self._export_action.setObjectName("exportRunAction")
+        self._export_action.triggered.connect(self._choose_export_directory)
+        file_menu.addAction(self._export_action)
+        self._cancel_export_action = QAction("Cancel Export", self)
+        self._cancel_export_action.setObjectName("cancelExportAction")
+        self._cancel_export_action.triggered.connect(
+            self._worker.request_export_cancel
+        )
+        self._cancel_export_action.setEnabled(False)
+        file_menu.addAction(self._cancel_export_action)
+        file_menu.addSeparator()
         exit_action = QAction("E&xit", self)
         exit_action.setObjectName("exitAction")
         exit_action.setShortcut("Ctrl+Q")
@@ -257,7 +283,9 @@ class MainWindow(QMainWindow):
         view_menu.addAction(self._experiment_dock.toggleViewAction())
         view_menu.addAction(self._controls_dock.toggleViewAction())
         view_menu.addAction(self._inspector_dock.toggleViewAction())
+        view_menu.addAction(self._analytics_dock.toggleViewAction())
         view_menu.addAction(self._error_dock.toggleViewAction())
+        self._refresh_export_actions()
 
         help_menu = self.menuBar().addMenu("&Help")
         help_menu.setObjectName("helpMenu")
@@ -325,9 +353,10 @@ class MainWindow(QMainWindow):
         QMessageBox.about(
             self,
             "About BioMesh",
-            "BioMesh P3-WP05 desktop viewer, experiment editor, deterministic "
-            "controls, checkpoints, and immutable cell inspection. Scientific "
-            "behavior remains owned by the frozen application API.",
+            "BioMesh P3-WP06 desktop viewer, experiment editor, deterministic "
+            "controls, immutable inspection, live stored-metric analytics, and "
+            "atomic export. Scientific behavior remains owned by the frozen "
+            "application API.",
         )
 
     @Slot(object)
@@ -336,6 +365,7 @@ class MainWindow(QMainWindow):
             self.report_error("Worker returned an invalid simulation snapshot")
             return
         self._viewer.present_snapshot(snapshot)
+        self._analytics.accept_snapshot(snapshot)
         self.statusBar().showMessage(
             f"{snapshot.status.value.title()} · step "
             f"{snapshot.step_index}/{snapshot.step_count} · {snapshot.time_s:.6g} s"
@@ -357,6 +387,56 @@ class MainWindow(QMainWindow):
             return
         self._worker.inspect_cell(
             cell_id, expected_step_index=snapshot.step_index
+        )
+
+    @Slot(object)
+    def _accept_worker_state(self, _status: RunStatus) -> None:
+        self._refresh_export_actions()
+
+    @Slot()
+    def _choose_export_directory(self) -> None:
+        selected, _filter = QFileDialog.getSaveFileName(
+            self,
+            "Create BioMesh export directory",
+            "",
+            "BioMesh export directory (*)",
+        )
+        if selected:
+            self._worker.export_run(Path(selected))
+
+    @Slot()
+    def _accept_export_started(self) -> None:
+        self._export_action.setEnabled(False)
+        self._cancel_export_action.setEnabled(True)
+        self.statusBar().showMessage("Exporting completed run...")
+
+    @Slot(object)
+    def _accept_export_completed(self, result: AnalyticsExportResult) -> None:
+        if not isinstance(result, AnalyticsExportResult):
+            self.report_error("Worker returned an invalid export result")
+            return
+        self._cancel_export_action.setEnabled(False)
+        self._refresh_export_actions()
+        self.statusBar().showMessage(f"Exported run to {result.output_directory}")
+
+    @Slot()
+    def _accept_export_cancelled(self) -> None:
+        self._cancel_export_action.setEnabled(False)
+        self._refresh_export_actions()
+        self.statusBar().showMessage("Export cancelled before publication")
+
+    @Slot(str)
+    def _accept_worker_error(self, message: str) -> None:
+        self._cancel_export_action.setEnabled(False)
+        self._refresh_export_actions()
+        self.report_error(message)
+
+    def _refresh_export_actions(self) -> None:
+        if not hasattr(self, "_export_action"):
+            return
+        exporting = self._cancel_export_action.isEnabled()
+        self._export_action.setEnabled(
+            self._worker.status is RunStatus.COMPLETED and not exporting
         )
 
 

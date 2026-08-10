@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P3-WP05
+## Current architecture through P3-WP06
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -24,6 +24,9 @@ draft state can yield only existing immutable validated configuration models.
 P3-WP05 adds one background owner for the synchronous service, exact accepted
 P2 run selectors, boundary controls, checkpoint interaction, and immutable
 cell-click inspection without changing the application or scientific layers.
+P3-WP06 adds snapshot-only live analytics and one cancellable completed-run
+export command on that existing worker. Canonical fields, tables, and run
+metadata still originate only from the public application export operation.
 
 Dependency direction is intentionally simple:
 
@@ -49,6 +52,8 @@ GUI editor      -> existing parameter schemas + isolated draft/persistence state
 GUI controls    -> exact P2 RunRequest values + worker command queue
 GUI worker      -> public ApplicationService operations only
 GUI inspector   -> immutable CellInspection records only
+GUI analytics   -> immutable RunSnapshot metrics only
+GUI export      -> public completed export + immutable snapshot history
 tests           -> public component interfaces
 ```
 
@@ -547,3 +552,42 @@ round-trip, worker error propagation, stale-frame rejection, and exact
 inspection-record presentation. Analytics, live plots, new export formats,
 campaign/project models, queues, acceleration, plugins, and new biology remain
 outside P3-WP05.
+
+## P3-WP06 analytics and export
+
+`biomesh.gui.analytics.AnalyticsHistory` accepts only frozen `RunSnapshot`
+values and orders them by solver step. It reads existing scalar metrics without
+conversion. Population uses the immutable cell count corresponding to the
+canonical summary table; the strain plot is labelled as the existing producer
+cell frequency; penetration depth retains separate carbon and oxygen series.
+Missing metrics or incorrect units fail explicitly.
+
+`AnalyticsPanel` redraws PyQtGraph curves from that snapshot-only history. It
+does not access the application service, mutable arrays, solver state, or
+scientific modules. The same immutable records drive export CSV, Parquet, and
+PNG values.
+
+At completed state, `SimulationWorker.export_run` invokes
+`ApplicationService.export` on its existing background thread. The composer
+keeps canonical Parquet and NumPy bytes unchanged, validates stored population,
+biomass, producer frequency, EPS, quorum response, thickness, and roughness
+against the public records, then adds exact analytics tables and eight plot
+PNGs. The manifest records sorted artifact hashes/sizes, seed, Git commit,
+fixture hash, biological-parameter hashes, calibration status, and software
+versions.
+
+```text
+immutable snapshots -> exact metric history -> live PyQtGraph curves
+                                      |-> CSV + Parquet + PNG
+completed service -> canonical export |-> byte-preserved fields + tables
+                                      `-> hashed provenance manifest
+
+cancel/error -> remove sibling staging directory -X-> partial target
+success      -> one atomic directory replace
+```
+
+Cancellation is a thread-safe event checked between deterministic export
+stages, so the Qt event loop remains responsive. This boundary creates no
+persistent queue, project/campaign model, plugin, live export stream,
+acceleration path, new metric calculation, unit conversion, calibration claim,
+or scientific behavior.

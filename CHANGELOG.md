@@ -97,6 +97,14 @@ All notable repository changes are documented here.
   engine, stale-frame inspection fails explicitly, and accepted stop prevents
   any later advancement. No scientific behavior, analytics, additional export,
   campaign/project model, or future-phase behavior was added.
+- P3-WP06 – Snapshot-only live plots for exact stored population, dry biomass,
+  producer cell frequency, EPS, continuous quorum response, thickness,
+  roughness, and carbon/oxygen penetration depths. Completed runs export on the
+  existing worker as deterministic PNG and exact CSV/Parquet analytics while
+  preserving canonical Parquet tables, NumPy fields, seed, commit, biological
+  parameter hashes, calibration status, and software versions. Cancellation
+  and failure leave no partial target; no scientific behavior or future-phase
+  model was added.
 
 ### Audit findings
 

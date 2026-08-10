@@ -1,4 +1,4 @@
-"""Small P3-WP05 worker boundary around the public application service."""
+"""Small P3-WP05/P3-WP06 worker boundary around the application service."""
 
 from __future__ import annotations
 
@@ -21,6 +21,11 @@ from biomesh.application_types import (
     RunSnapshot,
     RunStatus,
 )
+from biomesh.gui.analytics_export import (
+    AnalyticsExportCancelled,
+    AnalyticsExportResult,
+    export_analytics_bundle,
+)
 
 
 class WorkerError(ValueError):
@@ -37,6 +42,7 @@ class _CommandKind(StrEnum):
     CHECKPOINT = "checkpoint"
     RESUME_CHECKPOINT = "resume_checkpoint"
     INSPECT = "inspect"
+    EXPORT = "export"
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,24 +67,39 @@ class SimulationWorker(QThread):
     stopped = Signal()
     error_reported = Signal(str)
     speed_target_changed = Signal(float)
+    export_started = Signal()
+    export_completed = Signal(object)
+    export_cancelled = Signal()
 
     def __init__(
         self,
         parent: QObject | None = None,
         *,
         service_factory: Callable[[], ApplicationService] = ApplicationService,
+        export_function: Callable[
+            [
+                ApplicationService,
+                Path,
+                tuple[RunSnapshot, ...],
+                threading.Event,
+            ],
+            AnalyticsExportResult,
+        ] = export_analytics_bundle,
         speed_target_hz: float = 10.0,
     ) -> None:
         super().__init__(parent)
         self._service_factory = service_factory
+        self._export_function = export_function
         self._condition = threading.Condition()
         self._commands: deque[_Command] = deque()
         self._pause_requested = threading.Event()
         self._stop_requested = threading.Event()
         self._shutdown_requested = threading.Event()
+        self._export_cancel_requested = threading.Event()
         self._continuous = False
         self._status = RunStatus.IDLE
         self._speed_target_hz = _validated_speed_target(speed_target_hz)
+        self._snapshots: dict[int, RunSnapshot] = {}
 
     @property
     def status(self) -> RunStatus:
@@ -158,9 +179,23 @@ class SimulationWorker(QThread):
             _Command(_CommandKind.INSPECT, cell_id, expected_step_index)
         )
 
+    def export_run(self, output_directory: Path) -> None:
+        """Queue one completed-run export on the existing background boundary."""
+        if not isinstance(output_directory, Path):
+            raise WorkerError("output_directory must be a Path")
+        self._export_cancel_requested.clear()
+        self._submit(_Command(_CommandKind.EXPORT, output_directory))
+
+    def request_export_cancel(self) -> None:
+        """Request cancellation before the export's atomic publication point."""
+        self._export_cancel_requested.set()
+        with self._condition:
+            self._condition.notify_all()
+
     def request_shutdown(self) -> None:
         """Request orderly cancellation and release of worker-owned resources."""
         self._stop_requested.set()
+        self._export_cancel_requested.set()
         self._shutdown_requested.set()
         with self._condition:
             self._condition.notify_all()
@@ -217,6 +252,7 @@ class SimulationWorker(QThread):
         try:
             if command.kind is _CommandKind.RUN:
                 assert isinstance(command.value, RunRequest)
+                self._snapshots.clear()
                 snapshot = service.run(command.value)
                 self._continuous = True
                 self._publish_snapshot(snapshot)
@@ -238,6 +274,7 @@ class SimulationWorker(QThread):
             elif command.kind is _CommandKind.STOP:
                 service.close()
                 self._continuous = False
+                self._snapshots.clear()
                 self._stop_requested.clear()
                 self._pause_requested.clear()
                 self._set_state(RunStatus.IDLE)
@@ -249,10 +286,11 @@ class SimulationWorker(QThread):
                 self.speed_target_changed.emit(command.value)
             elif command.kind is _CommandKind.CHECKPOINT:
                 assert isinstance(command.value, Path)
-                result = service.checkpoint(command.value)
-                self.checkpoint_created.emit(result)
+                checkpoint_result = service.checkpoint(command.value)
+                self.checkpoint_created.emit(checkpoint_result)
             elif command.kind is _CommandKind.RESUME_CHECKPOINT:
                 assert isinstance(command.value, Path)
+                self._snapshots.clear()
                 snapshot = service.resume(command.value)
                 self._continuous = snapshot.status is RunStatus.RUNNING
                 self._publish_snapshot(snapshot)
@@ -268,6 +306,25 @@ class SimulationWorker(QThread):
                 inspection = service.inspect(command.value)
                 assert isinstance(inspection, CellInspection)
                 self.inspection_ready.emit(inspection)
+            elif command.kind is _CommandKind.EXPORT:
+                assert isinstance(command.value, Path)
+                self.export_started.emit()
+                try:
+                    export_result = self._export_function(
+                        service,
+                        command.value,
+                        tuple(
+                            self._snapshots[index]
+                            for index in sorted(self._snapshots)
+                        ),
+                        self._export_cancel_requested,
+                    )
+                except AnalyticsExportCancelled:
+                    self.export_cancelled.emit()
+                else:
+                    self.export_completed.emit(export_result)
+                finally:
+                    self._export_cancel_requested.clear()
         except Exception as error:
             self._handle_error(service, error)
 
@@ -296,6 +353,7 @@ class SimulationWorker(QThread):
         self.error_reported.emit(str(error))
 
     def _publish_snapshot(self, snapshot: RunSnapshot) -> None:
+        self._snapshots[snapshot.step_index] = snapshot
         self._set_state(snapshot.status)
         self.snapshot_ready.emit(snapshot)
 

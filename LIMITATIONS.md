@@ -1,5 +1,28 @@
 # Limitations
 
+## P3-WP06 – Analytics and export
+
+- Live analytics retain only immutable public snapshots received during the
+  current desktop session. Population is the exact stored cell count; “strain
+  ratio” is the existing producer cell frequency, not a newly defined quotient.
+  Carbon and oxygen penetration depth remain separate stored metric series.
+- The application API exposes no physical field extent or additional
+  penetration calculation. P3-WP06 therefore performs no unit conversion,
+  spatial inference, resampling, thresholding, or missing-metric fallback.
+- Completed export preserves canonical Parquet tables, NumPy fields, and run
+  metadata byte-for-byte. PNG and exact long-form CSV/Parquet analytics are
+  derived only from received immutable metric snapshots. A run resumed in a
+  fresh desktop session can plot/export only public metric snapshots observed
+  after that resume; missing earlier analytics are not reconstructed from
+  private solver state.
+- Export runs on the existing worker thread and accepts cancellation before
+  atomic directory publication. It is a single completed-run operation, not a
+  persistent queue, campaign/project model, plugin exporter, or live-streaming
+  export service.
+- Biological parameters and campaign inputs remain `CALIBRATION_REQUIRED`.
+  Plots and exports are software representations, not calibration evidence or
+  biological validation. P3 remains unaudited pending P3A.
+
 ## P3-WP05 – Controls, checkpoints, and inspection
 
 - Desktop runs remain limited to the 15 existing manufactured P2 fixture
@@ -15,9 +38,10 @@
   records. P3-WP01 exposes local EPS density but no per-cell EPS production
   rate, so the inspector reports the value and explicitly marks the rate as
   unavailable rather than reading or deriving private state.
-- P3-WP05 adds no analytics, live plots, new export format, project/campaign
-  model, persistent run queue, plugin, acceleration, calibration, or biology.
-  P3 remains unaudited.
+- P3-WP05 itself added no analytics, live plots, new export format,
+  project/campaign model, persistent run queue, plugin, acceleration,
+  calibration, or biology. P3-WP06 adds only the bounded analytics/export
+  surface described above; P3 remains unaudited.
 
 ## P3-WP04 – Experiment editor
 

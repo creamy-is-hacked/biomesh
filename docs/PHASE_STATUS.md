@@ -246,7 +246,7 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 | P3-WP03 | Simulation viewer | COMPLETE |
 | P3-WP04 | Experiment editor | COMPLETE |
 | P3-WP05 | Controls, checkpoints, and inspection | COMPLETE |
-| P3-WP06 | Analytics and export | INCOMPLETE |
+| P3-WP06 | Analytics and export | COMPLETE |
 | P3A | Phase 3 Audit | INCOMPLETE |
 
 P3-WP01 validation evidence:
@@ -338,6 +338,25 @@ P3-WP05 validation evidence:
   gate passed 185 tests, Ruff, strict mypy, `git diff --check`, module help, and
   the offscreen GUI smoke path.
 
+P3-WP06 validation evidence:
+
+- `biomesh.gui.analytics.AnalyticsPanel` plots immutable public snapshot values
+  for population, total dry biomass, stored producer cell frequency, EPS,
+  continuous quorum-active fraction, thickness, roughness, and separate carbon
+  and oxygen penetration depths. Missing metrics/units fail explicitly and no
+  scientific quantity or conversion is inferred.
+- Completed-run export reuses the existing worker and public application export
+  operation. It preserves canonical Parquet tables, NumPy fields, and run
+  metadata bytes; adds exact long-form CSV/Parquet analytics and eight PNGs;
+  and records deterministic artifact hashes plus seed, commit, fixture and
+  biological-parameter hashes, `CALIBRATION_REQUIRED`, and software versions.
+- Focused tests compare live/export values exactly with immutable metrics and
+  corresponding canonical tables, verify export schemas and provenance,
+  atomic failure/retry and cancellation cleanup, responsive worker execution,
+  and propagated errors. The complete Python 3.14.4 gate passed 190 tests,
+  Ruff, strict mypy, `git diff --check`, module help, and the clean offscreen GUI
+  smoke path.
+
 ## Dedicated repository remediation after P3-WP04
 
 This is a controlled repository-hardening pass, not P3-WP05 and not a change
@@ -393,7 +412,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3-WP06 – Analytics and export`.
+`P3A – Phase 3 Audit`.
 
 ## Remaining Issues
 
@@ -401,6 +420,6 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3-WP05 is complete. P3-WP06 is the first incomplete package; the desktop has
-  no analytics, live plots, additional export formats, project model, or later
-  P3/P4 behavior.
+- P3-WP06 is complete. P3A is the first incomplete item. The desktop has no
+  project/campaign model, persistent queue, plugin system, acceleration,
+  calibration behavior, P3A audit behavior, or P4 feature.
