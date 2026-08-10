@@ -455,7 +455,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | ID | Work package | Status |
 | --- | --- | --- |
 | P4-WP01 | Project and campaign model | COMPLETE |
-| P4-WP02 | Comparison and reports | INCOMPLETE |
+| P4-WP02 | Comparison and reports | COMPLETE |
 | P4-WP03 | Plugin API | INCOMPLETE |
 | P4-WP04 | Model and parameter registry | INCOMPLETE |
 | P4-WP05 | Local run queue | INCOMPLETE |
@@ -481,9 +481,34 @@ P4-WP01 validation evidence:
   Python 3.14.4 full gate passed module help, Ruff, strict mypy,
   `git diff --check`, and 204 tests. No P4-WP02 or later behavior was added.
 
+P4-WP02 validation evidence:
+
+- The read-only report service consumes only hash-verified P4-WP01 completed
+  runs. Sixteen declared scalar metrics retain their existing SI units and
+  trace every replicate value to the raw artifact path, SHA-256, byte size,
+  Parquet row and column, run ID, seed, and replicate index. Project state and
+  raw artifacts are unchanged by reporting.
+- Condition distributions expose every replicate plus mean, median, range,
+  sample variance, standard deviation, and two-sided 95% Student-t intervals.
+  Pairwise condition data exposes the unit-aware difference in means, Hedges g
+  where defined, and a Welch Student-t interval. These are descriptive report
+  data only; no significance decision, scientific conclusion, calibration, or
+  GUI inference is generated.
+- Every planned run remains in report coverage with its completed, pending,
+  running, or failed status and explicit failure record. Per-summary missing
+  run IDs are retained, and all one-observation summaries/comparisons are
+  labelled `SINGLE_SEED_ONLY` with unavailable uncertainty rather than a
+  manufactured estimate.
+- The real `campaign report` application path used four P3-backed runs and
+  produced 192 traced observations, 96 condition summaries, and 48 pairwise
+  comparisons. A second report was byte-identical; all five data files matched
+  the report manifest, and atomic failure cleanup passed. The Python 3.14.4
+  full gate passed module help, Ruff, strict mypy, `git diff --check`, and 208
+  tests. No P4-WP03 or later behavior was added.
+
 ## Next Work Package
 
-`P4-WP02 – Comparison and reports`.
+`P4-WP03 – Plugin API`.
 
 ## Remaining Issues
 
@@ -491,7 +516,7 @@ P4-WP01 validation evidence:
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 adds the local synchronous project/campaign
-  model only. The desktop has no persistent queue, comparison/report workflow,
-  plugin system, model registry, portable archive, acceleration, or calibration
-  behavior.
+- P3A accepted Phase 3. P4-WP01 and P4-WP02 add the local synchronous
+  project/campaign model and presentation-neutral comparison/report data. The
+  desktop has no report UI, persistent queue, plugin system, model registry,
+  portable archive, acceleration, or calibration behavior.

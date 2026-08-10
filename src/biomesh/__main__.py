@@ -13,6 +13,7 @@ from biomesh import __version__
 from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
 from biomesh.p3_verification import compare_frontends, verify_checkpoint
 from biomesh.project_campaign import CampaignService, create_project
+from biomesh.project_reports import generate_campaign_report
 from biomesh.reference import (
     DEFAULT_REFERENCE_PARAMETER_FILE,
     default_output_directory,
@@ -128,10 +129,10 @@ def build_parser() -> argparse.ArgumentParser:
     project_create.add_argument("project_directory", type=Path)
 
     campaign_parser = commands.add_parser(
-        "campaign", help="inspect, resume, or retry a P4 project campaign"
+        "campaign", help="inspect, resume, retry, or report a P4 project campaign"
     )
     campaign_commands = campaign_parser.add_subparsers(dest="campaign_command")
-    for operation in ("status", "resume", "retry"):
+    for operation in ("status", "resume", "retry", "report"):
         operation_parser = campaign_commands.add_parser(operation)
         operation_parser.add_argument("project_directory", type=Path)
         operation_parser.add_argument("campaign_id")
@@ -141,6 +142,13 @@ def build_parser() -> argparse.ArgumentParser:
                 action="append",
                 dest="run_ids",
                 help="retry one failed run ID; repeat to select multiple runs",
+            )
+        if operation == "report":
+            operation_parser.add_argument(
+                "--output",
+                required=True,
+                type=Path,
+                help="publish comparison/report data to this new directory",
             )
     return parser
 
@@ -256,7 +264,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if arguments.command == "campaign":
             if arguments.campaign_command is None:
-                raise ValueError("campaign requires status, resume, or retry")
+                raise ValueError("campaign requires status, resume, retry, or report")
+            if arguments.campaign_command == "report":
+                report_result = generate_campaign_report(
+                    arguments.project_directory,
+                    arguments.campaign_id,
+                    arguments.output,
+                )
+                print(json.dumps(report_result.as_dict(), sort_keys=True))
+                return 0
             service = CampaignService(arguments.project_directory)
             if arguments.campaign_command == "status":
                 status = service.status(arguments.campaign_id)

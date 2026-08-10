@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP01
+## Current architecture through P4-WP02
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -32,6 +32,12 @@ same synchronous public application service. It expands explicit sweep points
 and deterministic seed policies into immutable run identities, records atomic
 lifecycle transitions, and hash-verifies every completed artifact without
 changing any accepted engine or GUI contract.
+P4-WP02 adds a read-only comparison/report layer over those verified records.
+It extracts only declared SI scalar columns from canonical raw Parquet files,
+retains artifact/hash/row/column/run/seed traceability for every value, and
+publishes presentation-neutral JSON and CSV atomically. Statistical summaries
+and pairwise effect data do not feed the engine or encode conclusions in the
+GUI.
 
 Dependency direction is intentionally simple:
 
@@ -61,6 +67,7 @@ GUI analytics   -> immutable RunSnapshot metrics only
 GUI export      -> public completed export + immutable snapshot history
 project/campaign -> public ApplicationService + accepted fixture identities
 project state    -> atomic JSON + process lock + append-only audit sequence
+project reports  -> verified project state + immutable raw Parquet artifacts
 tests           -> public component interfaces
 ```
 

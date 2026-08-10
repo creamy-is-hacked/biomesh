@@ -113,6 +113,13 @@ All notable repository changes are documented here.
   failures remain explicit until an intentional retry. The synchronous runner
   uses only the accepted P3 application service and adds no queue, report,
   plugin, registry, archive, acceleration, calibration, or scientific behavior.
+- P4-WP02 – Presentation-neutral JSON and CSV comparison/report data over
+  hash-verified P4 project runs. Exact SI scalar observations retain raw
+  artifact SHA-256, size, row, column, run, seed, and replicate traceability;
+  condition distributions, Student-t uncertainty, pairwise mean differences,
+  and Hedges g remain descriptive. Incomplete runs and single-seed evidence are
+  explicit, report publication is atomic and deterministic, and no scientific
+  conclusion or calibration claim is generated.
 
 ### Audit findings
 

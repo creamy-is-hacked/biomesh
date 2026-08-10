@@ -9,8 +9,9 @@ into a Linux desktop research platform.
 
 The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
 2026-08-10 audit passed with recorded limitations and is represented by the
-`v0.3.1-audit` tag. P4-WP01 – Project and campaign model is the next incomplete
-work package; no P4 behavior is implemented yet.
+`v0.3.1-audit` tag. P4-WP01 – Project and campaign model and P4-WP02 –
+Comparison and reports are complete on the Phase 4 branch. P4-WP03 – Plugin API
+is the next incomplete work package.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -56,7 +57,10 @@ The repository currently provides:
   export bundle with PNG, CSV, Parquet, canonical fields/tables, hashes,
   calibration status, seed, commit, and software-version provenance; and
 - deterministic P3 frontend-equivalence and checkpoint-replay verification
-  commands over a manufactured `CALIBRATION_REQUIRED` reference selector.
+  commands over a manufactured `CALIBRATION_REQUIRED` reference selector; and
+- the P4 versioned local project/campaign model plus presentation-neutral
+  comparison/report JSON and CSV with raw-run hash/row traceability, explicit
+  missing-run coverage, and single-seed warnings.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -154,6 +158,21 @@ second reconstructs that checkpoint and byte-compares the replay with the
 stored uninterrupted application artifacts. Both outputs remain manufactured
 software-verification evidence and preserve `CALIBRATION_REQUIRED` status.
 
+For a completed P4 project campaign, generate a new comparison/report data
+directory with:
+
+```bash
+python -m biomesh campaign report PROJECT_DIRECTORY CAMPAIGN_ID \
+  --output NEW_REPORT_DIRECTORY
+```
+
+The report contains deterministic JSON plus CSV coverage, observations,
+condition summaries, and pairwise comparisons. Each value retains raw artifact
+hash and row provenance. Missing runs and single-seed limitations remain
+visible; the report does not generate a scientific conclusion or calibration
+claim. See [the P4-WP01 project model](docs/P4_WP01_PROJECT_CAMPAIGN.md) and
+[the P4-WP02 report contract](docs/P4_WP02_COMPARISON_REPORTS.md).
+
 The Simulation Controls dock selects only the 15 existing manufactured P2
 fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
 remain disabled while the Experiment Editor document is invalid or retains
@@ -211,9 +230,9 @@ boundaries.
 
 ## Roadmap
 
-P3 is accepted. P4 covers the broader research platform and begins with
-P4-WP01 – Project and campaign model. These are roadmap items, not completed
-functionality. BioMesh is not called v1; no v1 milestone has been reached.
+P3 is accepted. P4-WP01 – Project and campaign model and P4-WP02 – Comparison
+and reports are complete on the Phase 4 branch; P4-WP03 – Plugin API is next.
+The remaining P4 items are roadmap work, and BioMesh is not called v1.
 
 ## License
 

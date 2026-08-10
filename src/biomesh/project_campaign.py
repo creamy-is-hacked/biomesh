@@ -431,6 +431,11 @@ class CampaignService:
             _campaign(definition, campaign_id)
             return _campaign_status(state, campaign_id)
 
+    def verified_records(self) -> tuple[ProjectDefinition, ProjectState]:
+        """Return validated records after verifying all project artifacts."""
+        with self._lock():
+            return self._load()
+
     def resume(self, campaign_id: str) -> CampaignStatus:
         """Reconcile interrupted work and execute only pending campaign runs."""
         with self._lock():
