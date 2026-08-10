@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "fixture_file": "../experiments/producer.yaml",
+  "condition_id": "producer",
+  "calibration_status": "CALIBRATION_REQUIRED",
+  "purpose": "Manufactured deterministic frontend-equivalence validation; not biological evidence."
+}

@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import shutil
+import tempfile
 import tomllib
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
@@ -327,8 +330,15 @@ def run_experiment_campaign(
         )
     if not callable(runner):
         raise ExperimentValidationError("runner must be callable")
-    if output_directory.exists():
-        raise ExperimentValidationError("output_directory must not already exist")
+    requested_output_directory = Path(output_directory)
+    if (
+        requested_output_directory.exists()
+        or requested_output_directory.is_symlink()
+    ):
+        raise ExperimentValidationError(
+            f"output directory already exists: {requested_output_directory}; "
+            "choose a new path with --output"
+        )
     try:
         configuration_bytes = configuration_file.read_bytes()
     except OSError as error:
@@ -339,95 +349,126 @@ def run_experiment_campaign(
     parameter_files = _parameter_file_records(
         configuration, configuration_file.parent
     )
-    output_directory.mkdir(parents=True)
-    runs_directory = output_directory / "runs"
-    runs_directory.mkdir()
-    run_records: list[dict[str, object]] = []
-    run_manifests: list[Path] = []
-    observations_by_condition: dict[
-        str, list[tuple[int, tuple[ExperimentObservation, ...]]]
-    ] = defaultdict(list)
+    for condition in configuration.conditions:
+        _validate_condition_id(condition.condition_id)
+    requested_output_directory.parent.mkdir(parents=True, exist_ok=True)
+    staging_directory = Path(
+        tempfile.mkdtemp(
+            prefix=f".{requested_output_directory.name}.",
+            dir=requested_output_directory.parent,
+        )
+    )
+    try:
+        runs_directory = staging_directory / "runs"
+        runs_directory.mkdir()
+        run_records: list[dict[str, object]] = []
+        run_manifests: list[Path] = []
+        observations_by_condition: dict[
+            str, list[tuple[int, tuple[ExperimentObservation, ...]]]
+        ] = defaultdict(list)
 
-    for condition in sorted(
-        configuration.conditions, key=lambda candidate: candidate.condition_id
-    ):
-        for seed in sorted(configuration.seeds):
-            run_directory = runs_directory / condition.condition_id / f"seed-{seed}"
-            request = ExperimentRunRequest(
-                campaign_id=configuration.campaign_id,
-                condition=condition,
-                seed=seed,
-                parameter_files=parameter_files,
-            )
-            observations = _validated_observations(runner(request, run_directory))
-            _validate_required_metrics(observations)
-            artifact_records = _validated_artifacts(run_directory)
-            raw_manifest = {
+        for condition in sorted(
+            configuration.conditions, key=lambda candidate: candidate.condition_id
+        ):
+            for seed in sorted(configuration.seeds):
+                run_directory = _condition_run_directory(
+                    runs_directory, condition.condition_id, seed
+                )
+                request = ExperimentRunRequest(
+                    campaign_id=configuration.campaign_id,
+                    condition=condition,
+                    seed=seed,
+                    parameter_files=parameter_files,
+                )
+                observations = _validated_observations(runner(request, run_directory))
+                _assert_output_tree_contained(staging_directory)
+                _validate_required_metrics(observations)
+                artifact_records = _validated_artifacts(run_directory)
+                raw_manifest = {
+                    "campaign_id": configuration.campaign_id,
+                    "condition": condition.model_dump(mode="json"),
+                    "observations": [
+                        _observation_dict(item) for item in observations
+                    ],
+                    "parameter_files": [
+                        _parameter_file_dict(item) for item in parameter_files
+                    ],
+                    "raw_artifacts": artifact_records,
+                    "seed": seed,
+                }
+                manifest_path = run_directory / "run_manifest.json"
+                _write_json(manifest_path, raw_manifest)
+                run_manifests.append(manifest_path)
+                relative_manifest = manifest_path.relative_to(
+                    staging_directory
+                ).as_posix()
+                run_records.append(
+                    {
+                        "condition_id": condition.condition_id,
+                        "run_manifest": relative_manifest,
+                        "seed": seed,
+                    }
+                )
+                observations_by_condition[condition.condition_id].append(
+                    (seed, observations)
+                )
+
+        statistics = _replicate_statistics(
+            observations_by_condition, configuration.confidence_level
+        )
+        summary_path = staging_directory / "summary_statistics.json"
+        _write_json(
+            summary_path,
+            {
                 "campaign_id": configuration.campaign_id,
-                "condition": condition.model_dump(mode="json"),
-                "observations": [_observation_dict(item) for item in observations],
+                "confidence_level": configuration.confidence_level,
+                "statistics": statistics,
+            },
+        )
+        sensitivity_path = staging_directory / "sensitivity_ranking.json"
+        _write_json(
+            sensitivity_path,
+            {
+                "campaign_id": configuration.campaign_id,
+                "method": (
+                    "absolute range of condition replicate means per metric and time"
+                ),
+                "rankings": _sensitivity_rankings(configuration, statistics),
+            },
+        )
+        campaign_manifest_path = staging_directory / "campaign_manifest.json"
+        _write_json(
+            campaign_manifest_path,
+            {
+                "campaign_configuration": configuration.model_dump(mode="json"),
+                "campaign_configuration_sha256": hashlib.sha256(
+                    configuration_bytes
+                ).hexdigest(),
                 "parameter_files": [
                     _parameter_file_dict(item) for item in parameter_files
                 ],
-                "raw_artifacts": artifact_records,
-                "seed": seed,
-            }
-            manifest_path = run_directory / "run_manifest.json"
-            _write_json(manifest_path, raw_manifest)
-            run_manifests.append(manifest_path)
-            relative_manifest = manifest_path.relative_to(output_directory).as_posix()
-            run_records.append(
-                {
-                    "condition_id": condition.condition_id,
-                    "run_manifest": relative_manifest,
-                    "seed": seed,
-                }
-            )
-            observations_by_condition[condition.condition_id].append(
-                (seed, observations)
-            )
+                "runs": run_records,
+                "sensitivity_ranking": sensitivity_path.name,
+                "summary_statistics": summary_path.name,
+            },
+        )
+        _assert_output_tree_contained(staging_directory)
+        relative_manifests = tuple(
+            path.relative_to(staging_directory) for path in run_manifests
+        )
+        os.replace(staging_directory, requested_output_directory)
+    except Exception:
+        shutil.rmtree(staging_directory, ignore_errors=True)
+        raise
 
-    statistics = _replicate_statistics(
-        observations_by_condition, configuration.confidence_level
-    )
-    summary_path = output_directory / "summary_statistics.json"
-    _write_json(
-        summary_path,
-        {
-            "campaign_id": configuration.campaign_id,
-            "confidence_level": configuration.confidence_level,
-            "statistics": statistics,
-        },
-    )
-    sensitivity_path = output_directory / "sensitivity_ranking.json"
-    _write_json(
-        sensitivity_path,
-        {
-            "campaign_id": configuration.campaign_id,
-            "method": "absolute range of condition replicate means per metric and time",
-            "rankings": _sensitivity_rankings(configuration, statistics),
-        },
-    )
-    campaign_manifest_path = output_directory / "campaign_manifest.json"
-    _write_json(
-        campaign_manifest_path,
-        {
-            "campaign_configuration": configuration.model_dump(mode="json"),
-            "campaign_configuration_sha256": hashlib.sha256(
-                configuration_bytes
-            ).hexdigest(),
-            "parameter_files": [_parameter_file_dict(item) for item in parameter_files],
-            "runs": run_records,
-            "sensitivity_ranking": sensitivity_path.name,
-            "summary_statistics": summary_path.name,
-        },
-    )
     return ExperimentCampaignResult(
-        output_directory=output_directory,
-        campaign_manifest=campaign_manifest_path,
-        summary_statistics=summary_path,
-        sensitivity_ranking=sensitivity_path,
-        run_manifests=tuple(run_manifests),
+        output_directory=requested_output_directory,
+        campaign_manifest=requested_output_directory / campaign_manifest_path.name,
+        summary_statistics=requested_output_directory / summary_path.name,
+        sensitivity_ranking=requested_output_directory / sensitivity_path.name,
+        run_manifests=tuple(
+            requested_output_directory / path for path in relative_manifests
+        ),
     )
 
 
@@ -517,6 +558,7 @@ def _validated_artifacts(run_directory: Path) -> list[dict[str, object]]:
         raise ExperimentValidationError(
             f"runner did not create run directory {run_directory}"
         )
+    _assert_output_tree_contained(run_directory)
     manifest_path = run_directory / "run_manifest.json"
     if manifest_path.exists():
         raise ExperimentValidationError("runner must not create run_manifest.json")
@@ -691,4 +733,70 @@ def _parameter_file_dict(record: ParameterFileRecord) -> dict[str, object]:
 
 def _write_json(path: Path, contents: object) -> None:
     serialized = json.dumps(contents, indent=2, sort_keys=True, allow_nan=False)
-    path.write_text(f"{serialized}\n", encoding="utf-8")
+    _atomic_write_text(path, f"{serialized}\n")
+
+
+def _validate_condition_id(condition_id: str) -> None:
+    """Require a condition identifier to be one safe output-path component."""
+    if (
+        not isinstance(condition_id, str)
+        or not condition_id.strip()
+        or condition_id in {".", ".."}
+        or "/" in condition_id
+        or "\\" in condition_id
+        or "\x00" in condition_id
+        or Path(condition_id).is_absolute()
+    ):
+        raise ExperimentValidationError(
+            "condition_id must be a nonblank path-safe identifier without separators"
+        )
+
+
+def _condition_run_directory(root: Path, condition_id: str, seed: int) -> Path:
+    _validate_condition_id(condition_id)
+    candidate = root / condition_id / f"seed-{seed}"
+    resolved_root = root.resolve()
+    resolved_candidate = candidate.resolve()
+    if not resolved_candidate.is_relative_to(resolved_root):
+        raise ExperimentValidationError("condition output path escapes campaign output")
+    return candidate
+
+
+def _assert_output_tree_contained(root: Path) -> None:
+    """Reject symlinks and every resolved output path outside ``root``."""
+    resolved_root = root.resolve()
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise ExperimentValidationError(
+                f"campaign output must not contain symlinks: {path}"
+            )
+        try:
+            path.resolve(strict=False).relative_to(resolved_root)
+        except ValueError as error:
+            raise ExperimentValidationError(
+                f"campaign output escapes requested output root: {path}"
+            ) from error
+
+
+def _atomic_file(path: Path, writer: Callable[[Path], None]) -> None:
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", dir=path.parent
+    )
+    temporary_path = Path(temporary_name)
+    os.close(descriptor)
+    try:
+        writer(temporary_path)
+        os.replace(temporary_path, path)
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+
+def _atomic_write_text(path: Path, contents: str) -> None:
+    def write(temporary_path: Path) -> None:
+        with temporary_path.open("w", encoding="utf-8") as stream:
+            stream.write(contents)
+            stream.flush()
+            os.fsync(stream.fileno())
+
+    _atomic_file(path, write)

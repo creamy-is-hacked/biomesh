@@ -4,26 +4,24 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-08 after the independent P2A clean-clone audit
-accepted P2 – Phase 2 – Colony System at implementation commit
-`6adb5def6f094762cb79ba3a2eddeede6007a2f5` with recorded limitations. The
-Python 3.14 full gate passes 145 tests; every required campaign and report path
-reproduces byte-identically.
+Snapshot verified: 2026-08-10 after the accepted P3A clean-clone audit. P3 is
+the latest audited and accepted phase at implementation commit
+`ed062935552c6a5df639c56474c7854cac91bd69`. The Python 3.14 full gate passes
+195 tests.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P3 – Phase 3 – Desktop GUI (not started) |
-| Current work package | P3-WP01 – Stable application API is the first `INCOMPLETE` item |
-| Current branch | `main` after the accepted-audit workflow |
-| Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
-| Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
-| Current test count | 145 passed (`pytest -q`, 2026-08-08) |
-| Next planned work package | P3-WP01 – Stable application API |
+| Current phase | P4 – Phase 4 – Research Platform (not started) |
+| Current work package | P4-WP01 – Project and campaign model is the first `INCOMPLETE` item |
+| Current branch | `main` after the accepted-audit merge |
+| Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
+| Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
+| Current test count | 195 passed (`pytest -q`, 2026-08-10) |
+| Next planned work package | P4-WP01 – Project and campaign model |
 
 ## Outstanding technical debt
 
-- Create the canonical P1A audit tag `v0.1.1-audit` only through the approved
-  accepted-audit workflow. It is not present in the repository.
+- License selection is pending; no license was added by this remediation pass.
 
 ## Known limitations
 
@@ -40,11 +38,45 @@ reproduces byte-identically.
   their outputs are not calibration or biological evidence. The sensitivity
   rankings are descriptive observed ranges, EPS is an immobile field, shear is
   a non-CFD exposure abstraction, and P2 adds no mutation or evolution.
+- P3-WP01 controls only the existing manufactured P2 fixture path. It is
+  synchronous and headless; checkpoints are hash-verified deterministic replay
+  positions, and export preserves the existing completed raw artifact set. The
+  pre-audit verification adapter accepts independent deterministic seed 42 for
+  CLI/application byte comparison without expanding the published P2 campaign
+  or GUI seed selectors. The minimum supported desktop display is 1024×720;
+  rich dock content scrolls locally and primary controls have explicit keyboard
+  focus order.
+- P3-WP03 renders immutable snapshots only. Cells retain SI coordinates in a
+  separate canvas from grid-indexed fields because P3-WP01 exposes no physical
+  field extent. P3-WP04 edits the five existing biological-parameter schemas
+  only; unresolved records remain `CALIBRATION_REQUIRED` and run-ineligible.
+  Audited presets are hash-bound and read-only, while editable configurations
+  are separate from UI preferences and round-trip through strict TOML
+  validation.
+- P3-WP05 controls only the exact existing P2 fixture/condition/seed surface.
+  The editor is an eligibility gate but its parameter document is not executed.
+  One worker serializes public application-service calls; stop completes any
+  in-flight accepted boundary before closing and schedules no later advance.
+  Inspection uses immutable public records; local EPS density is exposed but a
+  per-cell EPS production rate is not, so the UI does not infer one. P3-WP06
+  plots only received immutable stored metrics. Its completed-run
+  bundle preserves canonical field/table/metadata bytes, adds exact
+  CSV/Parquet and PNG representations, and publishes atomically through the
+  existing cancellable worker. Fresh-session checkpoint resume does not invent
+  unseen earlier plot history. Project models, persistent queues, plugins,
+  acceleration, calibration behavior, and new biology remain absent. P3A
+  accepted these boundaries after zero-mismatch frontend and checkpoint
+  verification, direct desktop probes, and clean wheel/sdist application paths.
 - License selection is pending.
+- The post-P3-WP04 remediation fixes BM-001, BM-002, BM-003, BM-004, BM-005,
+  BM-006, and BM-007. BM-008 and BM-009 remain deferred because their required
+  behavior is not established by the current contracts. P3A closes BM-010:
+  direct worker, stop, export-cancellation, responsiveness, and error probes
+  passed without adding scientific or P4 behavior.
 
 ## Update policy
 
-Update this file whenever a work package completes, an audit completes, a
-phase is accepted, or a release tag is created. Refresh the snapshot from the
-live branch, tags, test output, and the relevant status/limitation records;
-do not infer unverified state.
+Update this file whenever a work package completes, a remediation completes,
+an audit completes, a phase is accepted, or a release tag is created. Refresh
+the snapshot from the live branch, tags, test output, and the relevant
+status/limitation records; do not infer unverified state.

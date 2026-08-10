@@ -360,10 +360,59 @@ def test_campaign_validation_fails_explicitly_for_incomplete_inputs_and_outputs(
         )
     existing = tmp_path / "existing"
     existing.mkdir()
-    with pytest.raises(ExperimentValidationError, match="must not already exist"):
+    with pytest.raises(
+        ExperimentValidationError, match="output directory already exists"
+    ):
         run_experiment_campaign(
             configuration=_campaign(),
             configuration_file=configuration_file,
             output_directory=existing,
             runner=incomplete_runner,
         )
+
+
+def test_campaign_rejects_condition_path_traversal_and_cleans_staging(
+    tmp_path: Path,
+) -> None:
+    """Condition IDs cannot publish runs outside the requested output root."""
+    _, configuration_file = _campaign_inputs(tmp_path)
+    configuration = _campaign()
+    conditions = list(configuration.conditions)
+    conditions[0] = conditions[0].model_copy(update={"condition_id": "../escape"})
+    malicious = configuration.model_copy(update={"conditions": conditions})
+    output = tmp_path / "campaign-output"
+
+    with pytest.raises(ExperimentValidationError, match="path-safe"):
+        run_experiment_campaign(
+            configuration=malicious,
+            configuration_file=configuration_file,
+            output_directory=output,
+            runner=lambda _request, _directory: (),
+        )
+
+    assert not output.exists()
+    assert not (tmp_path / "escape").exists()
+
+
+def test_campaign_rejects_output_symlink_escape(tmp_path: Path) -> None:
+    """Campaign validation independently rejects a runner symlink escape."""
+    _, configuration_file = _campaign_inputs(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+
+    def escaping_runner(
+        request: ExperimentRunRequest, run_directory: Path
+    ) -> tuple[ExperimentObservation, ...]:
+        run_directory.mkdir(parents=True)
+        (run_directory / "outside-link").symlink_to(outside, target_is_directory=True)
+        return _observations(request.seed)
+
+    output = tmp_path / "campaign-output"
+    with pytest.raises(ExperimentValidationError, match="symlinks"):
+        run_experiment_campaign(
+            configuration=_campaign(),
+            configuration_file=configuration_file,
+            output_directory=output,
+            runner=escaping_runner,
+        )
+    assert not output.exists()

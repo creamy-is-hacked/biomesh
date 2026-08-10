@@ -279,7 +279,7 @@ def _metadata() -> RunMetadata:
         commit_hash="test",
         dependency_versions={"numpy": "test"},
         parameter_file="synthetic.toml",
-        parameter_file_sha256="test",
+        parameter_file_sha256="0" * 64,
         platform="test",
         python_version="3.14.test",
     )

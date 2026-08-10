@@ -64,8 +64,66 @@ All notable repository changes are documented here.
   parameter and raw-artifact hashes, complete SI result metrics and maps, and
   deterministic replicate means, sample variances, confidence intervals, and
   descriptive rankings limited to the observed sweep-result ranges.
+- P3-WP01 – A typed synchronous application service exposing run, pause, one
+  solver-boundary step, hash-verified checkpoint/resume, immutable snapshot and
+  cell inspection, and canonical raw-artifact export operations. The service
+  reuses the accepted P2 fixture adapter and exposes no mutable engine state,
+  GUI toolkit, worker, viewer, or new scientific behavior.
+- P3-WP02 – A PySide6 Linux desktop shell with a main window, File/View/Help
+  menus, dockable project and error-console panels, a status bar, opaque recent
+  project references, and strict atomic UI-preference persistence under the
+  user's configuration directory. Qt runs independently of the scientific
+  application service; no viewer, editor, worker, analytics, controls, export,
+  or scientific behavior was added.
+- P3-WP03 – A PyQtGraph-backed, snapshot-only simulation viewer with separate
+  coordinate-faithful cell and scalar-field canvases, zoom, pan, fit, per-layer
+  visibility and opacity, value legends, and newest-frame rate limiting.
+  Hidden layers skip cell-path rebuilds and field-image uploads; headless
+  application-path tests compare displayed fields with canonical exported
+  NumPy arrays without changing the immutable application API or simulation.
+- P3-WP04 – A schema-generated editor for all five existing validated
+  biological-parameter documents. It displays complete SI provenance and
+  explicit validation errors, keeps mutable draft/UI state separate from
+  immutable validated configurations, atomically saves and semantically
+  reloads TOML, rejects invalid or unresolved run eligibility, and provides
+  editable templates plus SHA-256-bound read-only P2A presets that cannot be
+  overwritten. It adds no run controls, worker, project model, export, or
+  scientific behavior.
+- P3-WP05 – A smallest-scope background worker and desktop controls for exact
+  existing P2 fixture/condition/seed requests, solver-boundary run, pause,
+  single-step, stop, speed targets, hash-verified checkpoint/resume, and
+  immutable cell-click inspection. Invalid or unresolved editor state cannot
+  enable run or checkpoint resume, editor documents are never passed to the
+  engine, stale-frame inspection fails explicitly, and accepted stop prevents
+  any later advancement. No scientific behavior, analytics, additional export,
+  campaign/project model, or future-phase behavior was added.
+- P3-WP06 – Snapshot-only live plots for exact stored population, dry biomass,
+  producer cell frequency, EPS, continuous quorum response, thickness,
+  roughness, and carbon/oxygen penetration depths. Completed runs export on the
+  existing worker as deterministic PNG and exact CSV/Parquet analytics while
+  preserving canonical Parquet tables, NumPy fields, seed, commit, biological
+  parameter hashes, calibration status, and software versions. Cancellation
+  and failure leave no partial target; no scientific behavior or future-phase
+  model was added.
 
 ### Audit findings
+
+- P3A – Independent clean-clone audit of pushed implementation commit
+  `ed062935552c6a5df639c56474c7854cac91bd69` passed with recorded
+  limitations. Python 3.14.4 installation, all 195 tests, the two audit
+  collections, Ruff, strict mypy, module help, GUI smoke, P1/P2 preservation,
+  zero-mismatch frontend comparison, 15-file checkpoint replay, real desktop
+  controls/inspection/analytics/export probes, 1024×720 responsiveness,
+  keyboard traversal, canonical artifacts, provenance, output hygiene, and
+  fresh wheel/sdist application paths passed. No Critical or Major finding
+  remains; manufactured fixtures remain separate from biological evidence and
+  all biological parameters remain `CALIBRATION_REQUIRED`.
+
+- P3A – The first independent audit attempt against
+  `c2de0acfc1f025492069923f7594443b933e5acd` stopped with `FAIL`: the mandatory
+  `compare-frontends` and `verify-checkpoint` CLI paths, reference selector,
+  and documented `tests/gui tests/integration` collection paths were absent.
+  No later audit condition, merge, or tag was attempted in that failed run.
 
 - P2A – Independent clean-clone audit of
   `6adb5def6f094762cb79ba3a2eddeede6007a2f5` passed with recorded limitations.
@@ -91,6 +149,30 @@ All notable repository changes are documented here.
   campaign conditions.
 
 ### Fixed
+
+- P3 pre-audit blocker remediation adds strict manufactured reference
+  selection, atomic CLI/application byte-equivalence evidence, hash-verified
+  checkpoint replay, actionable tamper failures, and the documented GUI and
+  integration test collections. The P2 published seed matrix and desktop
+  selector remain fixed at 101, 202, and 303; audit seed 42 is isolated to the
+  P3 application verification surface. Python 3.14.4, 195 tests, Ruff, strict
+  mypy, module help, `git diff --check`, both mandatory CLI paths, and offscreen
+  GUI smoke passed locally. The subsequent clean audit accepted P3 with the
+  recorded limitations above.
+- P3 display-usability remediation contains rich dock contents within local
+  scroll areas, declares and verifies a 1024×720 supported minimum, and adds
+  explicit logical keyboard focus order for run, lifecycle, speed, and
+  checkpoint controls without changing simulation state or scientific inputs.
+
+- Repository remediation after P3-WP04: SoluteField now rejects every
+  negative state; campaign condition IDs and all resolved outputs are
+  root-contained; artifacts, campaign records, checkpoints, exports, and
+  reports publish via retry-safe atomic staging; packaged wheels/sdists carry
+  runtime fixtures; CI covers external package installs and entry points;
+  RunMetadata enforces canonical SHA-256 provenance; and the accepted P1A
+  audit tag is recorded. BM-008/BM-009 remain deferred by contract. P3A closes
+  BM-010 after direct worker, stop, cancellation, responsiveness, and
+  actionable-error probes passed.
 
 - P2-WP06 – Remediated `P2A-003` by aligning README status and the documented
   command surface with all 11 published fixtures, and by documenting P2-WP05

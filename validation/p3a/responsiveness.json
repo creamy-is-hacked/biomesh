@@ -1,0 +1,10 @@
+{
+  "display_px": [1024, 720],
+  "elapsed_s": 0.323156294063665,
+  "event_iterations": 239,
+  "final_step": 3,
+  "final_time_s": 0.30000000000000004,
+  "maximum_event_gap_s": 0.023815248045139015,
+  "minimum_size_hint_px": [592, 532],
+  "snapshot_count": 4
+}

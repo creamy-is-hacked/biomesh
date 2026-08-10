@@ -1,60 +1,220 @@
 # BioMesh
 
-BioMesh is a scientifically grounded 2D bacterial biofilm simulator under
-development and a future Linux desktop research platform.
+BioMesh is a deterministic, 2D bacterial biofilm simulation platform under
+development. It combines a configurable scientific-model core with
+reproducible validation and experiment-fixture workflows, and is being shaped
+into a Linux desktop research platform.
 
-## Status
+## Current status
 
-The independent 2026-08-08 P2A – Phase 2 Audit accepted Phase 2 with recorded
-limitations. P3 – Phase 3 – Desktop GUI has not started; P3-WP01 is the next
-work package. The default P1 reference and all published P2 fixtures are
-manufactured software-validation evidence: every biological parameter remains
-`CALIBRATION_REQUIRED`, and no calibrated scientific result is claimed. See
-[the phase status](docs/PHASE_STATUS.md) for the current state.
+The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
+2026-08-10 audit passed with recorded limitations and is represented by the
+`v0.3.1-audit` tag. P4-WP01 – Project and campaign model is the next incomplete
+work package; no P4 behavior is implemented yet.
 
-## Development
+The current desktop GUI has menus, docks, status, recent project references, an
+error console, separate UI preferences, a snapshot-only simulation viewer, a
+schema-generated biological-parameter editor, solver-boundary controls,
+checkpoint interaction, and immutable cell inspection. A small background
+worker owns the synchronous application API and controls only the existing
+manufactured P2 fixture path. Snapshot-only live plots show the existing
+population, biomass, producer-frequency, EPS, quorum-response, thickness,
+roughness, and penetration-depth metrics. Completed runs export atomically as
+PNG plots, exact CSV/Parquet analytics, canonical Parquet tables and NumPy
+fields, and a provenance-complete run manifest.
 
-BioMesh uses the newest stable Python version fully supported by all required
-runtime dependencies. The current resolved version is Python 3.14. In that
-environment:
+See [the authoritative phase tracker](docs/PHASE_STATUS.md) and the
+[current project state](docs/PROJECT_STATE.md) for the live status.
+
+## What is implemented
+
+The repository currently provides:
+
+- a configurable P1 core for carbon and oxygen finite-volume fields, capsule
+  cells, metabolism, mechanics, accounting, deterministic outputs, and replay;
+- P2 colony-system components for quorum signal, EPS, producer/nonproducer
+  competition, physiological states, waste, and simplified shear exposure;
+- strict experiment and sweep fixtures with fixed seeds, provenance manifests,
+  raw Parquet/NumPy artifacts, replicate statistics, descriptive rankings, and
+  report plots;
+- CLI validation, reference-run reproduction, experiment/sweep execution, and
+  campaign reporting;
+- the P3-WP01 typed, synchronous application-service boundary for run, pause,
+  step, checkpoint/resume, inspection, snapshots, and canonical export; and
+- the P3-WP02 PySide6 desktop shell with menus, dockable project/error panels,
+  status reporting, recent file references, and UI-only XDG preferences; and
+- the P3-WP03 PyQtGraph viewer for immutable cell geometry and scalar fields,
+  with zoom, pan, fit, layer visibility/opacity, legends, and frame limiting;
+  and
+- the P3-WP04 editor for the existing validated biological-parameter schemas,
+  with provenance display, explicit validation, semantic TOML round-trip,
+  editable templates, and hash-bound read-only audited presets; and
+- the P3-WP05 worker, exact P2 fixture/condition/seed controls, deterministic
+  pause/step/stop behavior, speed target, checkpoint/resume interaction, and
+  snapshot-based cell inspection; and
+- the P3-WP06 immutable-snapshot analytics panel and cancellable background
+  export bundle with PNG, CSV, Parquet, canonical fields/tables, hashes,
+  calibration status, seed, commit, and software-version provenance; and
+- deterministic P3 frontend-equivalence and checkpoint-replay verification
+  commands over a manufactured `CALIBRATION_REQUIRED` reference selector.
+
+These are software capabilities and reproducibility contracts. They do not by
+themselves establish that the model is biologically calibrated or experimentally
+validated.
+
+## Validation and scientific scope
+
+The P1 and P2 independent audits accepted the implemented software paths with
+recorded limitations. The repository verifies deterministic behavior,
+validation cases, accounting, provenance, artifact schemas, and byte-identical
+replay for the published fixture workflows.
+
+All biological values remain configurable and `CALIBRATION_REQUIRED`. The
+reference run and published P2 fixtures are manufactured software-validation
+inputs, not biological calibration data or experimental results. In particular,
+the repository does not claim biological calibration, experimental or clinical
+validation, clinical suitability, or production readiness. P2's EPS field is
+immobile, shear is a simplified non-CFD exposure abstraction, and sensitivity
+rankings are descriptive observed ranges rather than global sensitivity
+analysis.
+
+Read [LIMITATIONS.md](LIMITATIONS.md) for the complete limitations record and
+[the biological assumptions](docs/BIOLOGICAL_ASSUMPTIONS.md) for the documented
+model assumptions.
+
+## Installation
+
+BioMesh currently requires Python **3.14** (`>=3.14,<3.15`) and targets Linux.
+The development install includes the runtime and verification tools:
 
 ```bash
 python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
-python -m biomesh --help
-ruff check .
-mypy src
-pytest -q
 ```
 
-The P2 command surface validates the published fixture set, runs seven
-experiment paths and four sweep paths, and renders one report per campaign:
+The project uses the newest stable Python version fully supported by all
+required dependencies. Do not silently substitute another Python version if a
+dependency compatibility problem appears.
+
+## Quick start
+
+From the repository root, confirm the CLI and run the core validation paths:
+
+```bash
+python -m biomesh --help
+python -m biomesh validate diffusion
+python -m biomesh validate growth
+python -m biomesh validate mass-balance
+python -m biomesh run
+python -m biomesh reproduce
+```
+
+To validate the published fixture definitions and run one complete manufactured
+P2 experiment, use a new output directory:
 
 ```bash
 python -m biomesh validate all
-python -m biomesh experiment experiments/producer.yaml
-python -m biomesh experiment experiments/nonproducer.yaml
-python -m biomesh experiment experiments/competition_50_50.yaml
-python -m biomesh experiment experiments/inoculation_intermixed.yaml
-python -m biomesh experiment experiments/inoculation_segregated.yaml
-python -m biomesh experiment experiments/eps_constitutive.yaml
-python -m biomesh experiment experiments/eps_quorum_controlled.yaml
-python -m biomesh sweep experiments/qs_threshold_sweep.yaml
-python -m biomesh sweep experiments/nutrient_oxygen_sweep.yaml
-python -m biomesh sweep experiments/eps_cost_sweep.yaml
-python -m biomesh sweep experiments/shear_sweep.yaml
-python -m biomesh report outputs/<campaign-directory>
+python -m biomesh experiment experiments/producer.yaml \
+  --output outputs/producer-experiment-demo
+python -m biomesh report outputs/producer-experiment-demo
 ```
 
-Each published condition runs at fixed seeds 101, 202, and 303. Generated
-Parquet, NumPy, manifest, statistical, ranking, and PNG artifacts are release
-reproducibility evidence only; they are not biological calibration.
+The experiment command prints the generated campaign directory. The report
+command validates that directory and writes `report.png` inside it. Output
+directories must not already exist; generated contents under `outputs/` are
+ignored by Git and should not be committed.
 
-Generated simulation output is intentionally not tracked. Project rules,
-scientific conventions, and phase boundaries are in [AGENTS.md](AGENTS.md).
+Launch the shell on Linux with `biomesh-gui` or `python -m biomesh.gui`. A
+headless startup check is available for development and CI:
+
+```bash
+QT_QPA_PLATFORM=offscreen python -m biomesh.gui --smoke-test
+```
+
+The minimum supported desktop display is 1024×720. Rich dock contents remain
+scrollable at that size. Standard Tab/Shift+Tab navigation reaches the run
+selectors, every lifecycle/checkpoint control when enabled, speed target,
+viewer controls, and editor inputs. Standard Alt menu navigation reaches the
+project and export actions; Ctrl+O opens a project reference and Ctrl+Q exits.
+
+The reproducible P3 verification reference runs the existing producer fixture
+at independent deterministic seed 42. It adds no biological value and does not
+expand the desktop's accepted P2 seed choices:
+
+```bash
+python -m biomesh compare-frontends parameters/phase2_reference.yaml --seed 42
+python -m biomesh verify-checkpoint outputs/p3a-reference-seed-42
+```
+
+The first command atomically writes byte-identical CLI and application-service
+artifact trees, a hash-bound checkpoint, and `frontend_equivalence.json`. The
+second reconstructs that checkpoint and byte-compares the replay with the
+stored uninterrupted application artifacts. Both outputs remain manufactured
+software-verification evidence and preserve `CALIBRATION_REQUIRED` status.
+
+The Simulation Controls dock selects only the 15 existing manufactured P2
+fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
+remain disabled while the Experiment Editor document is invalid or retains
+`CALIBRATION_REQUIRED` values or provenance. The editor document is a UI
+eligibility gate only: it is not passed to the frozen application API and no
+configuration-to-engine bridge is implied. Pause, step, stop, speed target,
+checkpoint, and resume operate at accepted solver boundaries. Clicking a cell
+shows its immutable public inspection record; values unavailable from that
+record are not inferred from private state.
+
+The Analytics dock plots only immutable public snapshots and their existing
+stored metrics. “Strain ratio” is explicitly the stored dimensionless producer
+cell frequency; penetration depth retains the separate stored carbon and oxygen
+series. File → Export Completed Run creates a new directory containing plot
+PNGs, exact long-form CSV and Parquet tables, byte-preserved canonical fields
+and tables, canonical run metadata, and a hash-indexed run manifest. Export can
+be cancelled before atomic publication; failures leave no partial target.
+
+## Experiment fixtures
+
+The root `experiments/` directory contains the executable manufactured fixture
+surface. Use `experiment` for:
+
+- `producer.yaml`, `nonproducer.yaml`, and `competition_50_50.yaml`;
+- `inoculation_intermixed.yaml` and `inoculation_segregated.yaml`; and
+- `eps_constitutive.yaml` and `eps_quorum_controlled.yaml`.
+
+Use `sweep` for `qs_threshold_sweep.yaml`, `nutrient_oxygen_sweep.yaml`,
+`eps_cost_sweep.yaml`, and `shear_sweep.yaml`. Each published condition runs at
+fixed seeds 101, 202, and 303. These fixture inputs and their outputs are
+software-validation evidence only; the unresolved campaign definition and
+biological parameter records remain separately provenance-labelled and
+`CALIBRATION_REQUIRED`.
+
+## Repository guide
+
+Useful entry points for users and developers:
+
+| Location | Purpose |
+| --- | --- |
+| `src/biomesh/` | Typed implementation and CLI entry point |
+| `tests/` | Focused behavior, validation, and replay tests |
+| `experiments/` | Published fixture commands and unresolved campaign definition |
+| `parameters/` | SI-labelled parameter records and provenance |
+| `outputs/` | Ignored generated runs; only `.gitkeep` is tracked |
+| `docs/ARCHITECTURE.md` | Component boundaries and data flow |
+| `docs/STANDARDS.md` | Development, scientific, verification, and Git rules |
+| `docs/PHASE_STATUS.md` | Authoritative work-package and audit status |
+| `docs/PROJECT_STATE.md` | Current branch snapshot and known limitations |
+
+For contribution and change-management rules, read [AGENTS.md](AGENTS.md) and
+[the standards](docs/STANDARDS.md) before editing. Keep scientific behavior,
+parameters, experiments, and audit evidence within their approved phase
+boundaries.
+
+## Roadmap
+
+P3 is accepted. P4 covers the broader research platform and begins with
+P4-WP01 – Project and campaign model. These are roadmap items, not completed
+functionality. BioMesh is not called v1; no v1 milestone has been reached.
 
 ## License
 
-License selection is pending.
+License selection is pending; no license has been added yet.

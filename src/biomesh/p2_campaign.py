@@ -17,9 +17,11 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import platform
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, replace
 from importlib.metadata import version
 from pathlib import Path
@@ -30,7 +32,11 @@ import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from biomesh import __version__
 from biomesh.cells import Cell
-from biomesh.competition import CompetitionStrains, advance_competition
+from biomesh.competition import (
+    CompetitionSnapshot,
+    CompetitionStrains,
+    advance_competition,
+)
 from biomesh.eps import EPSField, EPSParameters
 from biomesh.experiments import (
     REQUIRED_FIELD_ARRAYS,
@@ -42,6 +48,7 @@ from biomesh.experiments import (
     ExperimentObservation,
     ExperimentRunRequest,
     ExperimentValidationError,
+    ParameterFileRecord,
     SweepParameter,
     load_experiment_campaign,
     run_experiment_campaign,
@@ -49,10 +56,17 @@ from biomesh.experiments import (
 from biomesh.mass_balance import solute_amount_mol, top_boundary_input_rate_mol_s
 from biomesh.mechanics import MechanicsParameters, attach_initial_cells, relax_cells
 from biomesh.metabolism import MetabolismParameters
-from biomesh.outputs import MassBalanceEntry, RunMetadata, SimulationOutputWriter
+from biomesh.outputs import (
+    MassBalanceEntry,
+    OutputPaths,
+    RunMetadata,
+    SimulationOutputWriter,
+)
 from biomesh.physiology import (
+    CellPhysiologyState,
     DeadBiomassRule,
     PhysiologyParameters,
+    PhysiologySnapshot,
     advance_physiological_states,
     initialize_physiological_states,
     metabolic_activity_fractions,
@@ -64,12 +78,19 @@ from biomesh.quorum import (
     advance_quorum_signal,
     initialize_quorum_states,
 )
-from biomesh.shear import ShearParameters, advance_shear_detachment
+from biomesh.shear import (
+    CellShearState,
+    ShearParameters,
+    ShearSnapshot,
+    advance_shear_detachment,
+)
 from biomesh.solutes import SoluteField, SoluteFields
 from biomesh.waste import WasteParameters, advance_waste
 
 FIXTURE_SCHEMA_VERSION = 1
 FIXTURE_SEEDS = (101, 202, 303)
+FIXTURE_STEP_COUNT = 3
+FIXTURE_TIME_STEP_S = 0.1
 FixtureKind = Literal["experiment", "sweep"]
 PUBLISHED_FIXTURES: dict[str, tuple[FixtureKind, tuple[str, ...]]] = {
     "producer.yaml": ("experiment", ("producer",)),
@@ -115,6 +136,48 @@ class FixtureCommand:
     condition_ids: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class ResolvedFixtureRun:
+    """One exact P2 fixture condition and its immutable input identity."""
+
+    fixture_file: Path
+    fixture_sha256: str
+    request: ExperimentRunRequest
+    calibration_status: str
+
+
+@dataclass(slots=True)
+class _FixtureRunState:
+    """Private mutable state advanced only at accepted P2 solver boundaries."""
+
+    request: ExperimentRunRequest
+    fields: SoluteFields
+    signal: SoluteField
+    waste: SoluteField
+    eps: EPSField
+    cells: tuple[Cell, ...]
+    depth_m: float
+    mechanics: MechanicsParameters
+    attached_cell_ids: frozenset[str]
+    quorum_parameters: QuorumSignalParameters
+    eps_parameters: EPSParameters
+    metabolism_parameters: MetabolismParameters
+    physiology_parameters: PhysiologyParameters
+    shear_parameters: ShearParameters
+    strains: CompetitionStrains
+    writer: SimulationOutputWriter
+    quorum_states: tuple[CellQuorumState, ...]
+    physiology_states: tuple[CellPhysiologyState, ...]
+    shear_states: tuple[CellShearState, ...] | None = None
+    step_index: int = 0
+    observations: tuple[ExperimentObservation, ...] = ()
+    mass_balance_entries: tuple[MassBalanceEntry, ...] = ()
+    competition_snapshot: CompetitionSnapshot | None = None
+    physiology_snapshot: PhysiologySnapshot | None = None
+    shear_snapshot: ShearSnapshot | None = None
+    finalized_paths: OutputPaths | None = None
+
+
 def load_fixture_command(path: Path) -> FixtureCommand:
     """Load one strict JSON-compatible YAML fixture without a YAML dependency."""
     try:
@@ -154,6 +217,110 @@ def load_fixture_command(path: Path) -> FixtureCommand:
             "fixture condition_ids must be unique nonblank strings"
         )
     return FixtureCommand(fixture_kind, campaign_id, tuple(condition_ids))
+
+
+def resolve_fixture_run(
+    *, fixture_file: Path, condition_id: str, seed: int
+) -> ResolvedFixtureRun:
+    """Resolve one CLI fixture condition/seed without changing its science."""
+    command = load_fixture_command(fixture_file)
+    if condition_id not in command.condition_ids:
+        raise ExperimentValidationError(
+            f"fixture does not select condition {condition_id!r}"
+        )
+    if not isinstance(seed, int) or isinstance(seed, bool) or seed not in FIXTURE_SEEDS:
+        raise ExperimentValidationError(
+            "fixture seed must be one of " + ", ".join(map(str, FIXTURE_SEEDS))
+        )
+    return _resolve_fixture_run(
+        fixture_file=fixture_file,
+        command=command,
+        condition_id=condition_id,
+        seed=seed,
+    )
+
+
+def resolve_application_run(
+    *, fixture_file: Path, condition_id: str, seed: int
+) -> ResolvedFixtureRun:
+    """Resolve one deterministic P3 application run over an existing fixture.
+
+    The published P2 campaign remains restricted to ``FIXTURE_SEEDS``.  The P3
+    application boundary accepts any nonnegative deterministic seed so its
+    documented frontend-equivalence check can use an independent audit seed.
+    """
+    command = load_fixture_command(fixture_file)
+    if condition_id not in command.condition_ids:
+        raise ExperimentValidationError(
+            f"fixture does not select condition {condition_id!r}"
+        )
+    if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
+        raise ExperimentValidationError("application seed must be nonnegative")
+    return _resolve_fixture_run(
+        fixture_file=fixture_file,
+        command=command,
+        condition_id=condition_id,
+        seed=seed,
+    )
+
+
+def _resolve_fixture_run(
+    *,
+    fixture_file: Path,
+    command: FixtureCommand,
+    condition_id: str,
+    seed: int,
+) -> ResolvedFixtureRun:
+    """Resolve common immutable fixture inputs after caller seed validation."""
+    campaign = _software_campaign(fixture_file)
+    condition_by_id = {
+        condition.condition_id: condition for condition in campaign.conditions
+    }
+    try:
+        condition = condition_by_id[condition_id]
+    except KeyError as error:
+        raise ExperimentValidationError(
+            f"fixture selects unknown condition {condition_id!r}"
+        ) from error
+    try:
+        fixture_contents = fixture_file.read_bytes()
+    except OSError as error:
+        raise ExperimentValidationError(
+            f"unable to read fixture provenance file {fixture_file}: "
+            f"{error.strerror or error}"
+        ) from error
+    parameter_files = tuple(
+        _parameter_file_record(label, fixture_file.parent)
+        for label in sorted(campaign.biological_parameter_files)
+    )
+    return ResolvedFixtureRun(
+        fixture_file=fixture_file.resolve(),
+        fixture_sha256=hashlib.sha256(fixture_contents).hexdigest(),
+        request=ExperimentRunRequest(
+            campaign_id=command.campaign_id,
+            condition=condition,
+            seed=seed,
+            parameter_files=parameter_files,
+        ),
+        calibration_status=campaign.calibration_status,
+    )
+
+
+def _parameter_file_record(label: str, base_directory: Path) -> ParameterFileRecord:
+    path = Path(label)
+    resolved = path if path.is_absolute() else base_directory / path
+    try:
+        contents = resolved.read_bytes()
+    except OSError as error:
+        raise ExperimentValidationError(
+            f"unable to read biological parameter file {label}: "
+            f"{error.strerror or error}"
+        ) from error
+    return ParameterFileRecord(
+        label=label,
+        path=resolved.resolve(),
+        sha256=hashlib.sha256(contents).hexdigest(),
+    )
 
 
 def run_fixture_command(
@@ -274,7 +441,17 @@ def report_campaign(output_directory: Path) -> Path:
     axis.legend(fontsize="x-small")
     figure.tight_layout()
     report = output_directory / "report.png"
-    figure.savefig(report, dpi=120)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{report.name}.", suffix=".png", dir=output_directory
+    )
+    temporary_report = Path(temporary_name)
+    os.close(descriptor)
+    try:
+        figure.savefig(temporary_report, dpi=120, format="png")
+        os.replace(temporary_report, report)
+    except Exception:
+        temporary_report.unlink(missing_ok=True)
+        raise
     plt.close(figure)
     return report
 
@@ -412,10 +589,21 @@ def _run_fixture_replicate(
     request: ExperimentRunRequest, directory: Path
 ) -> tuple[ExperimentObservation, ...]:
     """Compose all approved P2 interfaces for one fixture condition/seed."""
+    state = _initialize_fixture_replicate(request, directory)
+    while state.step_index < FIXTURE_STEP_COUNT:
+        _advance_fixture_replicate(state)
+    _finalize_fixture_replicate(state)
+    return state.observations
+
+
+def _initialize_fixture_replicate(
+    request: ExperimentRunRequest, directory: Path
+) -> _FixtureRunState:
+    """Create private P2 state without advancing an accepted interval."""
     values = {
         item.name: float(item.value) for item in request.condition.parameter_overrides
     }
-    dt, depth = 0.1, 1e-6
+    depth = 1e-6
     carbon_bulk = values.get("carbon_bulk_concentration", 1e3)
     oxygen_bulk = values.get("oxygen_bulk_concentration", 1e3)
     shape, width, height = (4, 4), 4e-6, 4e-6
@@ -511,121 +699,169 @@ def _run_fixture_replicate(
     physiology_states = initialize_physiological_states(
         cells=cells, solute_fields=fields, time_s=0.0
     )
-    shear_states = None
-    observations: list[ExperimentObservation] = []
-    for index in range(1, 4):
-        start = (index - 1) * dt
-        quorum = advance_quorum_signal(
-            cells=cells,
-            signal_field=signal,
-            parameters=quorum_parameters,
-            time_step_s=dt,
-            depth_m=depth,
-            start_time_s=start,
-            cell_states=quorum_states,
-        )
-        eps_quorum_states = (
-            _constitutive_states(quorum_states)
-            if request.condition.eps_control == "constitutive"
-            else quorum_states
-        )
-        activities = metabolic_activity_fractions(
-            cells=cells, cell_states=physiology_states, parameters=physiology_parameters
-        )
-        carbon_before_mol = solute_amount_mol(fields.carbon, depth)
-        oxygen_before_mol = solute_amount_mol(fields.oxygen, depth)
-        carbon_boundary_mol = top_boundary_input_rate_mol_s(fields.carbon, depth) * dt
-        oxygen_boundary_mol = top_boundary_input_rate_mol_s(fields.oxygen, depth) * dt
-        competition = advance_competition(
-            cells=cells,
-            strain_roles=strains,
-            solute_fields=fields,
-            eps_field=eps,
-            quorum_states=eps_quorum_states,
-            eps_parameters=eps_parameters,
-            metabolism_parameters=metabolism,
-            time_step_s=dt,
-            start_time_s=start,
-            dry_biomass_per_unit_length_kg_m=1e-18,
-            metabolic_activity_fractions=activities,
-        )
-        waste_result = advance_waste(
-            cells=competition.cells,
-            waste_field=waste,
-            parameters=WasteParameters(1e-23, 0.0),
-            time_step_s=dt,
-            depth_m=depth,
-            metabolic_activity_fractions=activities,
-        )
-        shear = advance_shear_detachment(
-            cells=competition.cells,
-            eps_field=eps,
-            eps_parameters=eps_parameters,
-            parameters=shear_parameters,
-            time_step_s=dt,
-            start_time_s=start,
-            attached_cell_ids=attached.attached_cell_ids,
-            cell_states=shear_states,
-        )
-        shear_states = shear.cell_states
-        physiology = advance_physiological_states(
-            cells=competition.cells,
-            solute_fields=fields,
-            cell_states=physiology_states,
-            parameters=physiology_parameters,
-            time_step_s=dt,
-            start_time_s=start,
-            dry_biomass_per_unit_length_kg_m=1e-18,
-            detached_cell_ids=shear.detached_cell_ids,
-        )
-        retained = tuple(cell for cell in physiology.cells if cell.state != "detached")
-        retained_ids = frozenset(cell.cell_id for cell in retained)
-        relaxed = relax_cells(
-            retained,
-            mechanics,
-            attached_cell_ids=attached.attached_cell_ids & retained_ids,
-        )
-        changed = {cell.cell_id: cell for cell in relaxed.cells}
-        cells = tuple(changed.get(cell.cell_id, cell) for cell in physiology.cells)
-        physiology_states = physiology.cell_states
-        entries = _accounting_entries(
-            competition=competition,
-            quorum=quorum,
-            waste=waste_result,
-            carbon_before_mol=carbon_before_mol,
-            carbon_boundary_mol=carbon_boundary_mol,
-            carbon_after_mol=solute_amount_mol(fields.carbon, depth),
-            oxygen_before_mol=oxygen_before_mol,
-            oxygen_boundary_mol=oxygen_boundary_mol,
-            oxygen_after_mol=solute_amount_mol(fields.oxygen, depth),
-        )
-        writer.write_snapshot(
-            time_s=index * dt,
-            cells=cells,
-            solute_fields=fields,
-            division_events=(),
-            mass_balance_entries=entries,
-            quorum_signal_field=signal,
-            quorum_states=quorum.cell_states,
-            eps_field=eps,
-            competition_snapshot=competition.snapshot,
-            physiology_snapshot=physiology.snapshot,
-            waste_field=waste,
-            shear_snapshot=shear.snapshot,
-        )
-        observations.extend(
-            _observations(
-                cells,
-                eps,
-                quorum.cell_states,
-                physiology.snapshot,
-                shear.snapshot,
-                index * dt,
-            )
-        )
-        quorum_states = quorum.cell_states
-    writer.finalize()
-    return tuple(observations)
+    return _FixtureRunState(
+        request=request,
+        fields=fields,
+        signal=signal,
+        waste=waste,
+        eps=eps,
+        cells=cells,
+        depth_m=depth,
+        mechanics=mechanics,
+        attached_cell_ids=attached.attached_cell_ids,
+        quorum_parameters=quorum_parameters,
+        eps_parameters=eps_parameters,
+        metabolism_parameters=metabolism,
+        physiology_parameters=physiology_parameters,
+        shear_parameters=shear_parameters,
+        strains=strains,
+        writer=writer,
+        quorum_states=quorum_states,
+        physiology_states=physiology_states,
+    )
+
+
+def _advance_fixture_replicate(state: _FixtureRunState) -> None:
+    """Advance exactly one accepted interval in the recorded P2 update order."""
+    if state.finalized_paths is not None:
+        raise ExperimentValidationError("fixture run has already been finalized")
+    if state.step_index >= FIXTURE_STEP_COUNT:
+        raise ExperimentValidationError("fixture run has no remaining solver step")
+    dt = FIXTURE_TIME_STEP_S
+    start = state.step_index * dt
+    quorum = advance_quorum_signal(
+        cells=state.cells,
+        signal_field=state.signal,
+        parameters=state.quorum_parameters,
+        time_step_s=dt,
+        depth_m=state.depth_m,
+        start_time_s=start,
+        cell_states=state.quorum_states,
+    )
+    eps_quorum_states = (
+        _constitutive_states(state.quorum_states)
+        if state.request.condition.eps_control == "constitutive"
+        else state.quorum_states
+    )
+    activities = metabolic_activity_fractions(
+        cells=state.cells,
+        cell_states=state.physiology_states,
+        parameters=state.physiology_parameters,
+    )
+    carbon_before_mol = solute_amount_mol(state.fields.carbon, state.depth_m)
+    oxygen_before_mol = solute_amount_mol(state.fields.oxygen, state.depth_m)
+    carbon_boundary_mol = (
+        top_boundary_input_rate_mol_s(state.fields.carbon, state.depth_m) * dt
+    )
+    oxygen_boundary_mol = (
+        top_boundary_input_rate_mol_s(state.fields.oxygen, state.depth_m) * dt
+    )
+    competition = advance_competition(
+        cells=state.cells,
+        strain_roles=state.strains,
+        solute_fields=state.fields,
+        eps_field=state.eps,
+        quorum_states=eps_quorum_states,
+        eps_parameters=state.eps_parameters,
+        metabolism_parameters=state.metabolism_parameters,
+        time_step_s=dt,
+        start_time_s=start,
+        dry_biomass_per_unit_length_kg_m=1e-18,
+        metabolic_activity_fractions=activities,
+    )
+    waste_result = advance_waste(
+        cells=competition.cells,
+        waste_field=state.waste,
+        parameters=WasteParameters(1e-23, 0.0),
+        time_step_s=dt,
+        depth_m=state.depth_m,
+        metabolic_activity_fractions=activities,
+    )
+    shear = advance_shear_detachment(
+        cells=competition.cells,
+        eps_field=state.eps,
+        eps_parameters=state.eps_parameters,
+        parameters=state.shear_parameters,
+        time_step_s=dt,
+        start_time_s=start,
+        attached_cell_ids=state.attached_cell_ids,
+        cell_states=state.shear_states,
+    )
+    physiology = advance_physiological_states(
+        cells=competition.cells,
+        solute_fields=state.fields,
+        cell_states=state.physiology_states,
+        parameters=state.physiology_parameters,
+        time_step_s=dt,
+        start_time_s=start,
+        dry_biomass_per_unit_length_kg_m=1e-18,
+        detached_cell_ids=shear.detached_cell_ids,
+    )
+    retained = tuple(cell for cell in physiology.cells if cell.state != "detached")
+    retained_ids = frozenset(cell.cell_id for cell in retained)
+    relaxed = relax_cells(
+        retained,
+        state.mechanics,
+        attached_cell_ids=state.attached_cell_ids & retained_ids,
+    )
+    changed = {cell.cell_id: cell for cell in relaxed.cells}
+    cells = tuple(changed.get(cell.cell_id, cell) for cell in physiology.cells)
+    entries = _accounting_entries(
+        competition=competition,
+        quorum=quorum,
+        waste=waste_result,
+        carbon_before_mol=carbon_before_mol,
+        carbon_boundary_mol=carbon_boundary_mol,
+        carbon_after_mol=solute_amount_mol(state.fields.carbon, state.depth_m),
+        oxygen_before_mol=oxygen_before_mol,
+        oxygen_boundary_mol=oxygen_boundary_mol,
+        oxygen_after_mol=solute_amount_mol(state.fields.oxygen, state.depth_m),
+    )
+    end_time_s = (state.step_index + 1) * dt
+    state.writer.write_snapshot(
+        time_s=end_time_s,
+        cells=cells,
+        solute_fields=state.fields,
+        division_events=(),
+        mass_balance_entries=entries,
+        quorum_signal_field=state.signal,
+        quorum_states=quorum.cell_states,
+        eps_field=state.eps,
+        competition_snapshot=competition.snapshot,
+        physiology_snapshot=physiology.snapshot,
+        waste_field=state.waste,
+        shear_snapshot=shear.snapshot,
+    )
+    state.observations = (
+        *state.observations,
+        *_observations(
+            cells,
+            state.eps,
+            quorum.cell_states,
+            physiology.snapshot,
+            shear.snapshot,
+            end_time_s,
+        ),
+    )
+    state.cells = cells
+    state.quorum_states = quorum.cell_states
+    state.physiology_states = physiology.cell_states
+    state.shear_states = shear.cell_states
+    state.mass_balance_entries = entries
+    state.competition_snapshot = competition.snapshot
+    state.physiology_snapshot = physiology.snapshot
+    state.shear_snapshot = shear.snapshot
+    state.step_index += 1
+
+
+def _finalize_fixture_replicate(state: _FixtureRunState) -> OutputPaths:
+    """Finalize a complete fixture run without changing scientific state."""
+    if state.step_index != FIXTURE_STEP_COUNT:
+        raise ExperimentValidationError("only a complete fixture run can be finalized")
+    if state.finalized_paths is not None:
+        raise ExperimentValidationError("fixture run has already been finalized")
+    state.finalized_paths = state.writer.finalize()
+    return state.finalized_paths
 
 
 def _initial_cells(request: ExperimentRunRequest, width: float) -> tuple[Cell, ...]:
@@ -823,6 +1059,7 @@ def _commit_hash() -> str:
 
 def _validate_campaign_artifacts(output_directory: Path) -> None:
     """Validate the complete immutable campaign and raw-artifact contract."""
+    _assert_output_tree_contained(output_directory)
     manifest = output_directory / "campaign_manifest.json"
     summary = output_directory / "summary_statistics.json"
     ranking = output_directory / "sensitivity_ranking.json"
@@ -1269,6 +1506,22 @@ def _safe_artifact_path(root: Path, relative_path: str) -> Path:
     if not resolved_path.is_relative_to(resolved_root):
         raise ExperimentValidationError("artifact path escapes campaign output")
     return resolved_path
+
+
+def _assert_output_tree_contained(root: Path) -> None:
+    """Reject symlinks and paths resolving outside a campaign output root."""
+    resolved_root = root.resolve()
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise ExperimentValidationError(
+                f"campaign output must not contain symlinks: {path}"
+            )
+        try:
+            path.resolve(strict=False).relative_to(resolved_root)
+        except ValueError as error:
+            raise ExperimentValidationError(
+                f"campaign output escapes requested output root: {path}"
+            ) from error
 
 
 def _is_sha256(value: object) -> bool:

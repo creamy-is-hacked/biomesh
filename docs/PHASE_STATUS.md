@@ -241,13 +241,212 @@ Source: `docs/06_PHASE_THREE_DESKTOP_GUI.md`.
 
 | ID | Work package | Status |
 | --- | --- | --- |
-| P3-WP01 | Stable application API | INCOMPLETE |
-| P3-WP02 | Desktop shell | INCOMPLETE |
-| P3-WP03 | Simulation viewer | INCOMPLETE |
-| P3-WP04 | Experiment editor | INCOMPLETE |
-| P3-WP05 | Controls, checkpoints, and inspection | INCOMPLETE |
-| P3-WP06 | Analytics and export | INCOMPLETE |
-| P3A | Phase 3 Audit | INCOMPLETE |
+| P3-WP01 | Stable application API | COMPLETE |
+| P3-WP02 | Desktop shell | COMPLETE |
+| P3-WP03 | Simulation viewer | COMPLETE |
+| P3-WP04 | Experiment editor | COMPLETE |
+| P3-WP05 | Controls, checkpoints, and inspection | COMPLETE |
+| P3-WP06 | Analytics and export | COMPLETE |
+| P3A | Phase 3 Audit | COMPLETE |
+
+P3-WP01 validation evidence:
+
+- `biomesh.application.ApplicationService` exposes typed run, pause, one-boundary
+  step, hash-verified checkpoint/resume, immutable snapshot/inspection, and
+  completed canonical-artifact export operations over the existing P2 fixture
+  path. Mutable solver state remains private; no GUI or worker dependency was
+  added.
+- Pause/step/resume and checkpoint reconstruction produce equal final snapshots.
+  Snapshot arrays are immutable byte-backed read-only views. The CLI/API
+  equivalence test compares every raw artifact byte-for-byte for the same
+  fixture condition and seed.
+- Focused application/P2 validation passed 9 tests. The complete Python 3.14.4
+  gate passed 151 tests, Ruff, strict mypy, `git diff --check`, and module help.
+
+P3-WP02 validation evidence:
+
+- `biomesh.gui.main_window.MainWindow` provides File/View/Help menus, two
+  dockable panels,
+  a read-only persistent error console, a status bar, and an intentionally
+  empty central placeholder. Project entries are opaque readable-file
+  references only; no project schema, scientific load, viewer, editor,
+  controls, worker, analytics, or export behavior is present.
+- Versioned UI preferences contain only recent paths and Qt window geometry/
+  dock state. They are strictly validated, atomically written to a separate
+  XDG configuration file, and never read or write biological parameters.
+- Six focused headless tests cover startup, shell chrome, recent projects,
+  missing/invalid file errors, corrupt preferences, round-trip persistence,
+  and unchanged biological-parameter hashes. The complete Python 3.14.4 gate
+  passed 161 tests, Ruff, strict mypy, `git diff --check`, module help, and the
+  offscreen `python -m biomesh.gui --smoke-test` application path.
+
+P3-WP03 validation evidence:
+
+- `biomesh.gui.viewer.SimulationViewer` renders immutable snapshot capsules in
+  SI coordinates and the five immutable scalar arrays in explicit grid-index
+  coordinates through PyQtGraph. Separate canvases avoid inventing a physical
+  field extent absent from the frozen P3-WP01 snapshot contract.
+- Mouse navigation and explicit zoom, pan, and fit operations are available.
+  Each layer has visibility, opacity, and a unit/range legend. A newest-frame
+  limiter bounds presentation rate; focused work counters verify that hidden
+  cells skip path rebuilds and hidden fields skip image uploads.
+- The focused offscreen shell/viewer gate passed 7 tests. Its real P2
+  application-path probe rendered the reference-scale final snapshot in under
+  one second and matched all five displayed fields to canonical exported NumPy
+  arrays at `rtol=1e-12`, `atol=1e-15`. The complete Python 3.14.4 gate passed
+  162 tests, Ruff, strict mypy, `git diff --check`, module help, and the
+  offscreen GUI smoke path.
+
+P3-WP04 validation evidence:
+
+- `biomesh.gui.experiment_editor.ExperimentEditor` generates one form from
+  each of the five existing frozen biological-parameter schemas. Every record
+  displays value, SI unit, source, uncertainty, notes, calibration status, and
+  explicit field or record validation errors; names and required units remain
+  read-only.
+- Mutable draft text is structurally separate from immutable validated
+  configurations. All five schemas save atomically to TOML and reload with
+  equal Pydantic semantics. Invalid drafts cannot save or become run-eligible,
+  and schema-valid unresolved provenance remains explicitly
+  `CALIBRATION_REQUIRED` and run-ineligible.
+- Repository templates create unsaved editable copies. P2A-accepted presets
+  are SHA-256-bound to implementation revision
+  `6adb5def6f094762cb79ba3a2eddeede6007a2f5`, open read-only, and cannot be
+  overwritten even from an editable clone. Twelve focused tests, including the
+  offscreen editor path, and the offscreen application smoke path passed. The
+  complete Python 3.14.4 gate passed 174 tests, Ruff, strict mypy,
+  `git diff --check`, and module help.
+
+P3-WP05 validation evidence:
+
+- `biomesh.gui.simulation_worker.SimulationWorker` exclusively owns the frozen
+  public `ApplicationService` on one background thread. Its ordered command
+  boundary supports continuous run, pause, deterministic one-boundary step,
+  stop through public close, finite positive speed targets, hash-verified
+  checkpoint/resume, stale-safe public inspection, and error propagation.
+- Desktop selectors cover exactly the 15 existing P2 fixture/condition pairs
+  and fixed seeds 101, 202, and 303. Invalid or unresolved editor state cannot
+  enable run or checkpoint resume. Editor documents are never placed in
+  `RunRequest`, and no configuration-to-engine bridge or scientific change is
+  claimed.
+- Cell clicks hit-test immutable snapshot capsules. The inspector matches the
+  public `CellInspection` record for lineage identity/parent, strain, biomass,
+  state, local solutes, quorum activation, and local EPS density. The frozen
+  record has no per-cell EPS rate, which is reported as unavailable rather than
+  inferred from private state.
+- The focused application/GUI gate passed 18 tests. The complete Python 3.14.4
+  gate passed 185 tests, Ruff, strict mypy, `git diff --check`, module help, and
+  the offscreen GUI smoke path.
+
+P3-WP06 validation evidence:
+
+- `biomesh.gui.analytics.AnalyticsPanel` plots immutable public snapshot values
+  for population, total dry biomass, stored producer cell frequency, EPS,
+  continuous quorum-active fraction, thickness, roughness, and separate carbon
+  and oxygen penetration depths. Missing metrics/units fail explicitly and no
+  scientific quantity or conversion is inferred.
+- Completed-run export reuses the existing worker and public application export
+  operation. It preserves canonical Parquet tables, NumPy fields, and run
+  metadata bytes; adds exact long-form CSV/Parquet analytics and eight PNGs;
+  and records deterministic artifact hashes plus seed, commit, fixture and
+  biological-parameter hashes, `CALIBRATION_REQUIRED`, and software versions.
+- Focused tests compare live/export values exactly with immutable metrics and
+  corresponding canonical tables, verify export schemas and provenance,
+  atomic failure/retry and cancellation cleanup, responsive worker execution,
+  and propagated errors. The complete Python 3.14.4 gate passed 190 tests,
+  Ruff, strict mypy, `git diff --check`, module help, and the clean offscreen GUI
+  smoke path.
+
+P3A pre-audit blocker remediation evidence:
+
+- The first independent P3A attempt against
+  `c2de0acfc1f025492069923f7594443b933e5acd` stopped because the mandatory
+  `compare-frontends` and `verify-checkpoint` commands, reference selector, and
+  `tests/gui tests/integration` collection paths were absent.
+- The focused remediation adds an atomic byte-equivalence report over the
+  manufactured producer fixture, a hash-bound one-boundary checkpoint and
+  deterministic replay verifier, strict path/provenance validation, actionable
+  tamper errors, and real GUI/integration audit collections. Audit seed 42 is
+  non-biological and isolated to the P3 application verification adapter; the
+  P2 campaign and desktop selectors remain fixed at 101, 202, and 303.
+- Local Python 3.14.4 evidence passed 195 tests, Ruff, strict mypy,
+  `git diff --check`, module help, offscreen GUI smoke, exact zero-mismatch
+  frontend comparison, and zero-mismatch checkpoint replay. These were
+  pre-audit remediation results; the independent result is recorded below.
+- Display-usability prequalification reproduced a 1327×1173 implicit minimum,
+  larger than the former 1100×720 default. The focused remediation contains
+  rich dock content in local scroll areas, declares 1024×720 as the minimum
+  supported display, and verifies both that exact composed size and keyboard
+  traversal of primary controls. This changes presentation only.
+
+P3A independent audit evidence (2026-08-10):
+
+- Audit result: `PASS WITH RECORDED LIMITATIONS`; Phase 3 is accepted at pushed
+  implementation commit `ed062935552c6a5df639c56474c7854cac91bd69`. The
+  requested prerequisite `c2de0acfc1f025492069923f7594443b933e5acd` was
+  verified as an ancestor before the clean-clone audit.
+- A fresh Python 3.14.4 editable `.[dev]` install passed all mandatory commands
+  in document order: 195 full-suite tests, 2 audit-collection tests, GUI smoke,
+  zero-mismatch CLI/application equivalence, and zero-mismatch replay of all
+  15 checkpoint files. Ruff, strict mypy, `git diff --check`, module help, P1
+  validators/replay, and P2 fixture validation also passed.
+- Real application probes verified solver-boundary run, pause, step, stop,
+  checkpoint and resume; equal resumed/uninterrupted snapshots; immutable
+  visualization and inspection accuracy; schema-generated forms; explicit
+  validation and worker errors; analytics equality with stored metrics;
+  atomic cancellation; canonical artifact preservation; and complete export
+  provenance.
+- The exact 1024×720 window remained usable with local dock scrolling and
+  explicit keyboard traversal. A normal manufactured reference completed in
+  0.323156294063665 s with 239 event-loop iterations and a maximum observed
+  gap of 0.023815248045139015 s. Reference screenshots are retained under
+  `validation/p3a/`.
+- Fresh external Python 3.14.4 environments installed both wheel and sdist,
+  launched GUI smoke, reproduced zero frontend mismatches, and replayed the
+  packaged checkpoint without mismatch. Generated outputs remained ignored.
+- No Critical or Major finding remains. BM-010 is closed by direct worker,
+  cancellation, responsiveness, and actionable-error evidence. Biological
+  inputs remain SI-labelled, provenance-complete, and
+  `CALIBRATION_REQUIRED`; manufactured fixtures remain distinct from
+  biological evidence.
+
+## Dedicated repository remediation after P3-WP04
+
+This is a controlled repository-hardening pass, not P3-WP05 and not a change
+to the established P3-WP04 scientific or editor behavior.
+
+- `BM-001` is fixed: SoluteField construction and candidate updates now reject
+  every negative concentration, including values within the former numerical
+  tolerance; finite-state validation and focused regressions remain explicit.
+- `BM-002` is fixed: condition IDs are restricted to safe path components,
+  campaign runs use a staged output root, and resolved output-tree checks reject
+  escapes and symlinks before publication and during report validation.
+- `BM-003` and `BM-005` are fixed: wheel/sdist builds carry the versioned
+  experiment and parameter records as package resources; source and installed
+  runtime roots are resolved explicitly; CI covers Python 3.14 versioned CLI
+  and GUI entry points, `validate all`, GUI smoke, wheel/sdist installation,
+  and external-working-directory execution.
+- `BM-004` is fixed: simulation artifacts, campaign JSON, checkpoints, exports,
+  and PNG reports use temporary sibling files/directories and atomic replace;
+  failed publication leaves no final partial result and focused retry tests
+  cover each affected surface.
+- `BM-006` is fixed: RunMetadata requires exactly 64 lowercase hexadecimal
+  characters for parameter-file SHA-256 provenance.
+- `BM-007` is fixed through the documented accepted-audit Git workflow: the
+  canonical P1A tag `v0.1.1-audit` identifies the accepted P1A commit.
+- `BM-008` and `BM-009` are deferred. The current repository contracts do not
+  establish the required behavior sufficiently to implement it without
+  inventing policy or changing completed phase behavior.
+- `BM-010` is closed by P3A. The independent clean-clone audit directly
+  exercised worker ordering, stop, export cancellation, responsiveness, and
+  propagated actionable errors without finding a Critical or Major defect.
+
+Remediation verification evidence: Python 3.14.4, 183 tests, Ruff, strict
+mypy, module and console CLI versions/help, `validate all`, offscreen GUI
+smoke, `git diff --check`, wheel and sdist builds, and separate external-prefix
+wheel/sdist resource/CLI/GUI smoke runs using the verified local runtime
+dependencies. A network-isolated clean dependency installation was not
+available in this environment; CI now performs that clean installation.
 
 ## P4 – Phase 4 – Research Platform
 
@@ -266,13 +465,14 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 ## Next Work Package
 
-`P3-WP01 – Stable application API`.
+`P4-WP01 – Project and campaign model`.
 
 ## Remaining Issues
 
 - All biological values remain `CALIBRATION_REQUIRED`; the reference is a
   non-scientific software/replay fixture.
-- The canonical P1A tag `v0.1.1-audit` remains absent and must only be created
-  through its approved accepted-audit workflow; P2A does not retroactively
-  create it.
-- P3 – Phase 3 – Desktop GUI has not started. Its first package is P3-WP01.
+- The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
+  P2A does not retroactively change that historical audit.
+- P3A accepted Phase 3. P4-WP01 is the first incomplete item. The desktop has no
+  project/campaign model, persistent queue, plugin system, acceleration,
+  calibration behavior, or P4 feature.

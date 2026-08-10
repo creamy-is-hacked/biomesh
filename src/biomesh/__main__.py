@@ -11,12 +11,14 @@ from pathlib import Path
 
 from biomesh import __version__
 from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
+from biomesh.p3_verification import compare_frontends, verify_checkpoint
 from biomesh.reference import (
     DEFAULT_REFERENCE_PARAMETER_FILE,
     default_output_directory,
     reproduce_reference,
     run_reference,
 )
+from biomesh.runtime_resources import runtime_root
 from biomesh.validation import (
     validate_diffusion,
     validate_growth,
@@ -29,7 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="biomesh",
         description=(
-            "BioMesh Phase 1 core-model runner, validation, and P2 campaign tools."
+            "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
+            "and P3 verification tools."
         ),
     )
     parser.add_argument(
@@ -98,22 +101,47 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_REFERENCE_PARAMETER_FILE,
         help="reference TOML used to locate the default run",
     )
+
+    compare_parser = commands.add_parser(
+        "compare-frontends",
+        help="byte-compare CLI and P3 application artifacts for one reference",
+    )
+    compare_parser.add_argument("reference_file", type=Path)
+    compare_parser.add_argument("--seed", required=True, type=int)
+    compare_parser.add_argument("--output", type=Path)
+
+    checkpoint_parser = commands.add_parser(
+        "verify-checkpoint",
+        help="replay and byte-verify a P3 frontend-comparison checkpoint",
+    )
+    checkpoint_parser.add_argument("run_directory", type=Path)
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Execute one explicit P1 application path and report failures clearly."""
     parser = build_parser()
-    arguments = parser.parse_args(argv)
-    repository_root = Path.cwd()
+    command_line = list(sys.argv[1:] if argv is None else argv)
+    if command_line == ["help"]:
+        parser.print_help()
+        return 0
+    arguments = parser.parse_args(command_line)
+    working_directory = Path.cwd().resolve()
+    repository_root = runtime_root(working_directory)
     try:
         if arguments.command is None:
             parser.print_help()
             return 0
         if arguments.command == "run":
+            parameter_file = _resolve_runtime_path(
+                arguments.parameter_file, repository_root
+            )
+            output = arguments.output
+            if output is None and repository_root != working_directory:
+                output = working_directory / "outputs" / "p1-wp07-reference-seed-42"
             paths = run_reference(
-                parameter_file=arguments.parameter_file,
-                output_directory=arguments.output,
+                parameter_file=parameter_file,
+                output_directory=output,
                 seed=arguments.seed,
                 repository_root=repository_root,
             )
@@ -130,8 +158,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         if arguments.command == "reproduce":
             run_directory = arguments.run_directory
             if run_directory is None:
+                parameter_file = _resolve_runtime_path(
+                    arguments.parameter_file, repository_root
+                )
                 run_directory = default_output_directory(
-                    parameter_file=arguments.parameter_file,
+                    parameter_file=parameter_file,
                     repository_root=repository_root,
                 )
             mismatches = reproduce_reference(
@@ -150,13 +181,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 0 if not mismatches else 1
         if arguments.command in {"experiment", "sweep"}:
+            fixture_file = _resolve_runtime_path(
+                arguments.fixture_file, repository_root
+            )
             output = arguments.output
             if output is None:
-                output = repository_root / "outputs" / (
-                    f"{arguments.fixture_file.stem}-{arguments.command}"
+                output = working_directory / "outputs" / (
+                    f"{fixture_file.stem}-{arguments.command}"
                 )
             fixture_output = run_fixture_command(
-                fixture_file=arguments.fixture_file,
+                fixture_file=fixture_file,
                 output_directory=output,
                 expected_kind=arguments.command,
             )
@@ -165,10 +199,38 @@ def main(argv: Sequence[str] | None = None) -> int:
         if arguments.command == "report":
             print(report_campaign(arguments.output_directory))
             return 0
+        if arguments.command == "compare-frontends":
+            reference_file = _resolve_runtime_path(
+                arguments.reference_file, repository_root
+            )
+            output = arguments.output
+            if output is None:
+                output = working_directory / "outputs" / (
+                    f"p3a-reference-seed-{arguments.seed}"
+                )
+            comparison_result = compare_frontends(
+                reference_file=reference_file,
+                seed=arguments.seed,
+                output_directory=output,
+            )
+            print(json.dumps(comparison_result, sort_keys=True))
+            return 0
+        if arguments.command == "verify-checkpoint":
+            checkpoint_result = verify_checkpoint(arguments.run_directory)
+            print(json.dumps(checkpoint_result, sort_keys=True))
+            return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"biomesh: error: {error}", file=sys.stderr)
         return 2
     raise AssertionError("unhandled command")
+
+
+def _resolve_runtime_path(path: Path, repository_root: Path) -> Path:
+    """Resolve packaged defaults while preserving explicit caller paths."""
+    if path.is_absolute() or path.exists():
+        return path
+    packaged_candidate = repository_root / path
+    return packaged_candidate if packaged_candidate.exists() else path
 
 
 def _run_validation(

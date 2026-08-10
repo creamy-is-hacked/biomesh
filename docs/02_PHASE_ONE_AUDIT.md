@@ -160,7 +160,10 @@ P2 – Phase 2 – Colony System may start only when:
 - The audited commit is tagged.
 
 ## Tag
-Recommended tag:
+
+The canonical accepted-audit tag was created at the accepted P1A commit on
+2026-08-09 through the repository's documented Git workflow.
+
 ```bash
 git tag -a v0.1.1-audit -m "P1A: Phase 1 Audit"
 git push origin v0.1.1-audit

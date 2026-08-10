@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pyarrow.parquet as pq
 import pytest
 
+import biomesh.outputs as outputs_module
 from biomesh.cells import Cell
 from biomesh.outputs import (
     DivisionEvent,
@@ -84,7 +86,7 @@ def _metadata() -> RunMetadata:
         commit_hash="abc123",
         dependency_versions={"numpy": "test", "pyarrow": "test"},
         parameter_file="parameters/test.toml",
-        parameter_file_sha256="123456",
+        parameter_file_sha256="0" * 64,
         platform="synthetic-platform",
         python_version="3.14.test",
     )
@@ -201,12 +203,18 @@ def test_writer_exports_complete_si_state_and_provenance(tmp_path: Path) -> None
         "dependency_versions": {"numpy": "test", "pyarrow": "test"},
         "package_version": "0.0.0",
         "parameter_file": "parameters/test.toml",
-        "parameter_file_sha256": "123456",
+        "parameter_file_sha256": "0" * 64,
         "parameters": {"nested": {"alpha": 1, "beta": 2}, "schema_version": 1},
         "platform": "synthetic-platform",
         "python_version": "3.14.test",
         "seed": 42,
     }
+
+
+def test_run_metadata_rejects_malformed_sha256() -> None:
+    """Run provenance accepts only canonical lowercase SHA-256 text."""
+    with pytest.raises(OutputValidationError, match="64 lowercase"):
+        replace(_metadata(), parameter_file_sha256="123456")
 
 
 def test_identical_state_produces_byte_identical_exports(tmp_path: Path) -> None:
@@ -225,6 +233,34 @@ def test_identical_state_produces_byte_identical_exports(tmp_path: Path) -> None
         assert (first / relative_path).read_bytes() == (
             second / relative_path
         ).read_bytes()
+
+
+def test_writer_publication_failure_is_atomic_and_retryable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed finalization publishes no partial run and permits a retry."""
+    target = tmp_path / "run"
+    writer = SimulationOutputWriter(target, _metadata())
+    writer.write_snapshot(
+        time_s=4.0,
+        cells=_cells(),
+        solute_fields=_fields(),
+        division_events=(),
+        mass_balance_entries=_mass_balance(),
+    )
+    original = outputs_module._write_parquet
+
+    def fail(*_args: object, **_kwargs: object) -> None:
+        raise OSError("synthetic artifact failure")
+
+    monkeypatch.setattr(outputs_module, "_write_parquet", fail)
+    with pytest.raises(OSError, match="synthetic artifact failure"):
+        writer.finalize()
+    assert not target.exists()
+    monkeypatch.setattr(outputs_module, "_write_parquet", original)
+
+    _write_one_snapshot(target)
+    assert target.is_dir()
 
 
 def test_snapshot_input_and_lifecycle_failures_are_explicit(tmp_path: Path) -> None:
@@ -257,7 +293,9 @@ def test_snapshot_input_and_lifecycle_failures_are_explicit(tmp_path: Path) -> N
             division_events=(),
             mass_balance_entries=_mass_balance(),
         )
-    with pytest.raises(OutputValidationError, match="must not already exist"):
+    with pytest.raises(
+        OutputValidationError, match="output run directory already exists"
+    ):
         SimulationOutputWriter(tmp_path / "run", _metadata())
 
 

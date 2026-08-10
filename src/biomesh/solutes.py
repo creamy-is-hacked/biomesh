@@ -18,7 +18,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 FloatArray = NDArray[np.float64]
-NUMERICAL_TOLERANCE = 1.0e-12
 
 
 class SoluteValidationError(ValueError):
@@ -88,9 +87,9 @@ class SoluteField:
             raise SoluteValidationError(
                 "concentration_mol_m3 must contain finite values"
             )
-        if float(np.min(concentration)) < -NUMERICAL_TOLERANCE:
+        if np.any(concentration < 0.0):
             raise NegativeConcentrationError(
-                "concentration_mol_m3 cannot start below the numerical tolerance"
+                "concentration_mol_m3 cannot start below zero"
             )
         self.concentration_mol_m3 = concentration.copy()
 
@@ -134,10 +133,9 @@ class SoluteField:
         candidate = self.concentration_mol_m3 + time_step_s * (
             self.diffusivity_m2_s * self._laplacian_mol_m5() + source_rate
         )
-        if float(np.min(candidate)) < -NUMERICAL_TOLERANCE:
+        if np.any(candidate < 0.0):
             raise NegativeConcentrationError(
-                "solute update would produce a concentration below the numerical "
-                "tolerance"
+                "solute update would produce a concentration below zero"
             )
         self.concentration_mol_m3 = candidate
 

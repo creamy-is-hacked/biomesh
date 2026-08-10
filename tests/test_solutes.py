@@ -83,6 +83,41 @@ def test_stable_diffusion_preserves_nonnegative_concentrations() -> None:
     assert float(np.min(field.concentration_mol_m3)) >= -1.0e-12
 
 
+def test_solute_field_rejects_any_negative_initial_state() -> None:
+    """The stored field state is strictly finite and nonnegative."""
+    with pytest.raises(NegativeConcentrationError, match="below zero"):
+        SoluteField(
+            name="carbon",
+            shape=(2, 2),
+            width_m=1.0,
+            height_m=1.0,
+            diffusivity_m2_s=0.0,
+            top_bulk_concentration_mol_m3=0.0,
+            concentration_mol_m3=np.array(
+                [[0.0, -1.0e-15], [0.0, 0.0]], dtype=np.float64
+            ),
+        )
+
+
+def test_solute_field_rejects_tiny_negative_candidate_state() -> None:
+    """Numerical tolerance never stores a negative concentration."""
+    field = SoluteField(
+        name="carbon",
+        shape=(2, 2),
+        width_m=1.0,
+        height_m=1.0,
+        diffusivity_m2_s=0.0,
+        top_bulk_concentration_mol_m3=0.0,
+        concentration_mol_m3=np.zeros((2, 2), dtype=np.float64),
+    )
+
+    with pytest.raises(NegativeConcentrationError, match="below zero"):
+        field.advance(
+            1.0,
+            np.full((2, 2), -1.0e-15, dtype=np.float64),
+        )
+
+
 def test_bottom_boundary_uses_no_flux_stencil() -> None:
     """The bottom cell has one interior diffusive face and no exterior flux."""
     concentration = np.zeros((4, 4), dtype=np.float64)

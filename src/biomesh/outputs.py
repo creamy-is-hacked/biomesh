@@ -19,7 +19,10 @@ infer unrecorded sources, sinks, or boundary fluxes.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
+import os
+import shutil
+import tempfile
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from io import BytesIO
 from math import isfinite, sqrt
@@ -86,7 +89,7 @@ class RunMetadata:
         _require_nonblank("package_version", self.package_version)
         _require_nonblank("commit_hash", self.commit_hash)
         _require_nonblank("parameter_file", self.parameter_file)
-        _require_nonblank("parameter_file_sha256", self.parameter_file_sha256)
+        _require_sha256("parameter_file_sha256", self.parameter_file_sha256)
         _require_nonblank("platform", self.platform)
         _require_nonblank("python_version", self.python_version)
         if (
@@ -248,15 +251,32 @@ class SimulationOutputWriter:
     def __init__(self, run_directory: Path, metadata: RunMetadata) -> None:
         if not isinstance(metadata, RunMetadata):
             raise OutputValidationError("metadata must be a RunMetadata instance")
-        self._run_directory = Path(run_directory)
-        if self._run_directory.exists():
-            raise OutputValidationError("run_directory must not already exist")
-        self._run_directory.mkdir(parents=True)
+        self._published_run_directory = Path(run_directory)
+        if (
+            self._published_run_directory.exists()
+            or self._published_run_directory.is_symlink()
+        ):
+            raise OutputValidationError(
+                "output run directory already exists: "
+                f"{self._published_run_directory}; "
+                "choose a new path with --output"
+            )
+        self._published_run_directory.parent.mkdir(parents=True, exist_ok=True)
+        self._run_directory = Path(
+            tempfile.mkdtemp(
+                prefix=f".{self._published_run_directory.name}.",
+                dir=self._published_run_directory.parent,
+            )
+        )
         self._metadata = metadata
-        self._metadata_file = self._run_directory / "run_metadata.json"
-        self._write_metadata()
-        self._fields_directory = self._run_directory / "fields"
-        self._fields_directory.mkdir()
+        try:
+            self._metadata_file = self._run_directory / "run_metadata.json"
+            self._write_metadata()
+            self._fields_directory = self._run_directory / "fields"
+            self._fields_directory.mkdir()
+        except Exception:
+            shutil.rmtree(self._run_directory, ignore_errors=True)
+            raise
         self._cell_rows: list[dict[str, object]] = []
         self._summary_rows: list[dict[str, object]] = []
         self._division_event_rows: list[dict[str, object]] = []
@@ -282,6 +302,29 @@ class SimulationOutputWriter:
     def metadata(self) -> RunMetadata:
         """Return the immutable run-level provenance owned by this writer."""
         return self._metadata
+
+    def write_auxiliary_file(self, name: str, contents: bytes) -> Path:
+        """Stage one caller-owned immutable file for atomic run publication."""
+        if self._finalized:
+            raise OutputValidationError("writer has already been finalized")
+        if (
+            not isinstance(name, str)
+            or not name
+            or Path(name).name != name
+            or name in {".", ".."}
+        ):
+            raise OutputValidationError(
+                "auxiliary file name must be one path component"
+            )
+        if not isinstance(contents, bytes):
+            raise OutputValidationError("auxiliary file contents must be bytes")
+        target = self._run_directory / name
+
+        def write(path: Path) -> None:
+            path.write_bytes(contents)
+
+        _atomic_file(target, write)
+        return target
 
     def write_snapshot(
         self,
@@ -573,77 +616,123 @@ class SimulationOutputWriter:
             if self._shear_output_enabled is True
             else None
         )
-        _write_parquet(cells_table, self._cell_rows, _CELL_SCHEMA)
-        _write_parquet(summary_table, self._summary_rows, _SUMMARY_SCHEMA)
-        _write_parquet(
-            division_events_table, self._division_event_rows, _DIVISION_EVENT_SCHEMA
-        )
-        _write_parquet(
-            mass_balance_table, self._mass_balance_rows, _MASS_BALANCE_SCHEMA
-        )
-        if quorum_history_table is not None:
+        staging_directory = self._run_directory
+        try:
+            _write_parquet(cells_table, self._cell_rows, _CELL_SCHEMA)
+            _write_parquet(summary_table, self._summary_rows, _SUMMARY_SCHEMA)
             _write_parquet(
-                quorum_history_table,
-                self._quorum_history_rows,
-                _QUORUM_HISTORY_SCHEMA,
+                division_events_table,
+                self._division_event_rows,
+                _DIVISION_EVENT_SCHEMA,
             )
-        if eps_summary_table is not None:
             _write_parquet(
-                eps_summary_table,
-                self._eps_summary_rows,
-                _EPS_SUMMARY_SCHEMA,
+                mass_balance_table,
+                self._mass_balance_rows,
+                _MASS_BALANCE_SCHEMA,
             )
-        if competition_summary_table is not None:
-            _write_parquet(
-                competition_summary_table,
-                self._competition_summary_rows,
-                _COMPETITION_SUMMARY_SCHEMA,
-            )
-        if competition_strain_table is not None:
-            _write_parquet(
-                competition_strain_table,
-                self._competition_strain_rows,
-                _COMPETITION_STRAIN_SCHEMA,
-            )
-        if competition_cell_table is not None:
-            _write_parquet(
-                competition_cell_table,
-                self._competition_cell_rows,
-                _COMPETITION_CELL_SCHEMA,
-            )
-        if physiology_summary_table is not None:
-            _write_parquet(
-                physiology_summary_table,
-                self._physiology_summary_rows,
-                _PHYSIOLOGY_SUMMARY_SCHEMA,
-            )
-        if shear_summary_table is not None:
-            _write_parquet(
-                shear_summary_table,
-                self._shear_summary_rows,
-                _SHEAR_SUMMARY_SCHEMA,
-            )
+            if quorum_history_table is not None:
+                _write_parquet(
+                    quorum_history_table,
+                    self._quorum_history_rows,
+                    _QUORUM_HISTORY_SCHEMA,
+                )
+            if eps_summary_table is not None:
+                _write_parquet(
+                    eps_summary_table,
+                    self._eps_summary_rows,
+                    _EPS_SUMMARY_SCHEMA,
+                )
+            if competition_summary_table is not None:
+                _write_parquet(
+                    competition_summary_table,
+                    self._competition_summary_rows,
+                    _COMPETITION_SUMMARY_SCHEMA,
+                )
+            if competition_strain_table is not None:
+                _write_parquet(
+                    competition_strain_table,
+                    self._competition_strain_rows,
+                    _COMPETITION_STRAIN_SCHEMA,
+                )
+            if competition_cell_table is not None:
+                _write_parquet(
+                    competition_cell_table,
+                    self._competition_cell_rows,
+                    _COMPETITION_CELL_SCHEMA,
+                )
+            if physiology_summary_table is not None:
+                _write_parquet(
+                    physiology_summary_table,
+                    self._physiology_summary_rows,
+                    _PHYSIOLOGY_SUMMARY_SCHEMA,
+                )
+            if shear_summary_table is not None:
+                _write_parquet(
+                    shear_summary_table,
+                    self._shear_summary_rows,
+                    _SHEAR_SUMMARY_SCHEMA,
+                )
+            os.replace(staging_directory, self._published_run_directory)
+        except Exception:
+            shutil.rmtree(staging_directory, ignore_errors=True)
+            raise
+
+        def published_path(path: Path) -> Path:
+            return self._published_run_directory / path.relative_to(staging_directory)
+
+        self._run_directory = self._published_run_directory
+        self._metadata_file = published_path(self._metadata_file)
+        self._fields_directory = published_path(self._fields_directory)
+        self._field_files = [published_path(path) for path in self._field_files]
         self._finalized = True
         return OutputPaths(
-            run_directory=self._run_directory,
+            run_directory=self._published_run_directory,
             metadata_file=self._metadata_file,
-            cells_table=cells_table,
-            summary_table=summary_table,
-            division_events_table=division_events_table,
-            mass_balance_table=mass_balance_table,
+            cells_table=published_path(cells_table),
+            summary_table=published_path(summary_table),
+            division_events_table=published_path(division_events_table),
+            mass_balance_table=published_path(mass_balance_table),
             field_files=tuple(self._field_files),
-            quorum_history_table=quorum_history_table,
-            eps_summary_table=eps_summary_table,
-            competition_summary_table=competition_summary_table,
-            competition_strain_table=competition_strain_table,
-            competition_cell_table=competition_cell_table,
-            physiology_summary_table=physiology_summary_table,
-            shear_summary_table=shear_summary_table,
+            quorum_history_table=(
+                published_path(quorum_history_table)
+                if quorum_history_table is not None
+                else None
+            ),
+            eps_summary_table=(
+                published_path(eps_summary_table)
+                if eps_summary_table is not None
+                else None
+            ),
+            competition_summary_table=(
+                published_path(competition_summary_table)
+                if competition_summary_table is not None
+                else None
+            ),
+            competition_strain_table=(
+                published_path(competition_strain_table)
+                if competition_strain_table is not None
+                else None
+            ),
+            competition_cell_table=(
+                published_path(competition_cell_table)
+                if competition_cell_table is not None
+                else None
+            ),
+            physiology_summary_table=(
+                published_path(physiology_summary_table)
+                if physiology_summary_table is not None
+                else None
+            ),
+            shear_summary_table=(
+                published_path(shear_summary_table)
+                if shear_summary_table is not None
+                else None
+            ),
         )
 
     def _write_metadata(self) -> None:
         contents = json.dumps(self._metadata.as_dict(), indent=2, sort_keys=True)
-        self._metadata_file.write_text(f"{contents}\n", encoding="utf-8")
+        _atomic_write_text(self._metadata_file, f"{contents}\n")
 
     @staticmethod
     def _validated_cells(cells: Sequence[Cell]) -> tuple[Cell, ...]:
@@ -1083,14 +1172,18 @@ def _write_parquet(
     path: Path, rows: list[dict[str, object]], schema: pa.Schema
 ) -> None:
     table = pa.Table.from_pylist(rows, schema=schema)
-    pq.write_table(
-        table,
-        path,
-        compression="zstd",
-        use_dictionary=False,
-        write_statistics=False,
-        data_page_version="1.0",
-    )
+
+    def write(temporary_path: Path) -> None:
+        pq.write_table(
+            table,
+            temporary_path,
+            compression="zstd",
+            use_dictionary=False,
+            write_statistics=False,
+            data_page_version="1.0",
+        )
+
+    _atomic_file(path, write)
 
 
 def _write_field_archive(
@@ -1180,15 +1273,20 @@ def _write_field_archive(
                 ),
             ),
         )
-    with ZipFile(path, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
-        for name, array in arrays:
-            buffer = BytesIO()
-            _write_array(buffer, array, allow_pickle=False)
-            entry = ZipInfo(f"{name}.npy", date_time=(1980, 1, 1, 0, 0, 0))
-            entry.compress_type = ZIP_DEFLATED
-            entry.create_system = 3
-            entry.external_attr = 0o600 << 16
-            archive.writestr(entry, buffer.getvalue(), compress_type=ZIP_DEFLATED)
+    def write(temporary_path: Path) -> None:
+        with ZipFile(
+            temporary_path, "w", compression=ZIP_DEFLATED, compresslevel=9
+        ) as archive:
+            for name, array in arrays:
+                buffer = BytesIO()
+                _write_array(buffer, array, allow_pickle=False)
+                entry = ZipInfo(f"{name}.npy", date_time=(1980, 1, 1, 0, 0, 0))
+                entry.compress_type = ZIP_DEFLATED
+                entry.create_system = 3
+                entry.external_attr = 0o600 << 16
+                archive.writestr(entry, buffer.getvalue(), compress_type=ZIP_DEFLATED)
+
+    _atomic_file(path, write)
 
 
 def _biofilm_geometry(cells: Sequence[Cell]) -> tuple[float, float]:
@@ -1211,6 +1309,42 @@ def _biofilm_geometry(cells: Sequence[Cell]) -> tuple[float, float]:
 def _require_nonblank(name: str, value: str) -> None:
     if not isinstance(value, str) or not value.strip():
         raise OutputValidationError(f"{name} must be a non-blank string")
+
+
+def _require_sha256(name: str, value: str) -> None:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise OutputValidationError(
+            f"{name} must be exactly 64 lowercase hexadecimal characters"
+        )
+
+
+def _atomic_file(path: Path, writer: Callable[[Path], None]) -> None:
+    """Write one unpublished sibling file, then publish it with replacement."""
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", dir=path.parent
+    )
+    temporary_path = Path(temporary_name)
+    os.close(descriptor)
+    try:
+        writer(temporary_path)
+        os.replace(temporary_path, path)
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+
+def _atomic_write_text(path: Path, contents: str) -> None:
+    def write(temporary_path: Path) -> None:
+        with temporary_path.open("w", encoding="utf-8") as stream:
+            stream.write(contents)
+            stream.flush()
+            os.fsync(stream.fileno())
+
+    _atomic_file(path, write)
 
 
 def _require_finite(name: str, value: float) -> None:
