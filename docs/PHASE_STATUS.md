@@ -454,7 +454,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 | ID | Work package | Status |
 | --- | --- | --- |
-| P4-WP01 | Project and campaign model | INCOMPLETE |
+| P4-WP01 | Project and campaign model | COMPLETE |
 | P4-WP02 | Comparison and reports | INCOMPLETE |
 | P4-WP03 | Plugin API | INCOMPLETE |
 | P4-WP04 | Model and parameter registry | INCOMPLETE |
@@ -463,9 +463,27 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | P4-WP07 | Experimental acceleration boundary | INCOMPLETE |
 | P4A | Phase 4 Audit | INCOMPLETE |
 
+P4-WP01 validation evidence:
+
+- Versioned strict records cover projects, accepted-fixture experiments,
+  campaigns, expanded runs, SHA-256/size-bound artifacts, retryable failures,
+  and deterministic audit transitions. Explicit and arithmetic seed policies
+  expand to one stable seed per replicate, while SI/provenance-complete sweep
+  points must exactly match accepted P2 fixture conditions.
+- Project creation and state replacement are atomic. A process lock serializes
+  campaign mutation; interrupted runs become explicit retryable failures, and
+  a crash after artifact publication recovers only a hash-verified completion
+  receipt. Completed runs are skipped by resume/retry and artifact drift fails
+  closed.
+- The `project create` and `campaign status`, `resume`, and `retry` CLI paths
+  passed using the real P3 `ApplicationService`. A controlled fixture-drift
+  failure remained visible and retried successfully after restoration. The
+  Python 3.14.4 full gate passed module help, Ruff, strict mypy,
+  `git diff --check`, and 204 tests. No P4-WP02 or later behavior was added.
+
 ## Next Work Package
 
-`P4-WP01 – Project and campaign model`.
+`P4-WP02 – Comparison and reports`.
 
 ## Remaining Issues
 
@@ -473,6 +491,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 is the first incomplete item. The desktop has no
-  project/campaign model, persistent queue, plugin system, acceleration,
-  calibration behavior, or P4 feature.
+- P3A accepted Phase 3. P4-WP01 adds the local synchronous project/campaign
+  model only. The desktop has no persistent queue, comparison/report workflow,
+  plugin system, model registry, portable archive, acceleration, or calibration
+  behavior.

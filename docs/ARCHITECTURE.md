@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P3-WP06
+## Current architecture through P4-WP01
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -27,6 +27,11 @@ cell-click inspection without changing the application or scientific layers.
 P3-WP06 adds snapshot-only live analytics and one cancellable completed-run
 export command on that existing worker. Canonical fields, tables, and run
 metadata still originate only from the public application export operation.
+P4-WP01 adds a versioned local project/campaign persistence layer above the
+same synchronous public application service. It expands explicit sweep points
+and deterministic seed policies into immutable run identities, records atomic
+lifecycle transitions, and hash-verifies every completed artifact without
+changing any accepted engine or GUI contract.
 
 Dependency direction is intentionally simple:
 
@@ -54,6 +59,8 @@ GUI worker      -> public ApplicationService operations only
 GUI inspector   -> immutable CellInspection records only
 GUI analytics   -> immutable RunSnapshot metrics only
 GUI export      -> public completed export + immutable snapshot history
+project/campaign -> public ApplicationService + accepted fixture identities
+project state    -> atomic JSON + process lock + append-only audit sequence
 tests           -> public component interfaces
 ```
 

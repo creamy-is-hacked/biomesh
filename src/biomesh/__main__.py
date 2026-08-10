@@ -12,6 +12,7 @@ from pathlib import Path
 from biomesh import __version__
 from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
 from biomesh.p3_verification import compare_frontends, verify_checkpoint
+from biomesh.project_campaign import CampaignService, create_project
 from biomesh.reference import (
     DEFAULT_REFERENCE_PARAMETER_FILE,
     default_output_directory,
@@ -32,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="biomesh",
         description=(
             "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
-            "and P3 verification tools."
+            "P3 verification, and P4 project tools."
         ),
     )
     parser.add_argument(
@@ -115,6 +116,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="replay and byte-verify a P3 frontend-comparison checkpoint",
     )
     checkpoint_parser.add_argument("run_directory", type=Path)
+
+    project_parser = commands.add_parser(
+        "project", help="create a versioned local P4 research project"
+    )
+    project_commands = project_parser.add_subparsers(dest="project_command")
+    project_create = project_commands.add_parser(
+        "create", help="create a project from a strict JSON definition"
+    )
+    project_create.add_argument("definition_file", type=Path)
+    project_create.add_argument("project_directory", type=Path)
+
+    campaign_parser = commands.add_parser(
+        "campaign", help="inspect, resume, or retry a P4 project campaign"
+    )
+    campaign_commands = campaign_parser.add_subparsers(dest="campaign_command")
+    for operation in ("status", "resume", "retry"):
+        operation_parser = campaign_commands.add_parser(operation)
+        operation_parser.add_argument("project_directory", type=Path)
+        operation_parser.add_argument("campaign_id")
+        if operation == "retry":
+            operation_parser.add_argument(
+                "--run-id",
+                action="append",
+                dest="run_ids",
+                help="retry one failed run ID; repeat to select multiple runs",
+            )
     return parser
 
 
@@ -219,6 +246,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             checkpoint_result = verify_checkpoint(arguments.run_directory)
             print(json.dumps(checkpoint_result, sort_keys=True))
             return 0
+        if arguments.command == "project":
+            if arguments.project_command != "create":
+                raise ValueError("project requires create")
+            created = create_project(
+                arguments.definition_file, arguments.project_directory
+            )
+            print(json.dumps({"project_directory": str(created)}, sort_keys=True))
+            return 0
+        if arguments.command == "campaign":
+            if arguments.campaign_command is None:
+                raise ValueError("campaign requires status, resume, or retry")
+            service = CampaignService(arguments.project_directory)
+            if arguments.campaign_command == "status":
+                status = service.status(arguments.campaign_id)
+            elif arguments.campaign_command == "resume":
+                status = service.resume(arguments.campaign_id)
+            elif arguments.campaign_command == "retry":
+                status = service.retry(arguments.campaign_id, arguments.run_ids)
+            else:
+                raise AssertionError("unhandled campaign command")
+            print(json.dumps(status.as_dict(), sort_keys=True))
+            return 1 if status.failed and arguments.campaign_command != "status" else 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"biomesh: error: {error}", file=sys.stderr)
         return 2

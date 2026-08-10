@@ -4,20 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-10 after the accepted P3A clean-clone audit. P3 is
-the latest audited and accepted phase at implementation commit
-`ed062935552c6a5df639c56474c7854cac91bd69`. The Python 3.14 full gate passes
-195 tests.
+Snapshot verified: 2026-08-10 after P4-WP01 completion on the Phase 4 branch.
+P3 remains the latest audited and accepted phase at accepted main commit
+`ae67b3fb86e61cd75d373d790decdd4008bd3313` and tag `v0.3.1-audit`. The Python
+3.14 full gate passes 204 tests.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P4 – Phase 4 – Research Platform (not started) |
-| Current work package | P4-WP01 – Project and campaign model is the first `INCOMPLETE` item |
-| Current branch | `main` after the accepted-audit merge |
+| Current phase | P4 – Phase 4 – Research Platform (in progress) |
+| Current work package | P4-WP01 – Project and campaign model is `COMPLETE`; P4-WP02 is the first `INCOMPLETE` item |
+| Current branch | `phase-4-research-platform` |
 | Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
-| Current test count | 195 passed (`pytest -q`, 2026-08-10) |
-| Next planned work package | P4-WP01 – Project and campaign model |
+| Current test count | 204 passed (`pytest -q`, 2026-08-10) |
+| Next planned work package | P4-WP02 – Comparison and reports |
 
 ## Outstanding technical debt
 
@@ -73,6 +73,14 @@ the latest audited and accepted phase at implementation commit
   behavior is not established by the current contracts. P3A closes BM-010:
   direct worker, stop, export-cancellation, responsiveness, and error probes
   passed without adding scientific or P4 behavior.
+- P4-WP01 projects reference accepted application fixtures by SHA-256 and
+  execute synchronously through `ApplicationService`. Sweep points must match
+  existing fixture conditions exactly; they do not apply arbitrary editor
+  documents or invent biological inputs. Project archives, persistent queues,
+  comparisons/reports, plugins, model registries, packaging, and acceleration
+  remain absent until their later work packages. Completed run artifacts are
+  immutable and hash-verified, but portable fixture inclusion is intentionally
+  deferred to P4-WP06.
 
 ## Update policy
 

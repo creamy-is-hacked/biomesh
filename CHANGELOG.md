@@ -105,6 +105,14 @@ All notable repository changes are documented here.
   parameter hashes, calibration status, and software versions. Cancellation
   and failure leave no partial target; no scientific behavior or future-phase
   model was added.
+- P4-WP01 – Versioned local project, experiment, campaign, run, artifact, and
+  audit records with deterministic explicit/sequence seed policies and
+  SI/provenance-complete sweep points. Campaign state is lock-protected and
+  atomically replaced; interrupted publication is reconciled from a completion
+  receipt, completed artifacts are hash-verified and never rerun, and partial
+  failures remain explicit until an intentional retry. The synchronous runner
+  uses only the accepted P3 application service and adds no queue, report,
+  plugin, registry, archive, acceleration, calibration, or scientific behavior.
 
 ### Audit findings
 
