@@ -210,8 +210,8 @@ def test_invalid_request_and_export_targets_fail_explicitly(tmp_path: Path) -> N
     with pytest.raises(ApplicationError, match="nonnegative integer"):
         RunRequest(FIXTURE, "producer", True)  # type: ignore[arg-type]
     with ApplicationService() as service:
-        with pytest.raises(ApplicationError, match="fixture seed must be one of"):
-            service.run(RunRequest(FIXTURE, "producer", 999))
+        with pytest.raises(ApplicationError, match="does not select condition"):
+            service.run(RunRequest(FIXTURE, "missing", 101))
         _complete(service)
         existing = tmp_path / "existing"
         existing.mkdir()

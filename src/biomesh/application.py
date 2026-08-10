@@ -40,7 +40,7 @@ from biomesh.p2_campaign import (
     _finalize_fixture_replicate,
     _FixtureRunState,
     _initialize_fixture_replicate,
-    resolve_fixture_run,
+    resolve_application_run,
 )
 
 CHECKPOINT_SCHEMA_VERSION = 1
@@ -87,7 +87,7 @@ class ApplicationService:
         if not isinstance(request, RunRequest):
             raise ApplicationError("request must be a RunRequest")
         try:
-            resolved = resolve_fixture_run(
+            resolved = resolve_application_run(
                 fixture_file=request.fixture_file,
                 condition_id=request.condition_id,
                 seed=request.seed,

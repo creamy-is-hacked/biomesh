@@ -55,7 +55,9 @@ The repository currently provides:
   snapshot-based cell inspection; and
 - the P3-WP06 immutable-snapshot analytics panel and cancellable background
   export bundle with PNG, CSV, Parquet, canonical fields/tables, hashes,
-  calibration status, seed, commit, and software-version provenance.
+  calibration status, seed, commit, and software-version provenance; and
+- deterministic P3 frontend-equivalence and checkpoint-replay verification
+  commands over a manufactured `CALIBRATION_REQUIRED` reference selector.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -131,6 +133,21 @@ headless startup check is available for development and CI:
 ```bash
 QT_QPA_PLATFORM=offscreen python -m biomesh.gui --smoke-test
 ```
+
+The reproducible P3 verification reference runs the existing producer fixture
+at independent deterministic seed 42. It adds no biological value and does not
+expand the desktop's accepted P2 seed choices:
+
+```bash
+python -m biomesh compare-frontends parameters/phase2_reference.yaml --seed 42
+python -m biomesh verify-checkpoint outputs/p3a-reference-seed-42
+```
+
+The first command atomically writes byte-identical CLI and application-service
+artifact trees, a hash-bound checkpoint, and `frontend_equivalence.json`. The
+second reconstructs that checkpoint and byte-compares the replay with the
+stored uninterrupted application artifacts. Both outputs remain manufactured
+software-verification evidence and preserve `CALIBRATION_REQUIRED` status.
 
 The Simulation Controls dock selects only the 15 existing manufactured P2
 fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume

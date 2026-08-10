@@ -4,10 +4,10 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-10 after P3-WP06 implementation and validation. P2
+Snapshot verified: 2026-08-10 after P3 pre-audit blocker remediation. P2
 remains the latest audited and accepted phase at
 implementation commit `6adb5def6f094762cb79ba3a2eddeede6007a2f5`; P3 is in
-progress and has not been audited. The Python 3.14 full gate passes 190 tests.
+progress and has not been audited. The Python 3.14 full gate passes 195 tests.
 
 | Field | Current state |
 | --- | --- |
@@ -16,7 +16,7 @@ progress and has not been audited. The Python 3.14 full gate passes 190 tests.
 | Current branch | `phase-3-desktop-gui` |
 | Latest accepted phase | P2 – Phase 2 – Colony System, accepted by P2A on 2026-08-08 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.2.1-audit` (P2A release, 2026-08-08) |
-| Current test count | 190 passed (`pytest -q`, 2026-08-10) |
+| Current test count | 195 passed (`pytest -q`, 2026-08-10) |
 | Next planned work package | P3A – Phase 3 Audit |
 
 ## Outstanding technical debt
@@ -40,7 +40,10 @@ progress and has not been audited. The Python 3.14 full gate passes 190 tests.
   a non-CFD exposure abstraction, and P2 adds no mutation or evolution.
 - P3-WP01 controls only the existing manufactured P2 fixture path. It is
   synchronous and headless; checkpoints are hash-verified deterministic replay
-  positions, and export preserves the existing completed raw artifact set.
+  positions, and export preserves the existing completed raw artifact set. The
+  pre-audit verification adapter accepts independent deterministic seed 42 for
+  CLI/application byte comparison without expanding the published P2 campaign
+  or GUI seed selectors.
 - P3-WP03 renders immutable snapshots only. Cells retain SI coordinates in a
   separate canvas from grid-indexed fields because P3-WP01 exposes no physical
   field extent. P3-WP04 edits the five existing biological-parameter schemas

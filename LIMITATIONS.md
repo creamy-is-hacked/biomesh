@@ -1,5 +1,19 @@
 # Limitations
 
+## P3 pre-audit verification remediation
+
+- `parameters/phase2_reference.yaml` is a strict selector for the existing
+  manufactured producer fixture. Seed 42 is an independent deterministic
+  verification seed, not a biological parameter, calibration value, or an
+  additional desktop campaign choice. The published P2 campaign and GUI remain
+  restricted to seeds 101, 202, and 303.
+- Frontend equivalence compares canonical bytes emitted by the P2 CLI runner
+  boundary with bytes exported through the public P3 application service.
+  Checkpoints remain hash-bound replay positions rather than serialized mutable
+  solver state. Passing these commands proves software equivalence and replay,
+  not biological validity.
+- P3 remains unaudited until every independent P3A condition passes.
+
 ## P3-WP06 – Analytics and export
 
 - Live analytics retain only immutable public snapshots received during the

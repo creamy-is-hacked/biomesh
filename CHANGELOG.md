@@ -108,6 +108,12 @@ All notable repository changes are documented here.
 
 ### Audit findings
 
+- P3A – The first independent audit attempt against
+  `c2de0acfc1f025492069923f7594443b933e5acd` stopped with `FAIL`: the mandatory
+  `compare-frontends` and `verify-checkpoint` CLI paths, reference selector,
+  and documented `tests/gui tests/integration` collection paths were absent.
+  No later audit condition, merge, or tag was attempted in that failed run.
+
 - P2A – Independent clean-clone audit of
   `6adb5def6f094762cb79ba3a2eddeede6007a2f5` passed with recorded limitations.
   Python 3.14.4 installation, all 145 tests, P1 validators and replay, all 11
@@ -132,6 +138,15 @@ All notable repository changes are documented here.
   campaign conditions.
 
 ### Fixed
+
+- P3 pre-audit blocker remediation adds strict manufactured reference
+  selection, atomic CLI/application byte-equivalence evidence, hash-verified
+  checkpoint replay, actionable tamper failures, and the documented GUI and
+  integration test collections. The P2 published seed matrix and desktop
+  selector remain fixed at 101, 202, and 303; audit seed 42 is isolated to the
+  P3 application verification surface. Python 3.14.4, 195 tests, Ruff, strict
+  mypy, module help, `git diff --check`, both mandatory CLI paths, and offscreen
+  GUI smoke passed locally. P3A remains incomplete pending a clean audit.
 
 - Repository remediation after P3-WP04: SoluteField now rejects every
   negative state; campaign condition IDs and all resolved outputs are

@@ -232,6 +232,46 @@ def resolve_fixture_run(
         raise ExperimentValidationError(
             "fixture seed must be one of " + ", ".join(map(str, FIXTURE_SEEDS))
         )
+    return _resolve_fixture_run(
+        fixture_file=fixture_file,
+        command=command,
+        condition_id=condition_id,
+        seed=seed,
+    )
+
+
+def resolve_application_run(
+    *, fixture_file: Path, condition_id: str, seed: int
+) -> ResolvedFixtureRun:
+    """Resolve one deterministic P3 application run over an existing fixture.
+
+    The published P2 campaign remains restricted to ``FIXTURE_SEEDS``.  The P3
+    application boundary accepts any nonnegative deterministic seed so its
+    documented frontend-equivalence check can use an independent audit seed.
+    """
+    command = load_fixture_command(fixture_file)
+    if condition_id not in command.condition_ids:
+        raise ExperimentValidationError(
+            f"fixture does not select condition {condition_id!r}"
+        )
+    if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
+        raise ExperimentValidationError("application seed must be nonnegative")
+    return _resolve_fixture_run(
+        fixture_file=fixture_file,
+        command=command,
+        condition_id=condition_id,
+        seed=seed,
+    )
+
+
+def _resolve_fixture_run(
+    *,
+    fixture_file: Path,
+    command: FixtureCommand,
+    condition_id: str,
+    seed: int,
+) -> ResolvedFixtureRun:
+    """Resolve common immutable fixture inputs after caller seed validation."""
     campaign = _software_campaign(fixture_file)
     condition_by_id = {
         condition.condition_id: condition for condition in campaign.conditions

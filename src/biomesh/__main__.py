@@ -11,6 +11,7 @@ from pathlib import Path
 
 from biomesh import __version__
 from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
+from biomesh.p3_verification import compare_frontends, verify_checkpoint
 from biomesh.reference import (
     DEFAULT_REFERENCE_PARAMETER_FILE,
     default_output_directory,
@@ -30,7 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="biomesh",
         description=(
-            "BioMesh Phase 1 core-model runner, validation, and P2 campaign tools."
+            "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
+            "and P3 verification tools."
         ),
     )
     parser.add_argument(
@@ -99,6 +101,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_REFERENCE_PARAMETER_FILE,
         help="reference TOML used to locate the default run",
     )
+
+    compare_parser = commands.add_parser(
+        "compare-frontends",
+        help="byte-compare CLI and P3 application artifacts for one reference",
+    )
+    compare_parser.add_argument("reference_file", type=Path)
+    compare_parser.add_argument("--seed", required=True, type=int)
+    compare_parser.add_argument("--output", type=Path)
+
+    checkpoint_parser = commands.add_parser(
+        "verify-checkpoint",
+        help="replay and byte-verify a P3 frontend-comparison checkpoint",
+    )
+    checkpoint_parser.add_argument("run_directory", type=Path)
     return parser
 
 
@@ -182,6 +198,26 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if arguments.command == "report":
             print(report_campaign(arguments.output_directory))
+            return 0
+        if arguments.command == "compare-frontends":
+            reference_file = _resolve_runtime_path(
+                arguments.reference_file, repository_root
+            )
+            output = arguments.output
+            if output is None:
+                output = working_directory / "outputs" / (
+                    f"p3a-reference-seed-{arguments.seed}"
+                )
+            comparison_result = compare_frontends(
+                reference_file=reference_file,
+                seed=arguments.seed,
+                output_directory=output,
+            )
+            print(json.dumps(comparison_result, sort_keys=True))
+            return 0
+        if arguments.command == "verify-checkpoint":
+            checkpoint_result = verify_checkpoint(arguments.run_directory)
+            print(json.dumps(checkpoint_result, sort_keys=True))
             return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"biomesh: error: {error}", file=sys.stderr)

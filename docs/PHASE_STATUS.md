@@ -357,6 +357,23 @@ P3-WP06 validation evidence:
   Ruff, strict mypy, `git diff --check`, module help, and the clean offscreen GUI
   smoke path.
 
+P3A pre-audit blocker remediation evidence:
+
+- The first independent P3A attempt against
+  `c2de0acfc1f025492069923f7594443b933e5acd` stopped because the mandatory
+  `compare-frontends` and `verify-checkpoint` commands, reference selector, and
+  `tests/gui tests/integration` collection paths were absent.
+- The focused remediation adds an atomic byte-equivalence report over the
+  manufactured producer fixture, a hash-bound one-boundary checkpoint and
+  deterministic replay verifier, strict path/provenance validation, actionable
+  tamper errors, and real GUI/integration audit collections. Audit seed 42 is
+  non-biological and isolated to the P3 application verification adapter; the
+  P2 campaign and desktop selectors remain fixed at 101, 202, and 303.
+- Local Python 3.14.4 evidence passed 195 tests, Ruff, strict mypy,
+  `git diff --check`, module help, offscreen GUI smoke, exact zero-mismatch
+  frontend comparison, and zero-mismatch checkpoint replay. P3A remains
+  `INCOMPLETE` pending a clean independent rerun.
+
 ## Dedicated repository remediation after P3-WP04
 
 This is a controlled repository-hardening pass, not P3-WP05 and not a change
@@ -422,4 +439,4 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
   P2A does not retroactively change that historical audit.
 - P3-WP06 is complete. P3A is the first incomplete item. The desktop has no
   project/campaign model, persistent queue, plugin system, acceleration,
-  calibration behavior, P3A audit behavior, or P4 feature.
+  calibration behavior, or P4 feature.
