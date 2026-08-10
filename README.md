@@ -134,6 +134,12 @@ headless startup check is available for development and CI:
 QT_QPA_PLATFORM=offscreen python -m biomesh.gui --smoke-test
 ```
 
+The minimum supported desktop display is 1024×720. Rich dock contents remain
+scrollable at that size. Standard Tab/Shift+Tab navigation reaches the run
+selectors, every lifecycle/checkpoint control when enabled, speed target,
+viewer controls, and editor inputs. Standard Alt menu navigation reaches the
+project and export actions; Ctrl+O opens a project reference and Ctrl+Q exits.
+
 The reproducible P3 verification reference runs the existing producer fixture
 at independent deterministic seed 42. It adds no biological value and does not
 expand the desktop's accepted P2 seed choices:

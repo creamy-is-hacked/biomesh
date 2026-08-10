@@ -43,7 +43,9 @@ progress and has not been audited. The Python 3.14 full gate passes 195 tests.
   positions, and export preserves the existing completed raw artifact set. The
   pre-audit verification adapter accepts independent deterministic seed 42 for
   CLI/application byte comparison without expanding the published P2 campaign
-  or GUI seed selectors.
+  or GUI seed selectors. The minimum supported desktop display is 1024×720;
+  rich dock content scrolls locally and primary controls have explicit keyboard
+  focus order.
 - P3-WP03 renders immutable snapshots only. Cells retain SI coordinates in a
   separate canvas from grid-indexed fields because P3-WP01 exposes no physical
   field extent. P3-WP04 edits the five existing biological-parameter schemas

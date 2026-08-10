@@ -147,6 +147,10 @@ All notable repository changes are documented here.
   P3 application verification surface. Python 3.14.4, 195 tests, Ruff, strict
   mypy, module help, `git diff --check`, both mandatory CLI paths, and offscreen
   GUI smoke passed locally. P3A remains incomplete pending a clean audit.
+- P3 display-usability remediation contains rich dock contents within local
+  scroll areas, declares and verifies a 1024×720 supported minimum, and adds
+  explicit logical keyboard focus order for run, lifecycle, speed, and
+  checkpoint controls without changing simulation state or scientific inputs.
 
 - Repository remediation after P3-WP04: SoluteField now rejects every
   negative state; campaign condition IDs and all resolved outputs are

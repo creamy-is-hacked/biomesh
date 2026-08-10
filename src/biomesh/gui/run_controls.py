@@ -224,6 +224,23 @@ class SimulationControls(QWidget):
         layout.addWidget(self._checkpoint_status)
         layout.addStretch()
 
+        focus_order = (
+            self._fixture,
+            self._seed,
+            self._run,
+            self._pause,
+            self._step,
+            self._resume,
+            self._stop,
+            self._speed,
+            self._checkpoint,
+            self._load_checkpoint,
+        )
+        for current, following in zip(
+            focus_order[:-1], focus_order[1:], strict=True
+        ):
+            QWidget.setTabOrder(current, following)
+
     @Slot()
     def _emit_run(self) -> None:
         self.run_requested.emit(self.selected_request())

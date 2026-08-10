@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
+    QScrollArea,
     QStatusBar,
     QVBoxLayout,
     QWidget,
@@ -34,6 +35,8 @@ from biomesh.gui.simulation_worker import SimulationWorker
 from biomesh.gui.viewer import SimulationViewer
 from biomesh.runtime_resources import RuntimeResourceError, runtime_root
 
+MINIMUM_DISPLAY_SIZE = (1024, 720)
+
 
 class MainWindow(QMainWindow):
     """Desktop chrome around snapshot viewing and validated parameter editing."""
@@ -46,6 +49,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setObjectName("biomeshMainWindow")
         self.setWindowTitle("BioMesh")
+        self.setMinimumSize(*MINIMUM_DISPLAY_SIZE)
         self.resize(1100, 720)
         self._preferences_store = preferences_store or UiPreferencesStore()
         self._repository_root = (
@@ -171,7 +175,13 @@ class MainWindow(QMainWindow):
             self._repository_root, self._experiment_dock
         )
         self._experiment_editor.error_reported.connect(self.report_error)
-        self._experiment_dock.setWidget(self._experiment_editor)
+        self._experiment_dock.setWidget(
+            _scrollable_dock_content(
+                self._experiment_editor,
+                self._experiment_dock,
+                "experimentEditorDockScroll",
+            )
+        )
         self.addDockWidget(
             Qt.DockWidgetArea.RightDockWidgetArea, self._experiment_dock
         )
@@ -181,7 +191,13 @@ class MainWindow(QMainWindow):
         self._controls = SimulationControls(
             self._repository_root, self._controls_dock
         )
-        self._controls_dock.setWidget(self._controls)
+        self._controls_dock.setWidget(
+            _scrollable_dock_content(
+                self._controls,
+                self._controls_dock,
+                "simulationControlsDockScroll",
+            )
+        )
         self.addDockWidget(
             Qt.DockWidgetArea.LeftDockWidgetArea, self._controls_dock
         )
@@ -189,7 +205,13 @@ class MainWindow(QMainWindow):
         self._inspector_dock = QDockWidget("Cell Inspector", self)
         self._inspector_dock.setObjectName("cellInspectorDock")
         self._inspector = CellInspector(self._inspector_dock)
-        self._inspector_dock.setWidget(self._inspector)
+        self._inspector_dock.setWidget(
+            _scrollable_dock_content(
+                self._inspector,
+                self._inspector_dock,
+                "cellInspectorDockScroll",
+            )
+        )
         self.addDockWidget(
             Qt.DockWidgetArea.RightDockWidgetArea, self._inspector_dock
         )
@@ -197,7 +219,13 @@ class MainWindow(QMainWindow):
         self._analytics_dock = QDockWidget("Analytics", self)
         self._analytics_dock.setObjectName("analyticsDock")
         self._analytics = AnalyticsPanel(self._analytics_dock)
-        self._analytics_dock.setWidget(self._analytics)
+        self._analytics_dock.setWidget(
+            _scrollable_dock_content(
+                self._analytics,
+                self._analytics_dock,
+                "analyticsDockScroll",
+            )
+        )
         self.addDockWidget(
             Qt.DockWidgetArea.BottomDockWidgetArea, self._analytics_dock
         )
@@ -451,3 +479,15 @@ def _default_repository_root() -> Path:
     except RuntimeResourceError:
         pass
     return Path.cwd()
+
+
+def _scrollable_dock_content(
+    widget: QWidget, dock: QDockWidget, object_name: str
+) -> QScrollArea:
+    """Contain rich dock content so the supported display can remain usable."""
+    scroll = QScrollArea(dock)
+    scroll.setObjectName(object_name)
+    scroll.setWidgetResizable(True)
+    scroll.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    scroll.setWidget(widget)
+    return scroll

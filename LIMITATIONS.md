@@ -13,6 +13,10 @@
   solver state. Passing these commands proves software equivalence and replay,
   not biological validity.
 - P3 remains unaudited until every independent P3A condition passes.
+- The minimum supported desktop display is 1024×720. At that size, dock
+  contents may require their local scroll bars; smaller displays are not
+  claimed usable. Keyboard focus follows explicit lifecycle-control order and
+  standard Qt navigation for the remaining widgets and menus.
 
 ## P3-WP06 – Analytics and export
 

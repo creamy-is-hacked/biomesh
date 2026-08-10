@@ -6,11 +6,37 @@ import hashlib
 import sys
 from pathlib import Path
 
-from PySide6.QtWidgets import QApplication, QDockWidget, QMenu, QPlainTextEdit
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import (
+    QApplication,
+    QDockWidget,
+    QMenu,
+    QPlainTextEdit,
+    QPushButton,
+    QWidget,
+)
 
-from biomesh.gui.main_window import MainWindow
+from biomesh.application_types import RunStatus
+from biomesh.gui.main_window import MINIMUM_DISPLAY_SIZE, MainWindow
 from biomesh.gui.preferences import UiPreferences, UiPreferencesStore
+from biomesh.gui.run_controls import SimulationControls
 from biomesh.gui.viewer import SimulationViewer
+
+
+def _tab_focus_names(
+    application: QApplication, window: MainWindow, start: QWidget
+) -> set[str]:
+    start.setFocus(Qt.FocusReason.TabFocusReason)
+    application.processEvents()
+    names: set[str] = set()
+    for _ in range(200):
+        focused = application.focusWidget()
+        if focused is not None and focused.objectName():
+            names.add(focused.objectName())
+        QTest.keyClick(window, Qt.Key.Key_Tab)
+        application.processEvents()
+    return names
 
 
 def main(root: Path) -> int:
@@ -25,8 +51,13 @@ def main(root: Path) -> int:
     }
 
     window = MainWindow(UiPreferencesStore(preferences_file))
+    window.resize(*MINIMUM_DISPLAY_SIZE)
     window.show()
     application.processEvents()
+    assert (window.width(), window.height()) == MINIMUM_DISPLAY_SIZE
+    minimum_hint = window.minimumSizeHint()
+    assert minimum_hint.width() <= MINIMUM_DISPLAY_SIZE[0]
+    assert minimum_hint.height() <= MINIMUM_DISPLAY_SIZE[1]
     assert isinstance(window.centralWidget(), SimulationViewer)
     assert window.menuBar().findChild(QMenu, "fileMenu") is not None
     assert window.menuBar().findChild(QMenu, "viewMenu") is not None
@@ -36,6 +67,45 @@ def main(root: Path) -> int:
     console = window.findChild(QPlainTextEdit, "errorConsole")
     assert console is not None and console.isReadOnly()
     assert window.statusBar().currentMessage() == "Ready"
+
+    controls = window.findChild(SimulationControls, "simulationControls")
+    run = window.findChild(QPushButton, "runButton")
+    assert controls is not None and run is not None
+    controls.set_editor_run_eligible(True)
+    idle_focus = _tab_focus_names(application, window, run)
+    idle_expected = {
+        "runFixtureCondition",
+        "runSeed",
+        "runButton",
+        "speedTarget",
+        "resumeCheckpointButton",
+        "fitViewButton",
+        "zoomInButton",
+        "zoomOutButton",
+    }
+    assert idle_expected <= idle_focus, (idle_expected - idle_focus, idle_focus)
+
+    controls.accept_state(RunStatus.RUNNING)
+    running_focus = _tab_focus_names(application, window, controls)
+    running_expected = {"pauseButton", "stopButton", "speedTarget"}
+    assert running_expected <= running_focus, (
+        running_expected - running_focus,
+        running_focus,
+    )
+
+    controls.accept_state(RunStatus.PAUSED)
+    paused_focus = _tab_focus_names(application, window, controls)
+    paused_expected = {
+        "stepButton",
+        "resumeButton",
+        "stopButton",
+        "checkpointButton",
+    }
+    assert paused_expected <= paused_focus, (
+        paused_expected - paused_focus,
+        paused_focus,
+    )
+    controls.accept_state(RunStatus.IDLE)
 
     assert window.open_project_reference(project_file)
     assert window.current_project == project_file.resolve()

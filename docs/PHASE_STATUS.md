@@ -373,6 +373,11 @@ P3A pre-audit blocker remediation evidence:
   `git diff --check`, module help, offscreen GUI smoke, exact zero-mismatch
   frontend comparison, and zero-mismatch checkpoint replay. P3A remains
   `INCOMPLETE` pending a clean independent rerun.
+- Display-usability prequalification reproduced a 1327×1173 implicit minimum,
+  larger than the former 1100×720 default. The focused remediation contains
+  rich dock content in local scroll areas, declares 1024×720 as the minimum
+  supported display, and verifies both that exact composed size and keyboard
+  traversal of primary controls. This changes presentation only.
 
 ## Dedicated repository remediation after P3-WP04
 
