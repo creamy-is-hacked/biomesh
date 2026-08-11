@@ -19,6 +19,7 @@ from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
+from functools import lru_cache
 from pathlib import Path, PurePosixPath
 from typing import Annotated, Any, Literal, Self
 
@@ -36,9 +37,14 @@ from biomesh.application_types import RunRequest
 from biomesh.application_types import RunStatus as ApplicationRunStatus
 from biomesh.experiments import SweepParameter
 from biomesh.p2_campaign import resolve_application_run
+from biomesh.plugin_api import PluginSetManifest, plugin_set_sha256
+from biomesh.registry_catalog import builtin_registry
+from biomesh.registry_types import canonical_registry_sha256
 from biomesh.runtime_resources import runtime_root
 
-PROJECT_SCHEMA_VERSION = 1
+PROJECT_SCHEMA_VERSION = 2
+LEGACY_PROJECT_SCHEMA_VERSION = 1
+COMPLETION_RECEIPT_SCHEMA_VERSION = 2
 PROJECT_MANIFEST = "project.json"
 PROJECT_STATE = "campaign_state.json"
 COMPLETION_RECEIPT = ".biomesh-completion.json"
@@ -174,15 +180,71 @@ class CampaignRecord(BaseModel):
         return self
 
 
+class ExecutionModelIdentity(BaseModel):
+    """One exact named/versioned built-in model and parameter-set selection."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    model_id: Identifier
+    model_version: NonBlankText
+    model_record_sha256: Sha256
+    parameter_set_id: Identifier
+    parameter_set_version: NonBlankText
+    parameter_set_record_sha256: Sha256
+    parameter_source: NonBlankText
+    parameter_source_sha256: Sha256
+
+    @model_validator(mode="after")
+    def validate_parameter_source(self) -> Self:
+        _safe_relative_path(self.parameter_source, label="parameter source")
+        return self
+
+
+class ExecutionIdentity(BaseModel):
+    """Prospective registry and zero-plugin identity for accepted execution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    schema_version: Literal[1]
+    executor_id: Literal["org.biomesh.accepted-p2-fixture"]
+    executor_version: Literal["1.0.0"]
+    registry_schema_version: Literal[1]
+    registry_sha256: Sha256
+    models: list[ExecutionModelIdentity] = Field(min_length=1)
+    plugin_api_version: Literal[1]
+    plugin_set_kind: Literal["zero_plugin_core"]
+    plugin_set_sha256: Sha256
+    plugin_selection_sha256: list[Sha256] = Field(default_factory=list)
+    calibration_status: Literal["CALIBRATION_REQUIRED"]
+
+    @model_validator(mode="after")
+    def validate_selection(self) -> Self:
+        model_keys = [(item.model_id, item.model_version) for item in self.models]
+        parameter_keys = [
+            (item.parameter_set_id, item.parameter_set_version)
+            for item in self.models
+        ]
+        if model_keys != sorted(model_keys) or len(model_keys) != len(set(model_keys)):
+            raise ValueError("execution models must be unique and identity-sorted")
+        if len(parameter_keys) != len(set(parameter_keys)):
+            raise ValueError("execution parameter-set identities must be unique")
+        if self.plugin_selection_sha256:
+            raise ValueError(
+                "accepted campaign execution requires exactly zero plugins"
+            )
+        return self
+
+
 class ProjectDefinition(BaseModel):
     """Complete immutable project, experiment, and campaign definition."""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[1]
+    schema_version: Literal[1, 2]
     project: ProjectRecord
     experiments: list[ExperimentRecord] = Field(min_length=1)
     campaigns: list[CampaignRecord] = Field(min_length=1)
+    execution_identity: ExecutionIdentity | None = None
 
     @model_validator(mode="after")
     def validate_references(self) -> Self:
@@ -199,6 +261,13 @@ class ProjectDefinition(BaseModel):
             raise ValueError(
                 "campaigns reference missing experiments: " + ", ".join(missing)
             )
+        if self.schema_version == LEGACY_PROJECT_SCHEMA_VERSION:
+            if self.execution_identity is not None:
+                raise ValueError(
+                    "schema-version 1 projects cannot declare execution_identity"
+                )
+        elif self.execution_identity is None:
+            raise ValueError("schema-version 2 projects require execution_identity")
         return self
 
 
@@ -326,6 +395,7 @@ class RunExecutionRequest:
     point: SweepPoint
     run: RunRecord
     fixture_file: Path
+    execution_identity: ExecutionIdentity
 
 
 RunExecutor = Callable[[RunExecutionRequest, Path], None]
@@ -362,6 +432,52 @@ def load_project_definition(path: Path) -> ProjectDefinition:
         raise ProjectCampaignError(
             f"invalid project definition {path}: {error}"
         ) from error
+
+
+@lru_cache(maxsize=4)
+def accepted_core_execution_identity(repository_root: Path) -> ExecutionIdentity:
+    """Return the code-owned registry and empty-plugin identity for new runs."""
+    registry = builtin_registry(repository_root)
+    parameter_sets = {
+        (entry.record.model_id, entry.record.model_version): entry
+        for entry in registry.parameter_sets
+    }
+    models: list[ExecutionModelIdentity] = []
+    for model_entry in registry.models:
+        model = model_entry.record
+        parameter_entry = parameter_sets[(model.model_id, model.model_version)]
+        parameter_set = parameter_entry.record
+        models.append(
+            ExecutionModelIdentity(
+                model_id=model.model_id,
+                model_version=model.model_version,
+                model_record_sha256=model_entry.record_sha256,
+                parameter_set_id=parameter_set.parameter_set_id,
+                parameter_set_version=parameter_set.parameter_set_version,
+                parameter_set_record_sha256=parameter_entry.record_sha256,
+                parameter_source=parameter_set.source,
+                parameter_source_sha256=parameter_set.source_sha256,
+            )
+        )
+    empty_plugins = PluginSetManifest(schema_version=1, plugins=[])
+    return ExecutionIdentity(
+        schema_version=1,
+        executor_id="org.biomesh.accepted-p2-fixture",
+        executor_version="1.0.0",
+        registry_schema_version=registry.schema_version,
+        registry_sha256=canonical_registry_sha256(registry),
+        models=models,
+        plugin_api_version=1,
+        plugin_set_kind="zero_plugin_core",
+        plugin_set_sha256=plugin_set_sha256(empty_plugins),
+        plugin_selection_sha256=[],
+        calibration_status="CALIBRATION_REQUIRED",
+    )
+
+
+def execution_identity_sha256(identity: ExecutionIdentity) -> str:
+    """Return the canonical SHA-256 for one complete execution selection."""
+    return hashlib.sha256(_model_bytes(identity)).hexdigest()
 
 
 def create_project(definition_file: Path, project_directory: Path) -> Path:
@@ -443,6 +559,13 @@ class CampaignService:
         _campaign(definition, campaign_id)
         return _campaign_status(state, campaign_id)
 
+    def preflight_execution(self, campaign_id: str) -> ExecutionIdentity:
+        """Verify prospective execution identity without changing campaign state."""
+        with self._lock():
+            definition, state = self._load()
+            _campaign(definition, campaign_id)
+            return _require_execution_identity(definition, state, campaign_id)
+
     def verified_records(self) -> tuple[ProjectDefinition, ProjectState]:
         """Return validated records after verifying all project artifacts."""
         with self.verified_snapshot() as records:
@@ -461,7 +584,8 @@ class CampaignService:
         with self._lock():
             definition, state = self._load()
             _campaign(definition, campaign_id)
-            state = self._reconcile_interrupted(state, campaign_id)
+            _require_execution_identity(definition, state, campaign_id)
+            state = self._reconcile_interrupted(definition, state, campaign_id)
             return self._execute_pending(definition, state, campaign_id)
 
     def retry(
@@ -471,7 +595,8 @@ class CampaignService:
         with self._lock():
             definition, state = self._load()
             _campaign(definition, campaign_id)
-            state = self._reconcile_interrupted(state, campaign_id)
+            _require_execution_identity(definition, state, campaign_id)
+            state = self._reconcile_interrupted(definition, state, campaign_id)
             failed = {
                 run.run_id: run
                 for run in state.runs
@@ -525,6 +650,7 @@ class CampaignService:
             definition, state = self._load()
             _campaign(definition, campaign_id)
             state = self._reconcile_interrupted(
+                definition,
                 state,
                 campaign_id,
                 cancellation_requested=cancellation_requested,
@@ -582,7 +708,7 @@ class CampaignService:
         ]:
             raise ProjectCampaignError("project state run plan does not match manifest")
         if verify_artifacts:
-            self._verify_artifact_layout(state)
+            self._verify_artifact_layout(definition, state)
         return definition, state
 
     def _write_state(self, state: ProjectState) -> None:
@@ -590,6 +716,7 @@ class CampaignService:
 
     def _reconcile_interrupted(
         self,
+        definition: ProjectDefinition,
         state: ProjectState,
         campaign_id: str,
         *,
@@ -603,7 +730,9 @@ class CampaignService:
                 or run.status is not CampaignRunStatus.RUNNING
             ):
                 continue
-            recovered = self._recover_published_run(run)
+            recovered = self._recover_published_run(
+                run, definition.execution_identity
+            )
             if recovered is not None:
                 replacements[run.run_id] = recovered
                 audit.append(
@@ -660,6 +789,9 @@ class CampaignService:
         campaign_id: str,
     ) -> CampaignStatus:
         campaign = _campaign(definition, campaign_id)
+        execution_identity = _require_execution_identity(
+            definition, state, campaign_id
+        )
         experiment = _experiment(definition, campaign.experiment_id)
         point_by_id = {point.point_id: point for point in campaign.sweep_matrix}
         fixture = _resolve_fixture_file(experiment.fixture_file, self.project_directory)
@@ -687,6 +819,7 @@ class CampaignService:
                 point=point_by_id[running.point_id],
                 run=running,
                 fixture_file=fixture,
+                execution_identity=execution_identity,
             )
             try:
                 artifacts = self._run_and_publish(request)
@@ -741,8 +874,14 @@ class CampaignService:
             receipt = {
                 "artifacts": [item.model_dump(mode="json") for item in artifacts],
                 "attempt": request.run.attempt_count,
+                "execution_identity": request.execution_identity.model_dump(
+                    mode="json"
+                ),
+                "execution_identity_sha256": execution_identity_sha256(
+                    request.execution_identity
+                ),
                 "run_id": request.run.run_id,
-                "schema_version": PROJECT_SCHEMA_VERSION,
+                "schema_version": COMPLETION_RECEIPT_SCHEMA_VERSION,
             }
             _write_bytes(
                 staging / COMPLETION_RECEIPT,
@@ -754,11 +893,15 @@ class CampaignService:
             if staging.exists():
                 shutil.rmtree(staging, ignore_errors=True)
 
-    def _recover_published_run(self, run: RunRecord) -> RunRecord | None:
+    def _recover_published_run(
+        self,
+        run: RunRecord,
+        execution_identity: ExecutionIdentity | None,
+    ) -> RunRecord | None:
         directory = self.project_directory / "artifacts" / run.run_id
         if not directory.exists():
             return None
-        artifacts = self._completion_artifacts(run, directory)
+        artifacts = self._completion_artifacts(run, directory, execution_identity)
         _verify_artifact_directory(directory, artifacts)
         return run.model_copy(
             update={
@@ -768,24 +911,46 @@ class CampaignService:
         )
 
     def _completion_artifacts(
-        self, run: RunRecord, directory: Path
+        self,
+        run: RunRecord,
+        directory: Path,
+        execution_identity: ExecutionIdentity | None,
     ) -> tuple[ArtifactRecord, ...]:
         receipt_path = directory / COMPLETION_RECEIPT
         if not receipt_path.is_file() or receipt_path.is_symlink():
             raise ProjectCampaignError("completion receipt is missing or is a symlink")
         payload = _read_json(receipt_path, label="completion receipt")
-        if not isinstance(payload, dict) or set(payload) != {
-            "artifacts",
-            "attempt",
-            "run_id",
-            "schema_version",
-        }:
+        if not isinstance(payload, dict):
             raise ProjectCampaignError("invalid completion receipt fields")
-        if (
-            payload["schema_version"] != PROJECT_SCHEMA_VERSION
-            or payload["run_id"] != run.run_id
-            or payload["attempt"] != run.attempt_count
-        ):
+        receipt_version = payload.get("schema_version")
+        legacy_fields = {"artifacts", "attempt", "run_id", "schema_version"}
+        current_fields = legacy_fields | {
+            "execution_identity",
+            "execution_identity_sha256",
+        }
+        if receipt_version == LEGACY_PROJECT_SCHEMA_VERSION:
+            if set(payload) != legacy_fields or execution_identity is not None:
+                raise ProjectCampaignError("invalid legacy completion receipt fields")
+        elif receipt_version == COMPLETION_RECEIPT_SCHEMA_VERSION:
+            if set(payload) != current_fields or execution_identity is None:
+                raise ProjectCampaignError("invalid completion receipt fields")
+            try:
+                receipt_identity = ExecutionIdentity.model_validate(
+                    payload["execution_identity"]
+                )
+            except ValidationError as error:
+                raise ProjectCampaignError(
+                    f"invalid completion execution identity: {error}"
+                ) from error
+            if (
+                receipt_identity != execution_identity
+                or payload["execution_identity_sha256"]
+                != execution_identity_sha256(execution_identity)
+            ):
+                raise ProjectCampaignError("completion execution identity mismatch")
+        else:
+            raise ProjectCampaignError("unsupported completion receipt schema_version")
+        if payload["run_id"] != run.run_id or payload["attempt"] != run.attempt_count:
             raise ProjectCampaignError("completion receipt identity mismatch")
         try:
             artifacts = tuple(
@@ -797,7 +962,9 @@ class CampaignService:
             ) from error
         return artifacts
 
-    def _verify_artifact_layout(self, state: ProjectState) -> None:
+    def _verify_artifact_layout(
+        self, definition: ProjectDefinition, state: ProjectState
+    ) -> None:
         artifact_root = self.project_directory / "artifacts"
         run_by_id = {run.run_id: run for run in state.runs}
         for path in artifact_root.iterdir():
@@ -822,7 +989,9 @@ class CampaignService:
         for run in state.runs:
             if run.status is CampaignRunStatus.COMPLETED:
                 directory = self.project_directory / "artifacts" / run.run_id
-                receipt_artifacts = self._completion_artifacts(run, directory)
+                receipt_artifacts = self._completion_artifacts(
+                    run, directory, definition.execution_identity
+                )
                 if receipt_artifacts != tuple(run.artifacts):
                     raise ProjectCampaignError(
                         "completed run receipt does not match project state"
@@ -850,10 +1019,27 @@ def execute_application_run(request: RunExecutionRequest, output: Path) -> None:
         raise ProjectCampaignError(
             "sweep point parameters do not match the accepted fixture condition"
         )
+    actual_parameter_sources = {
+        Path(record.label).name: record.sha256
+        for record in resolved.request.parameter_files
+    }
+    expected_parameter_sources = {
+        Path(model.parameter_source).name: model.parameter_source_sha256
+        for model in request.execution_identity.models
+    }
+    if actual_parameter_sources != expected_parameter_sources:
+        raise ProjectCampaignError(
+            "execution parameter resources do not match the selected registry "
+            "identity"
+        )
     request_record = {
         "calibration_status": request.experiment.calibration_status,
         "campaign_id": request.campaign.campaign_id,
         "condition_id": request.run.condition_id,
+        "execution_identity": request.execution_identity.model_dump(mode="json"),
+        "execution_identity_sha256": execution_identity_sha256(
+            request.execution_identity
+        ),
         "experiment_id": request.experiment.experiment_id,
         "fixture_sha256": request.experiment.fixture_sha256,
         "point": request.point.model_dump(mode="json"),
@@ -883,6 +1069,15 @@ def execute_application_run(request: RunExecutionRequest, output: Path) -> None:
 def _normalize_and_validate_definition(
     definition: ProjectDefinition, definition_parent: Path
 ) -> ProjectDefinition:
+    if definition.execution_identity is not None:
+        expected_identity = accepted_core_execution_identity(
+            runtime_root(Path.cwd())
+        )
+        if definition.execution_identity != expected_identity:
+            raise ProjectCampaignError(
+                "project execution_identity does not match the accepted built-in "
+                "model registry and zero-plugin core selection"
+            )
     experiments: list[ExperimentRecord] = []
     for experiment in definition.experiments:
         fixture = _resolve_fixture_file(experiment.fixture_file, definition_parent)
@@ -924,6 +1119,33 @@ def _normalize_and_validate_definition(
                     f"condition {point.condition_id}"
                 )
     return normalized
+
+
+def _require_execution_identity(
+    definition: ProjectDefinition,
+    state: ProjectState,
+    campaign_id: str,
+) -> ExecutionIdentity:
+    identity = definition.execution_identity
+    if identity is None:
+        unfinished = any(
+            run.campaign_id == campaign_id
+            and run.status is not CampaignRunStatus.COMPLETED
+            for run in state.runs
+        )
+        detail = "unfinished" if unfinished else "completed"
+        raise ProjectCampaignError(
+            f"legacy schema-version 1 {detail} campaign has no explicit execution "
+            "identity; historical results remain readable, but execution and "
+            "provenance backfilling are forbidden"
+        )
+    expected = accepted_core_execution_identity(runtime_root(Path.cwd()))
+    if identity != expected:
+        raise ProjectCampaignError(
+            "project execution_identity does not match the accepted built-in model "
+            "registry and zero-plugin core selection"
+        )
+    return identity
 
 
 def _planned_runs(definition: ProjectDefinition) -> list[RunRecord]:

@@ -37,23 +37,33 @@ class PortableProjectManifest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal[1]
+    schema_version: Literal[1, 2]
     archive_format: Literal["biomesh-portable-project"]
     biomesh_version: str
     project_id: str
-    project_schema_version: Literal[1]
+    project_schema_version: Literal[1, 2]
     source_definition_sha256: Sha256
     portable_definition_sha256: Sha256
     state_sha256: Sha256
     calibration_status: Literal["CALIBRATION_REQUIRED"]
     result_policy: Literal["all_hash_verified_completed_run_artifacts"]
     plugin_policy: Literal["no_plugins_embedded_or_trusted"]
-    registry_policy: Literal["no_registry_embedded_or_reidentified"]
+    registry_policy: Literal[
+        "no_registry_embedded_or_reidentified",
+        "no_registry_data_or_trust_embedded_identity_reverified",
+    ]
     queue_policy: Literal["queue_state_not_embedded_reenqueue_after_import"]
     files: list[PortableFileRecord] = Field(min_length=3)
 
     @model_validator(mode="after")
     def validate_inventory(self) -> Self:
+        if self.schema_version == 1:
+            if self.registry_policy != "no_registry_embedded_or_reidentified":
+                raise ValueError("legacy archive registry policy mismatch")
+        elif self.registry_policy != (
+            "no_registry_data_or_trust_embedded_identity_reverified"
+        ):
+            raise ValueError("archive registry policy mismatch")
         paths = [record.path for record in self.files]
         if paths != sorted(paths):
             raise ValueError("portable archive file inventory must be path-sorted")

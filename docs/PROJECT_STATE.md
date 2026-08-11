@@ -4,20 +4,21 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after P4-WP07 completion on the Phase 4 branch.
+Snapshot verified: 2026-08-11 after P4A production remediation validation on
+the Phase 4 branch.
 P3 remains the latest audited and accepted phase at accepted main commit
 `ae67b3fb86e61cd75d373d790decdd4008bd3313` and tag `v0.3.1-audit`. The Python
-3.14 full gate passes 242 tests.
+3.14 full gate passes 244 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P4 – Phase 4 – Research Platform (in progress) |
-| Current work package | P4-WP07 – Experimental acceleration boundary is `COMPLETE`; P4A is the first `INCOMPLETE` item and has not begun |
+| Current work package | P4-WP07 is `COMPLETE`; failed P4A findings have production remediations, but P4A remains the first `INCOMPLETE` item pending an independent rerun |
 | Current branch | `phase-4-research-platform` |
 | Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
-| Current test count | 242 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | P4A – Phase 4 Audit (not started) |
+| Current test count | 244 passed (`pytest -q`, 2026-08-11) |
+| Next planned work package | Independent P4A – Phase 4 Audit rerun from the exact pushed remediation commit |
 
 ## Outstanding technical debt
 
@@ -102,10 +103,11 @@ P3 remains the latest audited and accepted phase at accepted main commit
   interrupted unpublished runs remain explicit and retryable. Queue project
   references remain local absolute scheduler state and are deliberately not
   embedded in portable archives. P4-WP06 adds deterministic checksum-verified
-  project archives with embedded hash-bound fixtures and exact completed-run
-  artifacts/receipts, plus a reproducible Linux wheel-installer bundle that
-  rejects generated research data. Import grants no plugin trust or registry
-  identity and does not migrate queue state. The desktop has no
+  project archives with embedded hash-bound fixtures, required biological
+  parameter documents, and exact completed-run artifacts/receipts, plus a
+  reproducible Linux wheel-installer bundle that rejects generated research
+  data. Import grants no plugin or registry trust and does not migrate queue
+  state. The desktop has no
   report/plugin/registry/queue/archive UI, calibration, cloud, or automatic
   plugin-trust behavior. P4-WP07 adds a separate benchmark API with a scalar
   CPU reference and an explicitly enabled NumPy CPU feasibility candidate over
@@ -115,6 +117,18 @@ P3 remains the latest audited and accepted phase at accepted main commit
   campaign, queue, plugin, registry, archive, package, or GUI execution; no
   3D/GPU, production performance, scientific accuracy, or P4A result is
   claimed.
+- P4A production remediation adds prospective schema-version 2 execution
+  identity and portability. New projects bind the complete built-in registry,
+  all five named/versioned model/parameter-set and parameter-source hashes, and
+  the canonical explicit zero-plugin set before execution; run requests and
+  completion receipts repeat that identity. New archives embed all five exact
+  fixture-relative biological parameter documents and execute pending
+  multi-condition campaigns from a clean wheel installation. Historical
+  completed schema-version 1 projects remain byte-preserved and readable;
+  missing provenance is never backfilled. Plugin code/trust, registry
+  documents/trust, queue state, SI/calibration boundaries, and the isolated
+  acceleration boundary remain unchanged. P4A is not accepted by this
+  remediation.
 
 ## Update policy
 

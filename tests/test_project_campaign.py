@@ -11,6 +11,8 @@ from pydantic import ValidationError
 
 from biomesh.__main__ import main
 from biomesh.project_campaign import (
+    COMPLETION_RECEIPT,
+    ArtifactRecord,
     CampaignRecord,
     CampaignRunStatus,
     CampaignService,
@@ -18,10 +20,13 @@ from biomesh.project_campaign import (
     ProjectCampaignError,
     ProjectDefinition,
     ProjectRecord,
+    ProjectState,
     RunExecutionRequest,
     SeedPolicy,
     SweepPoint,
+    accepted_core_execution_identity,
     create_project,
+    execution_identity_sha256,
 )
 
 FIXTURE = Path("experiments/producer.yaml")
@@ -30,7 +35,7 @@ FIXTURE = Path("experiments/producer.yaml")
 def _definition(*, replicate_count: int = 2, points: int = 2) -> ProjectDefinition:
     fixture_hash = hashlib.sha256(FIXTURE.read_bytes()).hexdigest()
     return ProjectDefinition(
-        schema_version=1,
+        schema_version=2,
         project=ProjectRecord(
             schema_version=1,
             project_id="research-project",
@@ -65,6 +70,7 @@ def _definition(*, replicate_count: int = 2, points: int = 2) -> ProjectDefiniti
                 ],
             )
         ],
+        execution_identity=accepted_core_execution_identity(Path.cwd()),
     )
 
 
@@ -319,8 +325,83 @@ def test_real_application_executor_preserves_raw_artifact_contract(
     state = json.loads((project / "campaign_state.json").read_text())
     run = state["runs"][0]
     artifact_root = project / "artifacts" / run["run_id"]
-    assert (artifact_root / "run_request.json").is_file()
+    run_request = json.loads((artifact_root / "run_request.json").read_text())
+    expected_identity = _definition(
+        replicate_count=1, points=1
+    ).execution_identity
+    assert expected_identity is not None
+    assert run_request["execution_identity"] == expected_identity.model_dump(
+        mode="json"
+    )
+    assert run_request["execution_identity_sha256"] == execution_identity_sha256(
+        expected_identity
+    )
+    receipt = json.loads((artifact_root / COMPLETION_RECEIPT).read_text())
+    assert receipt["schema_version"] == 2
+    assert receipt["execution_identity"] == run_request["execution_identity"]
+    assert (
+        receipt["execution_identity_sha256"]
+        == run_request["execution_identity_sha256"]
+    )
     assert (artifact_root / "raw" / "run_metadata.json").is_file()
     assert (artifact_root / "raw" / "summary.parquet").is_file()
     assert all(record["sha256"] for record in run["artifacts"])
     assert run["status"] == CampaignRunStatus.COMPLETED.value
+
+
+def test_legacy_completed_project_is_read_only_and_not_backfilled(
+    tmp_path: Path,
+) -> None:
+    current = _definition(replicate_count=1, points=1)
+    legacy = current.model_copy(
+        update={"schema_version": 1, "execution_identity": None}
+    )
+    project = _create(tmp_path, legacy)
+    state_path = project / "campaign_state.json"
+    state = ProjectState.model_validate_json(state_path.read_bytes())
+    run = state.runs[0]
+    run_root = project / "artifacts" / run.run_id
+    run_root.mkdir()
+    contents = b"historical completed bytes"
+    (run_root / "result.bin").write_bytes(contents)
+    artifact = ArtifactRecord(
+        path="result.bin",
+        sha256=hashlib.sha256(contents).hexdigest(),
+        size_bytes=len(contents),
+    )
+    receipt = {
+        "artifacts": [artifact.model_dump(mode="json")],
+        "attempt": 1,
+        "run_id": run.run_id,
+        "schema_version": 1,
+    }
+    (run_root / COMPLETION_RECEIPT).write_text(
+        json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    completed = run.model_copy(
+        update={
+            "status": CampaignRunStatus.COMPLETED,
+            "attempt_count": 1,
+            "artifacts": [artifact],
+        }
+    )
+    historical_state = state.model_copy(update={"runs": [completed]})
+    state_path.write_text(
+        historical_state.model_dump_json(indent=2) + "\n", encoding="utf-8"
+    )
+    before = {
+        path.relative_to(project).as_posix(): path.read_bytes()
+        for path in sorted(project.rglob("*"))
+        if path.is_file()
+    }
+
+    assert CampaignService(project).status("campaign-a").completed == 1
+    with pytest.raises(ProjectCampaignError, match="provenance backfilling"):
+        CampaignService(project).resume("campaign-a")
+    after = {
+        path.relative_to(project).as_posix(): path.read_bytes()
+        for path in sorted(project.rglob("*"))
+        if path.is_file()
+    }
+    assert after == before

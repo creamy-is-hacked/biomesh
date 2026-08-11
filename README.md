@@ -11,7 +11,9 @@ The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
 2026-08-10 audit passed with recorded limitations and is represented by the
 `v0.3.1-audit` tag. The P4-WP01 – Project and campaign model through P4-WP07 –
 Experimental acceleration boundary work packages are complete on the Phase 4
-branch. P4A – Phase 4 Audit is the next incomplete item and has not begun.
+branch. The first P4A – Phase 4 Audit attempt reported three production
+findings; their remediations are complete on the Phase 4 branch, while P4A
+remains incomplete pending a separate independent rerun.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -60,7 +62,8 @@ The repository currently provides:
   commands over a manufactured `CALIBRATION_REQUIRED` reference selector; and
 - the P4 versioned local project/campaign model plus presentation-neutral
   comparison/report JSON and CSV with raw-run hash/row traceability, explicit
-  missing-run coverage, and single-seed warnings; and
+  missing-run coverage, single-seed warnings, and prospective exact
+  model/parameter-registry plus zero-plugin-set execution identity; and
 - the P4 versioned plugin boundary for species, kinetics, fields, metrics, and
   exporters, with whole-set compatibility/trust preflight, deterministic
   provenance manifests, zero-plugin operation, and a packaged uncalibrated
@@ -73,8 +76,9 @@ The repository currently provides:
   run-level progress, exact Linux CPU/memory enforcement, targeted
   cancellation, and restart recovery that preserves immutable completed runs;
 - deterministic portable project export/verification/import with embedded
-  hash-bound fixtures, exact completed-run artifacts, per-file SHA-256, and
-  clean-install reproduction; and
+  hash-bound fixtures and all required biological parameter documents, exact
+  completed-run artifacts, per-file SHA-256, and clean-install execution of
+  imported pending campaigns; and
 - a reproducible Linux wheel-installer bundle whose build gate rejects
   generated project, queue, report, raw-run, and research-result data; and
 - an isolated versioned benchmark interface with a disabled-by-default NumPy
@@ -192,6 +196,13 @@ visible; the report does not generate a scientific conclusion or calibration
 claim. See [the P4-WP01 project model](docs/P4_WP01_PROJECT_CAMPAIGN.md) and
 [the P4-WP02 report contract](docs/P4_WP02_COMPARISON_REPORTS.md).
 
+The tracked P4 platform reference is
+`experiments/platform_reference.yaml`. It selects two accepted manufactured
+quorum-threshold conditions at fixed seeds 101, 202, and 303. It is a
+deterministic, multi-condition software-validation project with complete SI and
+provenance records; its biological inputs remain `CALIBRATION_REQUIRED`. It is
+not a biological experiment or calibration result.
+
 Verify the zero-plugin core contract and the exact reviewed packaged example
 with:
 
@@ -254,10 +265,14 @@ python -m biomesh project import PROJECT_ARCHIVE.biomesh \
 ```
 
 The archive carries strict self-description, embedded hash-verified fixture
-configuration, project/campaign manifests, exact completed-run artifacts and
-receipts, and a per-file size/SHA-256 inventory. Pending and failed work remains
-explicit. Plugin trust, registry identity, and local queue state are neither
+configuration, every required hash-verified biological parameter document,
+project/campaign manifests, exact completed-run artifacts and receipts, and a
+per-file size/SHA-256 inventory. Pending and failed work remains explicit.
+Plugin code/trust, registry documents/trust, and local queue state are neither
 embedded nor inferred; imported projects must be intentionally re-enqueued.
+New runs record the exact built-in registry/model/parameter selections and the
+canonical empty plugin-set identity before execution and in their completion
+receipts. Legacy completed runs remain readable and are never backfilled.
 See [the P4-WP06 portability and packaging contract](docs/P4_WP06_PORTABLE_PROJECTS_PACKAGING.md).
 
 Build the documented Linux application installer bundle after creating the
@@ -351,7 +366,8 @@ boundaries.
 ## Roadmap
 
 P3 is accepted. P4-WP01 through P4-WP07 are complete on the Phase 4 branch;
-P4A – Phase 4 Audit is next and has not begun. BioMesh is not called v1.
+P4A production findings are remediated, and an independent P4A rerun is next.
+BioMesh is not called v1.
 
 ## License
 

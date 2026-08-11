@@ -161,6 +161,14 @@ All notable repository changes are documented here.
 
 ### Audit findings
 
+- P4A – The first independent audit identified `P4A-001` (pending portable
+  campaigns omitted the five fixture-relative biological parameter documents),
+  `P4A-002` (completed-run provenance did not explicitly identify the complete
+  named/versioned model/parameter registry selection or the empty plugin set),
+  and `P4A-003` (the audit authority named unsupported commands and a missing
+  platform reference). This production remediation does not perform or accept
+  the P4A rerun.
+
 - P3A – Independent clean-clone audit of pushed implementation commit
   `ed062935552c6a5df639c56474c7854cac91bd69` passed with recorded
   limitations. Python 3.14.4 installation, all 195 tests, the two audit
@@ -202,6 +210,25 @@ All notable repository changes are documented here.
   campaign conditions.
 
 ### Fixed
+
+- P4A remediation – New schema-version 2 project definitions bind the complete
+  built-in registry, all five named/versioned model and parameter-set records,
+  exact parameter-source hashes, and the canonical zero-plugin-set hash before
+  execution. Real run requests and version 2 completion receipts repeat that
+  identity. Historical schema-version 1 completed projects and receipts remain
+  byte-preserved and readable; unfinished legacy execution/backfilling fails
+  explicitly.
+- P4A remediation – New deterministic archive schema version 2 embeds all five
+  fixture-required biological parameter documents at contained relative paths,
+  inventories and cross-checks every byte, preserves completed artifacts and
+  receipts, and allows an imported pending multi-condition campaign to complete
+  from an installed-layout package. Plugin code/trust, registry documents/trust,
+  and queue state remain non-transferable.
+- P4A remediation – Added `experiments/platform_reference.yaml`, a strict
+  two-condition, three-fixed-seed manufactured software-validation project with
+  SI/provenance-complete sweep records and `CALIBRATION_REQUIRED` boundaries,
+  and aligned `docs/09_PHASE_FOUR_AUDIT.md` with the accepted project, campaign,
+  archive, report, plugin, registry, benchmark, and Hatchling command surface.
 
 - P3 pre-audit blocker remediation adds strict manufactured reference
   selection, atomic CLI/application byte-equivalence evidence, hash-verified

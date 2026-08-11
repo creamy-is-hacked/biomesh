@@ -1,5 +1,16 @@
 # Limitations
 
+## P4A production remediation
+
+- The first P4A attempt reported three production findings. This branch
+  contains their remediations and local validation evidence only; P4A remains
+  incomplete until a separate independent task reruns the audit from the exact
+  pushed remediation commit. No Phase 4 acceptance, merge, or tag is claimed.
+- `experiments/platform_reference.yaml` is a manufactured two-condition,
+  three-fixed-seed software-validation project. Its SI/provenance records and
+  deterministic completion do not make it a biological experiment, calibration
+  result, benchmark, or scientific conclusion.
+
 ## P4-WP07 – Experimental acceleration boundary
 
 - The fixed benchmark is a synthetic dimensionless 48 by 48 two-dimensional
@@ -24,16 +35,23 @@
 ## P4-WP06 – Portable projects and packaging
 
 - Portable archives contain exact hash-verified project configurations,
-  embedded manufactured fixtures, completed artifact bytes, and completion
-  receipts. They can reproduce the accepted software project path on another
-  clean clone or installation; they do not establish biological calibration,
-  experimental validity, or scientific conclusions.
+  embedded manufactured fixtures, every required biological parameter
+  document, completed artifact bytes, and completion receipts. They can execute
+  a pending accepted software campaign on another clean clone or installation;
+  they do not establish biological calibration, experimental validity, or
+  scientific conclusions.
 - Per-file SHA-256 and ZIP integrity detect accidental corruption. Archives are
   not digitally signed, encrypted, confidential, or proof of author identity.
   Import does not grant plugin trust or reinterpret registry identities.
 - Queue state is local scheduler metadata and is not portable. Import creates a
   new project path; callers must explicitly enqueue it under separately chosen
   local CPU/memory limits. No cancellation or stale-worker state is migrated.
+- New project/receipt schema version 2 records exact built-in registry,
+  named/versioned model and parameter-set, and canonical empty plugin-set
+  identities. These are provenance only: no registry bundle, registry trust,
+  plugin code, or plugin approval is transferred. Legacy version 1 completed
+  projects remain verifiable but cannot resume unfinished work or acquire
+  backfilled provenance.
 - The documented Linux bundle targets x86_64 or aarch64 Linux with Python 3.14.
   Its installer resolves declared dependencies with pip and has no automatic
   update, system-package integration, rollback, or uninstaller. It deliberately
@@ -48,6 +66,9 @@
   remain the zero-plugin path. P4-WP03 defines and verifies extension
   interfaces; it does not silently compose plugins into audited simulations or
   reinterpret completed runs.
+- The complete plugin-set SHA-256 explicitly identifies an empty selection.
+  This proves which set was selected; it is not approval, sandboxing, or
+  evidence that any plugin code ran.
 - The packaged species/kinetics plugin is a software extension example. Its
   species identity is non-taxonomic, all numeric kinetics inputs remain
   caller-supplied and provenance-complete, and its status remains

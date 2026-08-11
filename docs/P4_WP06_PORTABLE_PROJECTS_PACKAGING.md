@@ -7,16 +7,25 @@ or report contract.
 
 ## Portable project archive
 
-A `.biomesh` archive is a stored, deterministic ZIP with fixed metadata. Its
-strict schema-version 1 `archive.json` identifies the BioMesh version, project,
-source and portable project hashes, calibration boundary, inclusion policy,
-and every carried regular file by role, byte size, and SHA-256. The payload is:
+A `.biomesh` archive is a stored, deterministic ZIP with fixed metadata. New
+archives use strict schema-version 2 `archive.json`, which identifies the
+BioMesh version, project, source and portable project hashes, calibration
+boundary, inclusion policy, and every carried regular file by role, byte size,
+and SHA-256. The payload is:
 
 - a portable `project.json` whose accepted fixture references point to embedded
   hash-verified fixture bytes;
 - `campaign_state.json` rebound only to that portable definition hash;
-- the fixture configurations required to resolve existing campaign plans; and
+- the fixture configurations plus all five exact registry-selected biological
+  parameter documents required by the accepted campaign executor; and
 - every artifact and completion receipt for each hash-verified completed run.
+
+Parameter resources are stored at contained paths that preserve the fixture's
+relative references. Their bytes are checksum-inventoried and cross-checked
+against the prospective execution identity before import and again before
+execution. Plugin code/trust, registry documents/trust, and queue state remain
+non-transferable; carrying exact selection hashes as provenance grants none of
+them.
 
 The archive retains all completed raw-run bytes and artifact records. Existing
 Parquet/NumPy/JSON output is already the compact canonical result surface; no
@@ -42,32 +51,39 @@ size and SHA-256 before import. Import writes into a temporary sibling,
 recreates the process lock, validates the complete project through
 `CampaignService`, then publishes atomically.
 
+Legacy archive/project schema version 1 remains verifiable and importable for
+historical completed results. An unfinished legacy project cannot be exported
+as executable or resumed because missing model/plugin provenance is never
+backfilled. Completed bytes and legacy receipts remain unchanged.
+
 SHA-256 detects accidental corruption; it is not a digital signature or proof
-of author identity. No plugin, plugin approval, registry export, registry
-identity, or queue state is carried or inferred. Re-enqueue an imported project
+of author identity. No plugin, plugin approval, registry export, registry trust,
+or queue state is carried or inferred. Re-enqueue an imported project
 explicitly if local queue execution is wanted. Import never grants third-party
 plugin trust.
 
 ## Clean-clone or installed reproduction
 
-The tracked manufactured validation definition is
-`validation/p4_wp06/project.json`. It contains one accepted producer-fixture run
-at seed 101 and remains `CALIBRATION_REQUIRED` software-validation input. The
-reproduction path is:
+The tracked P4-WP06 manufactured validation definition remains
+`validation/p4_wp06/project.json`. The P4A audit authority uses the broader
+`experiments/platform_reference.yaml`: two accepted manufactured conditions at
+fixed seeds 101, 202, and 303. Both remain `CALIBRATION_REQUIRED`
+software-validation input. A pending-archive reproduction path is:
 
 ```bash
-python -m biomesh project create validation/p4_wp06/project.json SOURCE_PROJECT
-python -m biomesh campaign resume SOURCE_PROJECT portable-campaign
+python -m biomesh project create experiments/platform_reference.yaml SOURCE_PROJECT
 python -m biomesh project export SOURCE_PROJECT --output project.biomesh
 
 # Run these commands outside the clone with an installed BioMesh package.
 biomesh project verify-archive /path/to/project.biomesh
 biomesh project import /path/to/project.biomesh IMPORTED_PROJECT
-biomesh campaign status IMPORTED_PROJECT portable-campaign
+biomesh campaign resume IMPORTED_PROJECT platform-reference
+biomesh campaign status IMPORTED_PROJECT platform-reference
 ```
 
-The imported completed artifacts and receipts are byte-identical to the source
-and pass the existing immutable completed-run verifier. This establishes
+The imported pending campaign completes all six runs without the source clone.
+Separately, archives carrying completed artifacts and receipts preserve every
+source byte and pass the immutable completed-run verifier. This establishes
 portable software reproduction, not biological calibration or experimental
 validity.
 
@@ -115,13 +131,13 @@ always exchanged separately and explicitly.
 
 ## Migration and scope boundary
 
-There is no earlier portable-project or Linux-installer schema to migrate.
-P4-WP01 project/state records remain schema version 1; the imported definition
-changes only external fixture locations to archive-contained relative paths and
-updates the matching state definition hash. Run plans, audit sequences, run
-IDs, status, artifact records, raw bytes, and completion receipts remain equal.
+Archive/project schema version 1 has the explicit historical compatibility
+behavior described above. For version 2, the imported definition changes only
+external fixture locations to archive-contained relative paths and updates the
+matching state definition hash. Run plans, audit sequences, run IDs, status,
+artifact records, raw bytes, and completion receipts remain equal.
 
 P4-WP06 adds no GUI archive action, automatic queue rebinding, remote service,
 cloud behavior, installer auto-update, archive signing, automatic plugin trust,
 registry reinterpretation, acceleration prototype, biological parameter,
-scientific mechanism, calibration result, or P4-WP07/P4A behavior.
+scientific mechanism, calibration result, or P4A acceptance result.

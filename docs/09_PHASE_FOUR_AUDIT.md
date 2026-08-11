@@ -46,15 +46,72 @@ Verify that BioMesh functions as an extensible, reproducible local research plat
 
 ## Required Commands
 ```bash
+python -m biomesh --help
+ruff check .
+mypy src
 pytest -q
+git diff --check
 python -m biomesh validate all
-python -m biomesh campaign run experiments/platform_reference.yaml
-python -m biomesh campaign verify outputs/<campaign-id>
-python -m biomesh plugins verify
-python -m biomesh project export outputs/<campaign-id> biomesh-reference.bmz
-python -m biomesh project reproduce biomesh-reference.bmz
-python -m build
+python -m biomesh validate diffusion
+python -m biomesh validate growth
+python -m biomesh validate mass-balance
+python -m biomesh run --output outputs/p4a-p1-reference
+python -m biomesh reproduce outputs/p4a-p1-reference
+python -m biomesh compare-frontends parameters/phase2_reference.yaml --seed 42 \
+  --output outputs/p4a-p3-reference
+python -m biomesh verify-checkpoint outputs/p4a-p3-reference
+QT_QPA_PLATFORM=offscreen python -m biomesh.gui --smoke-test
+pytest -q tests/gui tests/integration
+pytest -q tests/test_local_queue.py
+python -m biomesh project create experiments/platform_reference.yaml \
+  outputs/p4a-platform-reference-source
+python -m biomesh campaign status \
+  outputs/p4a-platform-reference-source platform-reference
+python -m biomesh project export outputs/p4a-platform-reference-source \
+  --output outputs/p4a-platform-reference-pending.biomesh
+python -m biomesh project verify-archive \
+  outputs/p4a-platform-reference-pending.biomesh
+python -m biomesh project import \
+  outputs/p4a-platform-reference-pending.biomesh \
+  outputs/p4a-platform-reference-imported
+python -m biomesh campaign resume \
+  outputs/p4a-platform-reference-imported platform-reference
+python -m biomesh campaign status \
+  outputs/p4a-platform-reference-imported platform-reference
+python -m biomesh campaign report \
+  outputs/p4a-platform-reference-imported platform-reference \
+  --output outputs/p4a-platform-reference-report
+python -m biomesh plugins verify --output outputs/p4a-plugin-verification
+python -m biomesh registry verify
+python -m biomesh benchmark acceleration
+python -m biomesh benchmark acceleration --experimental
+python -m hatchling build --clean -d dist
 ```
+
+Also execute and report all 11 accepted P2 `experiment`/`sweep` fixture paths
+listed in `README.md` under new output directories. Generate each corresponding
+report with `python -m biomesh report OUTPUT_DIRECTORY`.
+
+Run archive import, campaign resume/status/report, CLI help, and the offscreen
+GUI smoke path again outside the clone from the newly built wheel installation.
+Use new output paths. The pending archive is intentional: completion after
+import proves that every required configuration resource is archive-contained.
+
+## Tracked reference campaign
+
+`experiments/platform_reference.yaml` is the sole P4A platform reference. It is
+a JSON-compatible, schema-version 2 project definition over the accepted
+`qs_threshold_sweep.yaml` manufactured fixture. It contains two fixed
+conditions and seeds 101, 202, and 303, for six deterministic runs. Every sweep
+value remains SI-labelled with source, uncertainty, notes, and calibration
+status; all biological parameter documents and the project remain
+`CALIBRATION_REQUIRED`. This is software-validation evidence, not a biological
+experiment, calibration result, or scientific conclusion.
+
+The audit must inspect each completed `run_request.json` and completion receipt
+for the exact named/versioned model and parameter-set records, complete registry
+SHA-256, and canonical zero-plugin-set SHA-256. A separate independent P4A task
+must execute this authority from the exact pushed remediation commit.
 
 ## Required Evidence
 - Regression report.

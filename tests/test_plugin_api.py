@@ -23,6 +23,7 @@ from biomesh.plugin_api import (
     load_plugins,
     plugin_metadata_sha256,
     plugin_selection_sha256,
+    plugin_set_sha256,
     verify_plugins,
 )
 
@@ -49,6 +50,7 @@ def test_core_plugin_boundary_accepts_an_empty_manifest_without_loading() -> Non
     )
 
     assert report.zero_plugins_compatible is True
+    assert report.plugin_set_sha256 == plugin_set_sha256(empty)
     assert report.plugins == []
 
 
@@ -164,6 +166,7 @@ def test_unreviewed_plugin_is_rejected_before_entry_point_load() -> None:
 def test_reviewed_example_provenance_and_limitations_are_manifest_complete() -> None:
     report = verify_plugins(example_plugin_manifest(), builtin_plugin_trust_policy())
     assert len(report.plugins) == 1
+    assert report.plugin_set_sha256 == plugin_set_sha256(example_plugin_manifest())
     provenance = report.plugins[0]
     assert provenance.metadata_sha256 == plugin_metadata_sha256(provenance.metadata)
     assert provenance.selection_sha256 == plugin_selection_sha256(

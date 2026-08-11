@@ -295,6 +295,7 @@ class LaunchPreflightReport(BaseModel):
     parameter_set_id: Identifier
     parameter_set_version: NonBlankText
     parameter_set_record_sha256: Sha256
+    plugin_set_sha256: Sha256
     plugin_selection_sha256: list[Sha256]
     parameter_count: int
     passed: Literal[True]

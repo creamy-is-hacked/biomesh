@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import shutil
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
 import pytest
 
+from biomesh import __version__
 from biomesh.__main__ import main
 from biomesh.portable_project import (
     export_project_archive,
@@ -25,6 +30,7 @@ from biomesh.project_campaign import (
     RunExecutionRequest,
     SeedPolicy,
     SweepPoint,
+    accepted_core_execution_identity,
     create_project,
 )
 
@@ -33,7 +39,7 @@ FIXTURE = Path("experiments/producer.yaml")
 
 def _definition() -> ProjectDefinition:
     return ProjectDefinition(
-        schema_version=1,
+        schema_version=2,
         project=ProjectRecord(
             schema_version=1,
             project_id="portable-project",
@@ -75,6 +81,7 @@ def _definition() -> ProjectDefinition:
                 ],
             ),
         ],
+        execution_identity=accepted_core_execution_identity(Path.cwd()),
     )
 
 
@@ -124,9 +131,10 @@ def test_archive_is_deterministic_self_describing_and_importable(
         archive_manifest = json.loads(archive.read("archive.json"))
         portable_definition = json.loads(archive.read("project/project.json"))
         names = set(archive.namelist())
+    assert archive_manifest["schema_version"] == 2
     assert archive_manifest["plugin_policy"] == "no_plugins_embedded_or_trusted"
     assert archive_manifest["registry_policy"] == (
-        "no_registry_embedded_or_reidentified"
+        "no_registry_data_or_trust_embedded_identity_reverified"
     )
     assert archive_manifest["queue_policy"] == (
         "queue_state_not_embedded_reenqueue_after_import"
@@ -134,6 +142,13 @@ def test_archive_is_deterministic_self_describing_and_importable(
     fixture_label = portable_definition["experiments"][0]["fixture_file"]
     assert fixture_label.startswith("fixtures/accepted-producer-")
     assert f"project/{fixture_label}" in names
+    assert {
+        "project/parameters/p1_core_model.toml",
+        "project/parameters/p2_eps_model.toml",
+        "project/parameters/p2_physiological_states.toml",
+        "project/parameters/p2_quorum_signal.toml",
+        "project/parameters/p2_waste_shear.toml",
+    }.issubset(names)
     assert not any("queue_state.json" in name for name in names)
 
     verified = verify_project_archive(first)
@@ -143,9 +158,22 @@ def test_archive_is_deterministic_self_describing_and_importable(
     assert import_result.completed_run_count == 1
     assert CampaignService(imported).status("completed-campaign").completed == 1
     assert CampaignService(imported).status("pending-campaign").pending == 1
-    original_result = next((project / "artifacts").glob("*/compact.json"))
-    imported_result = next((imported / "artifacts").glob("*/compact.json"))
-    assert imported_result.read_bytes() == original_result.read_bytes()
+    completed_run = next((project / "artifacts").iterdir())
+    imported_completed_run = imported / "artifacts" / completed_run.name
+    source_bytes = {
+        path.relative_to(completed_run).as_posix(): path.read_bytes()
+        for path in sorted(completed_run.rglob("*"))
+        if path.is_file()
+    }
+    imported_bytes = {
+        path.relative_to(imported_completed_run).as_posix(): path.read_bytes()
+        for path in sorted(imported_completed_run.rglob("*"))
+        if path.is_file()
+    }
+    assert imported_bytes == source_bytes
+
+    pending = CampaignService(imported).resume("pending-campaign")
+    assert (pending.completed, pending.failed, pending.pending) == (1, 0, 0)
 
 
 def test_checksums_detect_repacked_member_corruption(tmp_path: Path) -> None:
@@ -226,3 +254,74 @@ def test_project_archive_cli_paths(
     imported = tmp_path / "cli-imported"
     assert main(["project", "import", str(archive_path), str(imported)]) == 0
     assert json.loads(capsys.readouterr().out)["project_id"] == "portable-project"
+
+
+def test_clean_install_style_completes_imported_pending_multicondition_campaign(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    create_project(Path("experiments/platform_reference.yaml"), source)
+    archive = tmp_path / "platform-reference.biomesh"
+    export_project_archive(source, archive)
+
+    installed_root = tmp_path / "installed-site-packages"
+    installed_package = installed_root / "biomesh"
+    shutil.copytree(
+        Path("src/biomesh"),
+        installed_package,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    resources = installed_package / "resources"
+    shutil.copytree(Path("experiments"), resources / "experiments")
+    shutil.copytree(Path("parameters"), resources / "parameters")
+    distribution_metadata = installed_root / f"biomesh-{__version__}.dist-info"
+    distribution_metadata.mkdir()
+    (distribution_metadata / "METADATA").write_text(
+        f"Metadata-Version: 2.4\nName: biomesh\nVersion: {__version__}\n",
+        encoding="utf-8",
+    )
+
+    python = Path(sys.executable)
+    external = tmp_path / "external"
+    external.mkdir()
+    imported = external / "imported"
+    clean_environment = dict(os.environ)
+    clean_environment["PYTHONPATH"] = str(installed_root)
+
+    def installed_cli(*arguments: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [str(python), "-m", "biomesh", *arguments],
+            check=False,
+            capture_output=True,
+            cwd=external,
+            env=clean_environment,
+            text=True,
+            timeout=120,
+        )
+
+    location = subprocess.run(
+        [str(python), "-c", "import biomesh; print(biomesh.__file__)"],
+        check=False,
+        capture_output=True,
+        cwd=external,
+        env=clean_environment,
+        text=True,
+    )
+    assert location.returncode == 0, location.stderr
+    assert str(installed_root.resolve()) in location.stdout
+
+    imported_result = installed_cli("project", "import", str(archive), str(imported))
+    assert imported_result.returncode == 0, imported_result.stderr
+    resumed = installed_cli(
+        "campaign", "resume", str(imported), "platform-reference"
+    )
+    assert resumed.returncode == 0, resumed.stderr
+    status = json.loads(resumed.stdout)
+    assert status == {
+        "campaign_id": "platform-reference",
+        "completed": 6,
+        "failed": 0,
+        "pending": 0,
+        "running": 0,
+        "total": 6,
+    }

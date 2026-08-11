@@ -42,6 +42,11 @@ including its metadata, distribution/version, entry point, and review
 reference. The verification manifest exports both selection and metadata
 hashes.
 
+The complete ordered `PluginSetManifest` also has one canonical SHA-256. That
+identity is defined for the empty manifest as well as reviewed non-empty sets,
+so zero-plugin core execution is an explicit deterministic selection rather
+than omitted provenance. An empty set loads no code and grants no trust.
+
 A manifest is not a sandbox. Importing an approved entry point executes Python
 code with the host process's permissions. P4-WP03 trusts only the packaged
 example by default; adding another trust-policy entry requires separate human

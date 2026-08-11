@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import signal
+import time
 from pathlib import Path
 
 from biomesh.local_queue_runtime import (
@@ -152,6 +153,20 @@ class LocalQueueService:
             assert requested.worker_start_ticks is not None
             worker = (requested.worker_pid, requested.worker_start_ticks)
         if worker_identity_is_live(*worker):
+            # The queue state becomes RUNNING after prospective execution
+            # preflight, while campaign startup still has to reacquire and
+            # verify the project. Give that accepted startup a bounded window
+            # to persist its first run boundary before delivering SIGTERM.
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline:
+                progress = CampaignService(
+                    Path(requested.project_directory)
+                ).progress(requested.campaign_id)
+                if progress.running or not progress.pending:
+                    break
+                if not worker_identity_is_live(*worker):
+                    break
+                time.sleep(0.001)
             try:
                 os.kill(worker[0], signal.SIGTERM)
             except ProcessLookupError:
@@ -201,6 +216,9 @@ class LocalQueueService:
             selected = min(
                 candidates,
                 key=lambda item: (-item.priority, item.enqueue_sequence),
+            )
+            CampaignService(Path(selected.project_directory)).preflight_execution(
+                selected.campaign_id
             )
             started = selected.model_copy(
                 update={

@@ -6,7 +6,22 @@ parameter schemas, update order, artifacts, or calibration status.
 
 ## Versioned records
 
-`project.json` is an immutable, strict JSON `schema_version = 1` definition:
+New `project.json` files use strict top-level `schema_version = 2`; the nested
+project, experiment, and campaign records remain version 1. Version 2 requires
+one immutable `execution_identity` before any run can start. It binds the
+complete built-in registry SHA-256, every named/versioned model and
+parameter-set record used by the accepted P2 fixture executor, each exact
+parameter-source SHA-256, and the canonical plugin-set SHA-256 for an explicit
+empty selection. The accepted campaign executor still loads zero plugins and
+accepts only this code-owned identity.
+
+The original top-level `schema_version = 1` remains readable for status,
+artifact verification, reporting, and completed-result archive exchange. It
+has no execution identity, so pending/retry execution and provenance
+backfilling fail explicitly. Historical completed results and their version 1
+receipts are never rewritten in place.
+
+The immutable project definition otherwise contains:
 
 - `ProjectRecord` stores project identity, title, and purpose.
 - `ExperimentRecord` binds an experiment to an exact fixture SHA-256 and keeps
@@ -46,9 +61,11 @@ biological evidence.
 ## Resume, completion, and retry
 
 Before a run, state is atomically persisted as `running`. The executor writes
-to a sibling staging directory. Successful output is hashed, a completion
-receipt is written, and the directory is atomically published before state is
-marked `completed`.
+to a sibling staging directory. Successful output is hashed, and a version 2
+completion receipt records the full execution identity plus its canonical
+SHA-256 before the directory is atomically published and state is marked
+`completed`. The real accepted executor records the same identity in
+`run_request.json` before invoking the unchanged P3 application service.
 
 On resume, a prior `running` record with no published receipt becomes an
 explicit `interrupted` failure. A published receipt is accepted only when its
@@ -74,10 +91,14 @@ schema, or persistence errors return exit status 2.
 
 ## Migration and scope boundary
 
-There is no earlier project schema to migrate. P3 recent-project entries remain
-opaque paths, and existing standalone run directories are not silently adopted
-or rewritten. Portable archive import/export belongs to P4-WP06.
+Top-level schema version 1 has the explicit read-only compatibility behavior
+above; no project or completed result is migrated in place. P3 recent-project
+entries remain opaque paths, and existing standalone run directories are not
+silently adopted or rewritten. Portable archive import/export belongs to
+P4-WP06.
 
-P4-WP01 includes no comparison/report metrics, persistent background queue,
-priorities, cancellation, plugins, model/parameter registry, Linux packaging,
-archive transport, GPU/3D path, cloud behavior, or new scientific mechanism.
+The accepted execution identity is provenance and compatibility metadata only;
+it does not make registry data executable or load a plugin. P4-WP01 includes no
+comparison/report metrics, persistent background queue, priorities,
+cancellation, Linux packaging, archive transport, GPU/3D path, cloud behavior,
+or new scientific mechanism.

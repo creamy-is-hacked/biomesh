@@ -81,13 +81,23 @@ example; it does not discover or trust third-party code. A successful report
 contains exact registry, model, parameter-set, and plugin-selection hashes.
 It launches no simulation and changes no project or raw artifact.
 
+P4A remediation prospectively binds the accepted fixture executor to the
+complete built-in registry identity, all five exact named/versioned model and
+parameter-set records, their source-document hashes, and the canonical empty
+plugin-set hash. New project definitions record that selection before launch;
+completed run requests and receipts repeat it exactly. This does not make the
+registry executable, alter any equation, or insert identities into historical
+completed runs.
+
 ## Migration and scope boundary
 
 There is no earlier registry schema to migrate. Existing parameter TOML,
-P4-WP01 project/state files, completed artifacts, and P4-WP02 report schemas
-remain byte-compatible and unchanged. Existing raw-run/report traceability
-continues to originate from hash-verified project artifacts; registry
-identities are not retroactively inserted into accepted runs.
+mutable campaign-state records, completed artifacts, and P4-WP02 report schemas
+remain byte-compatible and unchanged. Top-level project schema version 1
+remains read-only compatible; schema version 2 is required for prospective
+execution provenance. Existing raw-run/report traceability continues to
+originate from hash-verified project artifacts; registry identities are not
+retroactively inserted into accepted runs.
 
 P4-WP04 adds no model equation, biological value, calibration result, GUI,
 background queue, priority/resource scheduler, portable project archive,

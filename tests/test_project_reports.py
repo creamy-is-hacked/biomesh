@@ -22,6 +22,7 @@ from biomesh.project_campaign import (
     RunExecutionRequest,
     SeedPolicy,
     SweepPoint,
+    accepted_core_execution_identity,
     create_project,
 )
 from biomesh.project_reports import generate_campaign_report
@@ -43,7 +44,7 @@ def _definition(*, replicate_count: int = 2) -> ProjectDefinition:
             )
         )
     return ProjectDefinition(
-        schema_version=1,
+        schema_version=2,
         project=ProjectRecord(
             schema_version=1,
             project_id="comparison-project",
@@ -72,6 +73,7 @@ def _definition(*, replicate_count: int = 2) -> ProjectDefinition:
                 sweep_matrix=points,
             )
         ],
+        execution_identity=accepted_core_execution_identity(Path.cwd()),
     )
 
 

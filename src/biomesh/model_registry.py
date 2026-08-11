@@ -17,6 +17,7 @@ from biomesh.plugin_api import (
     PluginTrustPolicy,
     load_plugins,
     plugin_selection_sha256,
+    plugin_set_sha256,
 )
 from biomesh.registry_catalog import builtin_registry
 from biomesh.registry_types import (
@@ -208,6 +209,7 @@ def preflight_launch(
         parameter_set_id=parameter_entry.record.parameter_set_id,
         parameter_set_version=parameter_entry.record.parameter_set_version,
         parameter_set_record_sha256=parameter_entry.record_sha256,
+        plugin_set_sha256=plugin_set_sha256(plugin_manifest),
         plugin_selection_sha256=sorted(
             plugin_selection_sha256(selection)
             for selection in plugin_manifest.plugins

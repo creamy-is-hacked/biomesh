@@ -23,15 +23,18 @@ from biomesh.portable_project_types import (
 )
 from biomesh.project_campaign import (
     COMPLETION_RECEIPT,
+    COMPLETION_RECEIPT_SCHEMA_VERSION,
+    LEGACY_PROJECT_SCHEMA_VERSION,
     PROJECT_MANIFEST,
-    PROJECT_SCHEMA_VERSION,
     PROJECT_STATE,
     ArtifactRecord,
     CampaignRunStatus,
     CampaignService,
+    ExecutionIdentity,
     ProjectDefinition,
     ProjectState,
     RunRecord,
+    execution_identity_sha256,
 )
 from biomesh.runtime_resources import runtime_root
 
@@ -134,6 +137,14 @@ def _portable_payload(
     if state.definition_sha256 != source_hash:
         raise PortableArchiveError("project state is not bound to its source manifest")
 
+    if definition.execution_identity is None and any(
+        run.status is not CampaignRunStatus.COMPLETED for run in state.runs
+    ):
+        raise PortableArchiveError(
+            "legacy projects with unfinished campaigns cannot be exported for "
+            "execution because execution provenance cannot be backfilled"
+        )
+
     fixtures: dict[str, bytes] = {}
     portable_experiments = []
     for experiment in definition.experiments:
@@ -153,6 +164,28 @@ def _portable_payload(
             experiment.model_copy(update={"fixture_file": portable_label})
         )
 
+    configurations: dict[str, bytes] = {}
+    if definition.execution_identity is not None:
+        for model in definition.execution_identity.models:
+            source = _resolve_project_resource(
+                project_directory, model.parameter_source
+            )
+            contents = source.read_bytes()
+            if _sha256(contents) != model.parameter_source_sha256:
+                raise PortableArchiveError(
+                    "execution parameter source changed: "
+                    f"{model.parameter_source}"
+                )
+            archive_path = _contained_archive_path(
+                f"project/{model.parameter_source}",
+                label="portable parameter source path",
+            )
+            existing = configurations.setdefault(archive_path, contents)
+            if existing != contents:
+                raise PortableArchiveError(
+                    f"conflicting portable parameter source: {archive_path}"
+                )
+
     portable_definition = definition.model_copy(
         update={"experiments": portable_experiments}
     )
@@ -167,6 +200,7 @@ def _portable_payload(
         "project/project.json": portable_manifest_bytes,
         "project/campaign_state.json": state_bytes,
         **fixtures,
+        **configurations,
     }
     roles: dict[
         str,
@@ -175,6 +209,7 @@ def _portable_payload(
         "project/project.json": "configuration",
         "project/campaign_state.json": "manifest",
         **{path: "fixture" for path in fixtures},
+        **{path: "configuration" for path in configurations},
     }
     expected_run_directories: set[str] = set()
     for run in state.runs:
@@ -206,18 +241,24 @@ def _portable_payload(
         for path, contents in sorted(payload.items())
     ]
     manifest = PortableProjectManifest(
-        schema_version=1,
+        schema_version=(
+            2 if definition.execution_identity is not None else 1
+        ),
         archive_format="biomesh-portable-project",
         biomesh_version=__version__,
         project_id=definition.project.project_id,
-        project_schema_version=1,
+        project_schema_version=definition.schema_version,
         source_definition_sha256=source_hash,
         portable_definition_sha256=portable_hash,
         state_sha256=_sha256(state_bytes),
         calibration_status="CALIBRATION_REQUIRED",
         result_policy="all_hash_verified_completed_run_artifacts",
         plugin_policy="no_plugins_embedded_or_trusted",
-        registry_policy="no_registry_embedded_or_reidentified",
+        registry_policy=(
+            "no_registry_data_or_trust_embedded_identity_reverified"
+            if definition.execution_identity is not None
+            else "no_registry_embedded_or_reidentified"
+        ),
         queue_policy="queue_state_not_embedded_reenqueue_after_import",
         files=records,
     )
@@ -298,6 +339,17 @@ def _validate_embedded_project(
     state_bytes = payload["project/campaign_state.json"]
     if definition.project.project_id != manifest.project_id:
         raise PortableArchiveError("archive project identity mismatch")
+    if definition.schema_version != manifest.project_schema_version:
+        raise PortableArchiveError("archive project schema identity mismatch")
+    if manifest.schema_version == 1:
+        if definition.execution_identity is not None:
+            raise PortableArchiveError(
+                "schema-version 1 archive cannot carry execution identity"
+            )
+    elif definition.execution_identity is None:
+        raise PortableArchiveError(
+            "schema-version 2 archive requires execution identity"
+        )
     if _sha256(definition_bytes) != manifest.portable_definition_sha256:
         raise PortableArchiveError("portable definition identity mismatch")
     if state.definition_sha256 != manifest.portable_definition_sha256:
@@ -322,6 +374,23 @@ def _validate_embedded_project(
                 f"portable fixture identity mismatch: {experiment.experiment_id}"
             )
         expected_roles[fixture_path] = "fixture"
+
+    if definition.execution_identity is not None:
+        for model in definition.execution_identity.models:
+            parameter_path = _contained_archive_path(
+                f"project/{model.parameter_source}",
+                label="portable parameter source path",
+            )
+            contents = payload.get(parameter_path)
+            if (
+                contents is None
+                or _sha256(contents) != model.parameter_source_sha256
+            ):
+                raise PortableArchiveError(
+                    "portable parameter source identity mismatch: "
+                    f"{model.parameter_source}"
+                )
+            expected_roles[parameter_path] = "configuration"
 
     for run in state.runs:
         if run.status is not CampaignRunStatus.COMPLETED:
@@ -353,7 +422,9 @@ def _validate_embedded_project(
             raise PortableArchiveError(
                 f"portable completion receipt is missing: {run.run_id}"
             )
-        _validate_completion_receipt(receipt, run)
+        _validate_completion_receipt(
+            receipt, run, definition.execution_identity
+        )
         expected_roles[receipt_path] = "manifest"
 
     actual_roles = {record.path: record.role for record in manifest.files}
@@ -363,19 +434,54 @@ def _validate_embedded_project(
         )
 
 
-def _validate_completion_receipt(receipt: bytes, run: RunRecord) -> None:
+def _validate_completion_receipt(
+    receipt: bytes,
+    run: RunRecord,
+    execution_identity: ExecutionIdentity | None,
+) -> None:
     """Cross-check one carried receipt against its completed run record."""
     try:
         value = json.loads(receipt)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise PortableArchiveError("invalid portable completion receipt") from error
-    if not isinstance(value, dict) or set(value) != {
-        "artifacts",
-        "attempt",
-        "run_id",
-        "schema_version",
-    }:
+    if not isinstance(value, dict):
         raise PortableArchiveError("invalid portable completion receipt fields")
+    receipt_version = value.get("schema_version")
+    legacy_fields = {"artifacts", "attempt", "run_id", "schema_version"}
+    current_fields = legacy_fields | {
+        "execution_identity",
+        "execution_identity_sha256",
+    }
+    if receipt_version == LEGACY_PROJECT_SCHEMA_VERSION:
+        if set(value) != legacy_fields or execution_identity is not None:
+            raise PortableArchiveError(
+                "invalid legacy portable completion receipt fields"
+            )
+    elif receipt_version == COMPLETION_RECEIPT_SCHEMA_VERSION:
+        if set(value) != current_fields or execution_identity is None:
+            raise PortableArchiveError(
+                "invalid portable completion receipt fields"
+            )
+        try:
+            receipt_identity = ExecutionIdentity.model_validate(
+                value["execution_identity"]
+            )
+        except ValidationError as error:
+            raise PortableArchiveError(
+                "invalid portable completion execution identity"
+            ) from error
+        if (
+            receipt_identity != execution_identity
+            or value["execution_identity_sha256"]
+            != execution_identity_sha256(execution_identity)
+        ):
+            raise PortableArchiveError(
+                "portable completion execution identity mismatch"
+            )
+    else:
+        raise PortableArchiveError(
+            "unsupported portable completion receipt schema_version"
+        )
     try:
         artifacts = tuple(
             ArtifactRecord.model_validate(item) for item in value["artifacts"]
@@ -383,8 +489,7 @@ def _validate_completion_receipt(receipt: bytes, run: RunRecord) -> None:
     except (TypeError, ValidationError) as error:
         raise PortableArchiveError("invalid portable completion receipt") from error
     if (
-        value["schema_version"] != PROJECT_SCHEMA_VERSION
-        or value["run_id"] != run.run_id
+        value["run_id"] != run.run_id
         or value["attempt"] != run.attempt_count
         or artifacts != tuple(run.artifacts)
     ):
@@ -422,6 +527,24 @@ def _resolve_project_fixture(project_directory: Path, label: str) -> Path:
         if candidate.is_file() and not candidate.is_symlink():
             return candidate.resolve()
     raise PortableArchiveError(f"project fixture is unavailable: {label}")
+
+
+def _resolve_project_resource(project_directory: Path, label: str) -> Path:
+    """Resolve one selected configuration without allowing symlink transfer."""
+    path = Path(label)
+    if path.is_absolute():
+        raise PortableArchiveError(
+            f"portable parameter source must be relative: {label}"
+        )
+    candidates = [project_directory / path, Path.cwd() / path]
+    try:
+        candidates.append(runtime_root(Path.cwd()) / path)
+    except (OSError, RuntimeError):
+        pass
+    for candidate in candidates:
+        if candidate.is_file() and not candidate.is_symlink():
+            return candidate.resolve()
+    raise PortableArchiveError(f"project parameter source is unavailable: {label}")
 
 
 def _validate_zip_member(info: zipfile.ZipInfo) -> None:

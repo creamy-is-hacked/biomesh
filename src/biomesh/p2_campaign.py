@@ -364,7 +364,11 @@ def validate_all(repository_root: Path) -> dict[str, object]:
     """Validate unresolved biological records and all executable fixture files."""
     load_experiment_campaign(repository_root / "experiments/p2_wp06_campaign.toml")
     fixture_directory = repository_root / "experiments"
-    actual_names = {path.name for path in fixture_directory.glob("*.yaml")}
+    actual_names = {
+        path.name
+        for path in fixture_directory.glob("*.yaml")
+        if path.name != "platform_reference.yaml"
+    }
     expected_names = set(PUBLISHED_FIXTURES)
     if actual_names != expected_names:
         missing = sorted(expected_names - actual_names)

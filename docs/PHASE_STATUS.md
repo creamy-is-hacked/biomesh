@@ -628,9 +628,46 @@ P4-WP07 validation evidence:
   source files, `git diff --check`, and 242 tests. P4A was not begun; no merge
   or tag was created.
 
+P4A production-remediation evidence (2026-08-11; audit remains incomplete):
+
+- `P4A-001` is remediated prospectively by project/archive schema version 2.
+  The pending platform-reference archive contains the project/state records,
+  accepted fixture, and all five exact biological parameter documents under a
+  strict eight-file checksum inventory. A clean installed wheel imported the
+  archive outside the clone and completed all six runs. A completed 110-file
+  archive reimported with zero byte mismatches, and pending/completed exports
+  each reproduced byte-identically (`ed10fa93...f1f0d` and
+  `3b402104...bce38`, respectively). The final Linux installer bundle was
+  checksum-verified as `3f07fc4d...b1763` before its documented isolated
+  install, validation, and offscreen GUI smoke paths passed.
+- `P4A-002` is remediated prospectively by a strict execution identity that
+  binds the complete built-in registry, all five named/versioned model and
+  parameter-set records, parameter-source hashes, and canonical empty plugin
+  set (`1919457d...10a0`) before work starts. All six real run requests and
+  version 2 completion receipts repeated one exact execution identity
+  (`cd8515f0...00a22`). Legacy version 1 completed projects/receipts remain
+  readable and byte-unchanged; unfinished execution and backfilling fail.
+- `P4A-003` is remediated by tracked
+  `experiments/platform_reference.yaml` and the accepted command surface in
+  `docs/09_PHASE_FOUR_AUDIT.md`. The reference is two manufactured SI-labelled
+  conditions at seeds 101, 202, and 303, remains
+  `CALIBRATION_REQUIRED`, and makes no biological-experiment claim.
+- Focused project/archive/plugin/registry/queue/report tests passed. The full
+  Python 3.14.4 gate passed 244 tests, Ruff, strict mypy over 57 source files,
+  `git diff --check`, and module help. All 11 P2 fixture/report paths, P1
+  validators and zero-mismatch replay, P3 zero-mismatch frontend/checkpoint
+  paths and GUI gates, queue recovery, plugin/registry checks, default-disabled
+  and opt-in isolated acceleration, clean wheel/Linux-installer paths, and the
+  corrected P4A application commands passed.
+- These are production remediation results only. P4A remains `INCOMPLETE` and
+  must rerun independently from the exact pushed remediation commit; no audit
+  result, merge, or tag is claimed here.
+
 ## Next Work Package
 
-`P4A – Phase 4 Audit` is the first incomplete item and has not begun.
+`P4A – Phase 4 Audit` is the first incomplete item. Its failed findings have
+production remediations, and the audit must rerun independently from the exact
+pushed remediation commit.
 
 ## Remaining Issues
 

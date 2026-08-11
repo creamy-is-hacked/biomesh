@@ -59,11 +59,14 @@ run-count progress, and reconciles cancelled or stale workers without changing
 completed artifact bytes or introducing another execution path.
 P4-WP06 adds a read/write portable-project boundary around one lock-held,
 fully verified P4-WP01 snapshot. Export embeds exact fixture, manifest,
-artifact, and completion-receipt bytes under a strict per-file checksum
-inventory. Import validates into a temporary project and atomically publishes
-only after the existing campaign verifier passes. A separate Linux packager
-wraps the release wheel in a checksum-indexed installer bundle while rejecting
-generated research data.
+biological-parameter, artifact, and completion-receipt bytes under a strict
+per-file checksum inventory. Import validates into a temporary project and
+atomically publishes only after the existing campaign verifier passes. New
+execution records bind the complete built-in registry/model/parameter
+selection and canonical empty plugin set before launch and in completion
+receipts; legacy completed records are never rewritten. A separate Linux
+packager wraps the release wheel in a checksum-indexed installer bundle while
+rejecting generated research data.
 P4-WP07 adds an isolated benchmark API beside every accepted execution path.
 The default command runs only a scalar-loop CPU reference over a synthetic
 dimensionless 2D stencil. An explicit flag enables a NumPy CPU candidate and
@@ -98,6 +101,7 @@ GUI inspector   -> immutable CellInspection records only
 GUI analytics   -> immutable RunSnapshot metrics only
 GUI export      -> public completed export + immutable snapshot history
 project/campaign -> public ApplicationService + accepted fixture identities
+execution identity -> built-in registry/model/parameter hashes + empty plugin-set hash
 project state    -> atomic JSON + process lock + append-only audit sequence
 project reports  -> verified project state + immutable raw Parquet artifacts
 plugin verifier  -> reviewed manifest + trust policy + exact entry points
@@ -112,6 +116,7 @@ queue runtime      -> Linux affinity/RLIMIT/process identity
 local queue        -> queue storage/runtime + accepted CampaignService
 queue CLI          -> local create/enqueue/status/run/cancel operations
 portable project   -> lock-held verified project + embedded fixture/artifact bytes
+portable resources -> contained fixture-relative parameter documents + checksums
 archive import     -> strict inventory/checksums + existing CampaignService verifier
 Linux packager     -> release wheel + data-exclusion gate + installer checksums
 benchmark types    -> strict case/backend/observation/divergence records
@@ -671,6 +676,15 @@ must equal one of the complete code-owned identities; a caller cannot create
 audited status by recomputing a content hash. Non-audited versioned records
 remain strictly validated but do not acquire audit trust.
 
+Top-level project schema version 2 prospectively records the complete built-in
+registry SHA-256, all five named/versioned model and parameter-set identities,
+their exact parameter-source hashes, and the canonical SHA-256 of an empty
+`PluginSetManifest`. The accepted campaign path compares this code-owned
+selection and the resolved parameter bytes before execution, writes it to
+`run_request.json`, and repeats it in a version 2 completion receipt. It still
+loads no plugin. Version 1 completed projects remain verifiable and are not
+mutated; unfinished version 1 execution fails explicitly.
+
 ```text
 accepted TOML bytes -> code-owned SHA-256 -> existing frozen schema
                                         -> audited registry parameter set
@@ -741,17 +755,19 @@ new plugin trust decision.
 `biomesh.portable_project_types` owns the immutable archive inventory and
 public result records. `biomesh.portable_project` holds the existing campaign
 lock while it verifies and snapshots a project, rewrites only fixture locations
-to archive-contained relative paths, rebinds the matching definition hash, and
-writes deterministic stored ZIP members. Completed artifact bytes and
-completion receipts remain exact. Import rejects unsafe or mismatched members,
-validates a temporary project through `CampaignService`, then renames it into a
-new target atomically.
+to archive-contained relative paths, carries the five exact parameter documents
+at the contained locations required by those fixture references, rebinds the
+matching definition hash, and writes deterministic stored ZIP members.
+Completed artifact bytes and completion receipts remain exact. Import rejects
+unsafe or mismatched members, validates a temporary project through
+`CampaignService`, then renames it into a new target atomically.
 
-The archive manifest states that plugin approval, registry identity, and queue
-state are not embedded or inferred. An imported project therefore remains on
-the accepted zero-plugin campaign path; callers must separately verify registry
-or plugin data and explicitly enqueue the new local path. SHA-256 provides
-corruption detection rather than origin authentication.
+The archive manifest states that plugin approval, registry documents/trust, and
+queue state are not embedded or inferred. Exact registry and empty-plugin-set
+hashes remain provenance, not transferred trust. An imported project therefore
+remains on the accepted zero-plugin campaign path; callers must explicitly
+enqueue the new local path. SHA-256 provides corruption detection rather than
+origin authentication.
 
 `biomesh.linux_packaging` builds a deterministic Linux tar/gzip application
 bundle from one version-matched wheel. It rejects generated research-data

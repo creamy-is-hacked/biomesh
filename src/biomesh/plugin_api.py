@@ -83,6 +83,7 @@ __all__ = [
     "load_plugins",
     "plugin_metadata_sha256",
     "plugin_selection_sha256",
+    "plugin_set_sha256",
     "publish_plugin_verification",
     "verify_plugins",
 ]
@@ -163,6 +164,7 @@ class PluginVerificationReport(BaseModel):
     schema_version: Literal[1]
     plugin_api_version: Literal[1]
     zero_plugins_compatible: Literal[True]
+    plugin_set_sha256: Sha256
     plugins: list[PluginProvenance]
 
 
@@ -222,6 +224,11 @@ def plugin_metadata_sha256(metadata: PluginMetadata) -> str:
 def plugin_selection_sha256(selection: PluginSelection) -> str:
     """Bind all reviewed metadata, code identity, and review provenance."""
     return hashlib.sha256(_model_bytes(selection)).hexdigest()
+
+
+def plugin_set_sha256(manifest: PluginSetManifest) -> str:
+    """Identify the complete ordered plugin set, including zero plugins."""
+    return hashlib.sha256(_model_bytes(manifest)).hexdigest()
 
 
 def example_plugin_metadata() -> PluginMetadata:
@@ -358,6 +365,7 @@ def verify_plugins(
         schema_version=1,
         plugin_api_version=1,
         zero_plugins_compatible=True,
+        plugin_set_sha256=plugin_set_sha256(selected),
         plugins=provenance,
     )
 

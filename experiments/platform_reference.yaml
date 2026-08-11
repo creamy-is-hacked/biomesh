@@ -2,37 +2,64 @@
   "schema_version": 2,
   "project": {
     "schema_version": 1,
-    "project_id": "p4-wp06-portable-validation",
-    "title": "P4-WP06 portable project validation",
-    "description": "Manufactured software-validation project; no biological conclusion or calibration claim."
+    "project_id": "p4-platform-reference",
+    "title": "P4 deterministic platform reference",
+    "description": "Manufactured multi-condition software validation only; no biological conclusion or calibration claim."
   },
   "experiments": [
     {
       "schema_version": 1,
-      "experiment_id": "accepted-producer",
-      "title": "Accepted producer fixture",
-      "fixture_file": "experiments/producer.yaml",
-      "fixture_sha256": "16bc57e1704e57f22a92087901802157a3ce310f4ef0f89b4c83c89266585358",
+      "experiment_id": "accepted-quorum-threshold",
+      "title": "Accepted quorum-threshold software fixture",
+      "fixture_file": "experiments/qs_threshold_sweep.yaml",
+      "fixture_sha256": "5457a5100af4370c3f33dbb02abb8210c354b0cdc89737e6b87602a11968a5fc",
       "calibration_status": "CALIBRATION_REQUIRED",
-      "notes": "P2A-accepted manufactured fixture; software validation only."
+      "notes": "P2A-accepted manufactured fixture; SI-labelled software validation only."
     }
   ],
   "campaigns": [
     {
       "schema_version": 1,
-      "campaign_id": "portable-campaign",
-      "experiment_id": "accepted-producer",
-      "title": "One-run portable archive reproduction",
-      "replicate_count": 1,
+      "campaign_id": "platform-reference",
+      "experiment_id": "accepted-quorum-threshold",
+      "title": "Two-condition three-seed platform reference",
+      "replicate_count": 3,
       "seed_policy": {
         "kind": "explicit",
-        "seeds": [101]
+        "seeds": [101, 202, 303]
       },
       "sweep_matrix": [
         {
-          "point_id": "producer",
-          "condition_id": "producer",
-          "parameters": []
+          "point_id": "quorum-low",
+          "condition_id": "qs-low",
+          "parameters": [
+            {
+              "name": "quorum_activation_half_saturation_constant",
+              "value": 5e-7,
+              "unit": "mol m^-3",
+              "source": "manufactured software-validation fixture",
+              "uncertainty": "not a biological uncertainty",
+              "notes": "SI-labelled executable fixture; not calibration.",
+              "calibration_status": "DERIVED",
+              "level_id": "low"
+            }
+          ]
+        },
+        {
+          "point_id": "quorum-high",
+          "condition_id": "qs-high",
+          "parameters": [
+            {
+              "name": "quorum_activation_half_saturation_constant",
+              "value": 5e-6,
+              "unit": "mol m^-3",
+              "source": "manufactured software-validation fixture",
+              "uncertainty": "not a biological uncertainty",
+              "notes": "SI-labelled executable fixture; not calibration.",
+              "calibration_status": "DERIVED",
+              "level_id": "high"
+            }
+          ]
         }
       ]
     }

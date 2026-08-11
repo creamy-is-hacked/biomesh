@@ -33,6 +33,11 @@ declared CPU and memory boundary applies to the complete active queue worker,
 not to an unbounded number of concurrent children. Execution stays on the
 local machine; there is no remote service or cloud fallback.
 
+Before a queue item is claimed as running, the worker verifies the project's
+prospective model/parameter-registry and explicit zero-plugin-set execution
+identity through the accepted campaign service. This preflight loads no plugin
+code and does not change queue ordering, project state, or resource policy.
+
 ## Progress, cancellation, and recovery
 
 Queue status joins each persistent item to an atomic P4-WP01 campaign-state

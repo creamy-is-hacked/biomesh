@@ -28,6 +28,7 @@ from biomesh.project_campaign import (
     RunExecutionRequest,
     SeedPolicy,
     SweepPoint,
+    accepted_core_execution_identity,
     create_project,
 )
 
@@ -43,7 +44,7 @@ def _definition(
 ) -> ProjectDefinition:
     fixture_hash = hashlib.sha256(FIXTURE.read_bytes()).hexdigest()
     return ProjectDefinition(
-        schema_version=1,
+        schema_version=2,
         project=ProjectRecord(
             schema_version=1,
             project_id="queue-research-project",
@@ -78,6 +79,7 @@ def _definition(
             )
             for campaign_id in campaign_ids
         ],
+        execution_identity=accepted_core_execution_identity(Path.cwd()),
     )
 
 

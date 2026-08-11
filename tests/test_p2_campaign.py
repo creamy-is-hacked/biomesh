@@ -57,9 +57,11 @@ def test_published_fixture_set_covers_every_executable_condition_once() -> None:
     assert result["fixture_count"] == 11
     assert result["condition_count"] == 15
     assert result["seeds"] == list(FIXTURE_SEEDS)
-    assert {path.name for path in Path("experiments").glob("*.yaml")} == {
+    yaml_names = {path.name for path in Path("experiments").glob("*.yaml")}
+    assert yaml_names - {"platform_reference.yaml"} == {
         fixture_name for _, fixture_name, _ in PUBLISHED_COMMANDS
     }
+    assert "platform_reference.yaml" in yaml_names
     published_conditions: list[str] = []
     for command_name, fixture_name, condition_ids in PUBLISHED_COMMANDS:
         fixture = load_fixture_command(Path("experiments") / fixture_name)

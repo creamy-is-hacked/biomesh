@@ -24,6 +24,7 @@ from biomesh.plugin_api import (
     PluginTrustPolicy,
     builtin_plugin_trust_policy,
     example_plugin_manifest,
+    plugin_set_sha256,
 )
 from biomesh.registry_catalog import builtin_registry
 from biomesh.registry_types import (
@@ -359,6 +360,9 @@ def test_preflight_requires_exact_plugins_and_returns_traceable_hashes() -> None
     assert report.passed
     assert report.parameter_count == 3
     assert len(report.plugin_selection_sha256) == 1
+    assert report.plugin_set_sha256 == plugin_set_sha256(
+        example_plugin_manifest()
+    )
     assert report.model_record_sha256 == bundle.models[0].record_sha256
     assert (
         report.parameter_set_record_sha256
