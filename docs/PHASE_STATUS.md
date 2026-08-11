@@ -460,7 +460,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | P4-WP04 | Model and parameter registry | COMPLETE |
 | P4-WP05 | Local run queue | COMPLETE |
 | P4-WP06 | Portable projects and packaging | COMPLETE |
-| P4-WP07 | Experimental acceleration boundary | INCOMPLETE |
+| P4-WP07 | Experimental acceleration boundary | COMPLETE |
 | P4A | Phase 4 Audit | INCOMPLETE |
 
 P4-WP01 validation evidence:
@@ -606,9 +606,31 @@ P4-WP06 validation evidence:
 - Python 3.14.4 passed module help, Ruff, strict mypy over 55 source files,
   `git diff --check`, and 235 tests. No P4-WP07 or P4A behavior was added.
 
+P4-WP07 validation evidence:
+
+- Benchmark API version 1 defines strict immutable case, backend, output,
+  environment, timing-observation, and divergence records. The fixed input is
+  SHA-256-bound deterministic dimensionless 48 by 48 synthetic 2D stencil for
+  four steps with `1e-12` absolute and relative engineering tolerances; it is
+  not a model, biological input, 3D workload, or scientific result.
+- The default `benchmark acceleration` application path executed only the
+  scalar-loop CPU reference and recorded the experimental candidate as
+  disabled. The candidate ran only with `--experimental`, declared NumPy
+  float64 CPU/2D execution and `gpu_used: false`, and measured zero absolute
+  and relative divergence with zero mismatches across all 2,304 values.
+- Stdout, atomic artifact publication, explicit overwrite rejection, candidate
+  divergence failure, invalid-output rejection, and opt-in timing paths passed.
+  Timings remain raw local nanosecond observations with no warm-up, comparison
+  ratio, inference, performance claim, GPU/3D claim, or scientific-accuracy
+  claim. Accepted engine, campaign, plugin, registry, queue, archive, package,
+  completed-run, and desktop paths remain unchanged.
+- Python 3.14.4 passed module and benchmark help, Ruff, strict mypy over 57
+  source files, `git diff --check`, and 242 tests. P4A was not begun; no merge
+  or tag was created.
+
 ## Next Work Package
 
-`P4-WP07 – Experimental acceleration boundary`.
+`P4A – Phase 4 Audit` is the first incomplete item and has not begun.
 
 ## Remaining Issues
 
@@ -623,5 +645,8 @@ P4-WP06 validation evidence:
   by registry data. P4-WP05 adds the separate persistent OS-limited local queue
   described above. P4-WP06 adds explicit portable archive CLI paths and a
   documented Linux installer bundle without migrating queue state or granting
-  trust. The desktop has no queue/report/plugin/registry/archive UI,
-  acceleration, cloud, automatic plugin trust, or calibration behavior.
+  trust. P4-WP07 adds only an isolated disabled-by-default synthetic 2D
+  benchmark and opt-in NumPy CPU candidate; no benchmark backend enters model
+  execution and no GPU, 3D, performance, or scientific claim is made. The
+  desktop has no queue/report/plugin/registry/archive UI, cloud, automatic
+  plugin trust, or calibration behavior.

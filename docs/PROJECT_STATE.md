@@ -4,20 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after P4-WP06 completion on the Phase 4 branch.
+Snapshot verified: 2026-08-11 after P4-WP07 completion on the Phase 4 branch.
 P3 remains the latest audited and accepted phase at accepted main commit
 `ae67b3fb86e61cd75d373d790decdd4008bd3313` and tag `v0.3.1-audit`. The Python
-3.14 full gate passes 235 tests.
+3.14 full gate passes 242 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P4 – Phase 4 – Research Platform (in progress) |
-| Current work package | P4-WP06 – Portable projects and packaging is `COMPLETE`; P4-WP07 is the first `INCOMPLETE` item |
+| Current work package | P4-WP07 – Experimental acceleration boundary is `COMPLETE`; P4A is the first `INCOMPLETE` item and has not begun |
 | Current branch | `phase-4-research-platform` |
 | Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
-| Current test count | 235 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | P4-WP07 – Experimental acceleration boundary |
+| Current test count | 242 passed (`pytest -q`, 2026-08-11) |
+| Next planned work package | P4A – Phase 4 Audit (not started) |
 
 ## Outstanding technical debt
 
@@ -106,8 +106,15 @@ P3 remains the latest audited and accepted phase at accepted main commit
   artifacts/receipts, plus a reproducible Linux wheel-installer bundle that
   rejects generated research data. Import grants no plugin trust or registry
   identity and does not migrate queue state. The desktop has no
-  report/plugin/registry/queue/archive UI, acceleration, calibration, cloud, or
-  automatic plugin-trust behavior.
+  report/plugin/registry/queue/archive UI, calibration, cloud, or automatic
+  plugin-trust behavior. P4-WP07 adds a separate benchmark API with a scalar
+  CPU reference and an explicitly enabled NumPy CPU feasibility candidate over
+  a synthetic dimensionless 2D stencil. The fixed 2,304-value case measured
+  zero divergence at `1e-12` absolute/relative engineering tolerances. Optional
+  timings are raw local observations only. No benchmark backend enters model,
+  campaign, queue, plugin, registry, archive, package, or GUI execution; no
+  3D/GPU, production performance, scientific accuracy, or P4A result is
+  claimed.
 
 ## Update policy
 

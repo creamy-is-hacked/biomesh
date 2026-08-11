@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP06
+## Current architecture through P4-WP07
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -64,6 +64,12 @@ inventory. Import validates into a temporary project and atomically publishes
 only after the existing campaign verifier passes. A separate Linux packager
 wraps the release wheel in a checksum-indexed installer bundle while rejecting
 generated research data.
+P4-WP07 adds an isolated benchmark API beside every accepted execution path.
+The default command runs only a scalar-loop CPU reference over a synthetic
+dimensionless 2D stencil. An explicit flag enables a NumPy CPU candidate and
+records pointwise divergence; optional raw timings carry limitations and no
+performance comparison. Neither backend can be selected by the simulation,
+campaign, queue, plugin, registry, archive, package, or GUI.
 
 Dependency direction is intentionally simple:
 
@@ -108,6 +114,9 @@ queue CLI          -> local create/enqueue/status/run/cancel operations
 portable project   -> lock-held verified project + embedded fixture/artifact bytes
 archive import     -> strict inventory/checksums + existing CampaignService verifier
 Linux packager     -> release wheel + data-exclusion gate + installer checksums
+benchmark types    -> strict case/backend/observation/divergence records
+benchmark runner   -> synthetic CPU reference + explicitly enabled CPU candidate
+benchmark CLI      -> stdout or atomic JSON artifact; no model execution
 tests           -> public component interfaces
 ```
 

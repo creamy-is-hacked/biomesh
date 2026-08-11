@@ -150,6 +150,14 @@ All notable repository changes are documented here.
   archive, CSV, Parquet, and NumPy research data. Archive exchange grants no
   plugin trust, registry identity, or queue migration and adds no scientific,
   calibration, acceleration, P4-WP07, or audit behavior.
+- P4-WP07 – A versioned, isolated benchmark boundary with a deterministic
+  scalar-loop CPU reference and an explicitly enabled NumPy CPU feasibility
+  candidate over one synthetic dimensionless 2D stencil. Reports measure
+  pointwise divergence and optional raw local timings, publish atomically, and
+  state accuracy/performance limitations without a speedup, GPU, 3D,
+  production, or scientific claim. The accepted engine and all completed-run,
+  plugin, registry, queue, archive, package, and desktop contracts remain
+  unchanged.
 
 ### Audit findings
 

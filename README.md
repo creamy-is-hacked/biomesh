@@ -9,10 +9,9 @@ into a Linux desktop research platform.
 
 The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
 2026-08-10 audit passed with recorded limitations and is represented by the
-`v0.3.1-audit` tag. The P4-WP01 – Project and campaign model through P4-WP06 –
-Portable projects and packaging work packages are complete on the Phase 4
-branch. P4-WP07 – Experimental acceleration boundary is the next incomplete
-work package.
+`v0.3.1-audit` tag. The P4-WP01 – Project and campaign model through P4-WP07 –
+Experimental acceleration boundary work packages are complete on the Phase 4
+branch. P4A – Phase 4 Audit is the next incomplete item and has not begun.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -77,7 +76,10 @@ The repository currently provides:
   hash-bound fixtures, exact completed-run artifacts, per-file SHA-256, and
   clean-install reproduction; and
 - a reproducible Linux wheel-installer bundle whose build gate rejects
-  generated project, queue, report, raw-run, and research-result data.
+  generated project, queue, report, raw-run, and research-result data; and
+- an isolated versioned benchmark interface with a disabled-by-default NumPy
+  CPU feasibility candidate, explicit CPU divergence measurement, optional raw
+  timing observations, and no 3D/GPU/scientific/performance claim.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -274,6 +276,23 @@ The bundle contains the wheel, installer documentation, and checksums. It
 requires Linux and Python 3.14, and deliberately excludes generated projects,
 archives, queues, reports, raw runs, and research results.
 
+Run the isolated benchmark reference, or explicitly enable the CPU-only
+feasibility candidate, with:
+
+```bash
+python -m biomesh benchmark acceleration
+python -m biomesh benchmark acceleration --experimental
+python -m biomesh benchmark acceleration --experimental \
+  --timing-samples 3 --output NEW_BENCHMARK_DIRECTORY
+```
+
+Experimental execution is disabled by default. The fixed case is a synthetic
+dimensionless 2D stencil and is not connected to model execution. The report
+measures candidate divergence from the CPU reference. Optional timings are raw
+local observations only: no speedup, GPU support, 3D validation, production
+performance, or scientific accuracy is claimed. See
+[the P4-WP07 benchmark contract](docs/P4_WP07_EXPERIMENTAL_ACCELERATION.md).
+
 The Simulation Controls dock selects only the 15 existing manufactured P2
 fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
 remain disabled while the Experiment Editor document is invalid or retains
@@ -331,9 +350,8 @@ boundaries.
 
 ## Roadmap
 
-P3 is accepted. P4-WP01 through P4-WP06 are complete on the Phase 4 branch;
-P4-WP07 – Experimental acceleration boundary is next. The remaining P4 items
-are roadmap work, and BioMesh is not called v1.
+P3 is accepted. P4-WP01 through P4-WP07 are complete on the Phase 4 branch;
+P4A – Phase 4 Audit is next and has not begun. BioMesh is not called v1.
 
 ## License
 

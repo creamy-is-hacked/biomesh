@@ -280,6 +280,31 @@ def build_parser() -> argparse.ArgumentParser:
     )
     package_linux.add_argument("--wheel", required=True, type=Path)
     package_linux.add_argument("--output", required=True, type=Path)
+
+    benchmark_parser = commands.add_parser(
+        "benchmark", help="run an isolated P4 experimental-feasibility benchmark"
+    )
+    benchmark_commands = benchmark_parser.add_subparsers(dest="benchmark_command")
+    acceleration_parser = benchmark_commands.add_parser(
+        "acceleration",
+        help="compare the CPU reference with an explicitly enabled CPU candidate",
+    )
+    acceleration_parser.add_argument(
+        "--experimental",
+        action="store_true",
+        help="enable the isolated NumPy CPU feasibility candidate",
+    )
+    acceleration_parser.add_argument(
+        "--timing-samples",
+        default=0,
+        type=int,
+        help="record raw local elapsed times without a performance claim",
+    )
+    acceleration_parser.add_argument(
+        "--output",
+        type=Path,
+        help="atomically publish acceleration_benchmark.json to a new directory",
+    )
     return parser
 
 
@@ -476,6 +501,32 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(json.dumps(package_result.as_dict(), sort_keys=True))
             return 0
+        if arguments.command == "benchmark":
+            from biomesh.acceleration_benchmark import (
+                publish_acceleration_benchmark,
+                run_acceleration_benchmark,
+            )
+
+            if arguments.benchmark_command != "acceleration":
+                raise ValueError("benchmark requires acceleration")
+            benchmark_report = (
+                run_acceleration_benchmark(
+                    enable_experimental=arguments.experimental,
+                    timing_samples=arguments.timing_samples,
+                )
+                if arguments.output is None
+                else publish_acceleration_benchmark(
+                    arguments.output,
+                    enable_experimental=arguments.experimental,
+                    timing_samples=arguments.timing_samples,
+                )
+            )
+            print(
+                json.dumps(
+                    benchmark_report.model_dump(mode="json"), sort_keys=True
+                )
+            )
+            return 0 if benchmark_report.passed else 1
         if arguments.command == "plugins":
             if arguments.plugins_command != "verify":
                 raise ValueError("plugins requires verify")

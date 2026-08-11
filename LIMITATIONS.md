@@ -1,5 +1,26 @@
 # Limitations
 
+## P4-WP07 – Experimental acceleration boundary
+
+- The fixed benchmark is a synthetic dimensionless 48 by 48 two-dimensional
+  software stencil. It does not execute or validate the BioMesh model and is
+  not a biological, scientific, three-dimensional, or production workload.
+- Experimental execution is disabled by default. The only opt-in candidate is
+  NumPy float64 slice evaluation on the CPU; no GPU is detected, selected,
+  exercised, supported, or claimed.
+- CPU equivalence is limited to the declared case and `1e-12` absolute and
+  relative engineering tolerances. The validated case measured zero divergence
+  across 2,304 values, but this is not evidence for other inputs, models,
+  hardware, precision, or scientific accuracy.
+- Timing is optional and records raw local elapsed nanoseconds only. There is
+  no warm-up, controlled environment, statistical inference, speedup ratio,
+  transfer-cost study, scaling study, production performance claim, or hardware
+  comparison.
+- The benchmark module is not imported by accepted model execution. It cannot
+  alter completed runs, projects, reports, plugin trust, registry identities,
+  queue limits/recovery, archives, packages, or desktop behavior. Any future
+  3D/GPU path requires separate implementation and audit.
+
 ## P4-WP06 – Portable projects and packaging
 
 - Portable archives contain exact hash-verified project configurations,
