@@ -161,13 +161,25 @@ All notable repository changes are documented here.
 
 ### Audit findings
 
+- P4A – The independent rerun of exact pushed prerequisite
+  `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4` passed with recorded
+  limitations and accepted Phase 4. Python 3.14.4, all 244 tests, complete
+  P1-P3 regressions, all 11 P2 fixture/report paths, six-run external wheel
+  archive completion, 288 raw-retraced report observations, six exact
+  request/receipt identities, queue/plugin/registry/acceleration controls,
+  corruption/traversal rejection, a byte-identical 111-file completed project
+  reimport, and reproducible wheel/sdist/installer bytes passed. No Critical or
+  Major finding remains; biological/calibration, plugin sandboxing, archive
+  signing, portable queue, installer lifecycle, GPU/3D, and performance claims
+  remain outside scope.
+
 - P4A – The first independent audit identified `P4A-001` (pending portable
   campaigns omitted the five fixture-relative biological parameter documents),
   `P4A-002` (completed-run provenance did not explicitly identify the complete
   named/versioned model/parameter registry selection or the empty plugin set),
   and `P4A-003` (the audit authority named unsupported commands and a missing
-  platform reference). This production remediation does not perform or accept
-  the P4A rerun.
+  platform reference). The independent rerun recorded above closes all three
+  findings.
 
 - P3A – Independent clean-clone audit of pushed implementation commit
   `ed062935552c6a5df639c56474c7854cac91bd69` passed with recorded

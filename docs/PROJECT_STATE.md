@@ -4,25 +4,25 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after P4A production remediation validation on
-the Phase 4 branch.
-P3 remains the latest audited and accepted phase at accepted main commit
-`ae67b3fb86e61cd75d373d790decdd4008bd3313` and tag `v0.3.1-audit`. The Python
-3.14 full gate passes 244 tests.
+Snapshot verified: 2026-08-11 after the independent P4A rerun accepted Phase 4
+from exact pushed prerequisite
+`b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`. The canonical accepted-audit
+workflow publishes tag `v0.4.1-audit`. The Python 3.14 full gate passes 244
+tests.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P4 – Phase 4 – Research Platform (in progress) |
-| Current work package | P4-WP07 is `COMPLETE`; failed P4A findings have production remediations, but P4A remains the first `INCOMPLETE` item pending an independent rerun |
-| Current branch | `phase-4-research-platform` |
-| Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
-| Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
+| Current phase | P4 – Phase 4 – Research Platform (accepted) |
+| Current work package | P4A is `COMPLETE`; the independent rerun passed with recorded limitations |
+| Current branch | `main` after the canonical accepted-audit merge |
+| Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
+| Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
 | Current test count | 244 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | Independent P4A – Phase 4 Audit rerun from the exact pushed remediation commit |
+| Next planned work package | None; no later phase or work package is authorized by the current plans |
 
 ## Outstanding technical debt
 
-- License selection is pending; no license was added by this remediation pass.
+- License selection is pending; no license was added by the audit.
 
 ## Known limitations
 
@@ -115,9 +115,8 @@ P3 remains the latest audited and accepted phase at accepted main commit
   zero divergence at `1e-12` absolute/relative engineering tolerances. Optional
   timings are raw local observations only. No benchmark backend enters model,
   campaign, queue, plugin, registry, archive, package, or GUI execution; no
-  3D/GPU, production performance, scientific accuracy, or P4A result is
-  claimed.
-- P4A production remediation adds prospective schema-version 2 execution
+  3D/GPU, production performance, or scientific-accuracy claim is made.
+- P4A independently accepted the prospective schema-version 2 execution
   identity and portability. New projects bind the complete built-in registry,
   all five named/versioned model/parameter-set and parameter-source hashes, and
   the canonical explicit zero-plugin set before execution; run requests and
@@ -127,8 +126,11 @@ P3 remains the latest audited and accepted phase at accepted main commit
   completed schema-version 1 projects remain byte-preserved and readable;
   missing provenance is never backfilled. Plugin code/trust, registry
   documents/trust, queue state, SI/calibration boundaries, and the isolated
-  acceleration boundary remain unchanged. P4A is not accepted by this
-  remediation.
+  acceleration boundary remain unchanged. The rerun retraced 288 report
+  observations, verified six request/receipt identities, completed the pending
+  archive from an external wheel, preserved a 111-file completed project tree,
+  and reproduced wheel, sdist, and installer bytes without a Critical or Major
+  finding.
 
 ## Update policy
 

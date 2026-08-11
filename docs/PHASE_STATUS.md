@@ -461,7 +461,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | P4-WP05 | Local run queue | COMPLETE |
 | P4-WP06 | Portable projects and packaging | COMPLETE |
 | P4-WP07 | Experimental acceleration boundary | COMPLETE |
-| P4A | Phase 4 Audit | INCOMPLETE |
+| P4A | Phase 4 Audit | COMPLETE |
 
 P4-WP01 validation evidence:
 
@@ -663,11 +663,43 @@ P4A production-remediation evidence (2026-08-11; audit remains incomplete):
   must rerun independently from the exact pushed remediation commit; no audit
   result, merge, or tag is claimed here.
 
+P4A independent audit evidence (2026-08-11):
+
+- Audit result: `PASS WITH RECORDED LIMITATIONS`; Phase 4 is accepted at exact
+  pushed prerequisite `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`.
+- A fresh Python 3.14.4 environment passed module help, Ruff, strict mypy over
+  57 source files, `git diff --check`, and all 244 tests. P1 validators and
+  zero-mismatch replay, all 11 P2 fixture/report paths, P3 zero-mismatch
+  frontend/checkpoint verification, GUI/integration tests, and offscreen GUI
+  smoke passed.
+- The strict eight-file pending archive reproduced byte-identically at
+  `ed10fa93...f1f0d`, carried the fixture and all five required parameter
+  resources, and completed six runs from a clean external wheel installation.
+  The external 110-file completed archive reproduced at `3795db66...4c37`,
+  and completed export/import preserved the full 111-file project tree with
+  zero byte mismatches. Corruption and path traversal failed explicitly.
+- All six run requests and six schema-version 2 receipts repeated the exact
+  five-model execution identity `cd8515f0...00a22`, registry identity, source
+  hashes, and canonical empty-plugin identity `1919457d...10a0`. Legacy
+  schema-version 1 completed bytes remained readable and unchanged; unfinished
+  execution/backfilling failed explicitly.
+- Independent report inspection retraced all 288 observations to raw hashes,
+  sizes, Parquet rows, columns, and values. All six planned runs were covered,
+  with 96 summaries, 48 pairwise comparisons, and no missing run. Plugin trust,
+  registry immutability/SI checks, queue ordering/resources/cancellation/retry/
+  recovery, and disabled-by-default acceleration isolation/equivalence passed.
+- Repeated wheel, sdist, and Linux installer outputs were byte-identical at
+  `12e69544...effb`, `c70ca745...424f`, and `4ff5aedc...f69d`. Fresh external
+  wheel, sdist, and checksum-verified installer CLI/GUI paths passed. No
+  generated research output was bundled or tracked.
+- No Critical or Major finding remains. Biological values remain
+  `CALIBRATION_REQUIRED`; plugin sandboxing, archive signing/confidentiality,
+  portable queue state, installer update/rollback, biological validation, and
+  GPU/3D/performance claims remain outside the accepted scope.
+
 ## Next Work Package
 
-`P4A – Phase 4 Audit` is the first incomplete item. Its failed findings have
-production remediations, and the audit must rerun independently from the exact
-pushed remediation commit.
+No later phase or work package is authorized by the current repository plans.
 
 ## Remaining Issues
 
@@ -675,7 +707,7 @@ pushed remediation commit.
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 through P4-WP06 add the local synchronous
+- P4A accepted Phase 4. P4-WP01 through P4-WP06 add the local synchronous
   project/campaign model, presentation-neutral comparison/report data, and a
   separately verified plugin API plus a declarative model/parameter registry.
   The accepted engine/campaign path still uses zero plugins and is unchanged

@@ -1,15 +1,20 @@
 # Limitations
 
-## P4A production remediation
+## P4A – Phase 4 Audit
 
-- The first P4A attempt reported three production findings. This branch
-  contains their remediations and local validation evidence only; P4A remains
-  incomplete until a separate independent task reruns the audit from the exact
-  pushed remediation commit. No Phase 4 acceptance, merge, or tag is claimed.
+- The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations
+  from exact pushed prerequisite
+  `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`. No Critical or Major finding
+  remains; `P4A-001`, `P4A-002`, and `P4A-003` are closed by fresh evidence.
 - `experiments/platform_reference.yaml` is a manufactured two-condition,
   three-fixed-seed software-validation project. Its SI/provenance records and
   deterministic completion do not make it a biological experiment, calibration
   result, benchmark, or scientific conclusion.
+- Installed distributions cannot discover a source Git checkout and therefore
+  record `commit_hash` as `UNKNOWN`; the audit separately binds the exact wheel
+  SHA-256 and package/dependency/environment versions. In-clone runs record the
+  exact prerequisite commit. Scientific/request bytes matched across both
+  environments; only this metadata and its checksum receipt differed.
 
 ## P4-WP07 – Experimental acceleration boundary
 

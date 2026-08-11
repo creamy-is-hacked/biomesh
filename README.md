@@ -7,13 +7,10 @@ into a Linux desktop research platform.
 
 ## Current status
 
-The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
-2026-08-10 audit passed with recorded limitations and is represented by the
-`v0.3.1-audit` tag. The P4-WP01 – Project and campaign model through P4-WP07 –
-Experimental acceleration boundary work packages are complete on the Phase 4
-branch. The first P4A – Phase 4 Audit attempt reported three production
-findings; their remediations are complete on the Phase 4 branch, while P4A
-remains incomplete pending a separate independent rerun.
+The latest accepted phase is **P4 – Phase 4 – Research Platform**. Its
+independent 2026-08-11 audit rerun passed with recorded limitations and is
+represented by the `v0.4.1-audit` tag. The rerun closed the three findings from
+the first P4A attempt without expanding the scientific or platform scope.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -365,9 +362,8 @@ boundaries.
 
 ## Roadmap
 
-P3 is accepted. P4-WP01 through P4-WP07 are complete on the Phase 4 branch;
-P4A production findings are remediated, and an independent P4A rerun is next.
-BioMesh is not called v1.
+P4 is accepted. No later phase or work package is authorized by the current
+repository plans. BioMesh is not called v1.
 
 ## License
 
