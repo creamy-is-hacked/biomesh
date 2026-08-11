@@ -10,9 +10,23 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from biomesh import __version__
+from biomesh.model_registry import (
+    import_registry,
+    load_registry,
+    preflight_launch,
+    publish_builtin_registry,
+    verify_registry,
+)
 from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
 from biomesh.p3_verification import compare_frontends, verify_checkpoint
-from biomesh.plugin_api import publish_plugin_verification, verify_plugins
+from biomesh.plugin_api import (
+    PluginSetManifest,
+    PluginTrustPolicy,
+    builtin_plugin_trust_policy,
+    example_plugin_manifest,
+    publish_plugin_verification,
+    verify_plugins,
+)
 from biomesh.project_campaign import CampaignService, create_project
 from biomesh.project_reports import generate_campaign_report
 from biomesh.reference import (
@@ -21,6 +35,7 @@ from biomesh.reference import (
     reproduce_reference,
     run_reference,
 )
+from biomesh.registry_catalog import builtin_registry
 from biomesh.runtime_resources import runtime_root
 from biomesh.validation import (
     validate_diffusion,
@@ -163,6 +178,42 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         help="atomically publish plugin_manifest.json to this new directory",
+    )
+
+    registry_parser = commands.add_parser(
+        "registry", help="verify and exchange the P4 model/parameter registry"
+    )
+    registry_commands = registry_parser.add_subparsers(dest="registry_command")
+    registry_verify = registry_commands.add_parser(
+        "verify", help="verify registry integrity, provenance, units, and compatibility"
+    )
+    registry_verify.add_argument(
+        "--registry",
+        type=Path,
+        help="registry file or directory (default: built-in audited catalog)",
+    )
+    registry_export = registry_commands.add_parser(
+        "export", help="atomically export the built-in audited registry"
+    )
+    registry_export.add_argument("--output", required=True, type=Path)
+    registry_import = registry_commands.add_parser(
+        "import", help="validate and atomically import a registry"
+    )
+    registry_import.add_argument("source", type=Path)
+    registry_import.add_argument("--output", required=True, type=Path)
+    registry_preflight = registry_commands.add_parser(
+        "preflight", help="prove exact model, parameter, unit, and plugin compatibility"
+    )
+    registry_preflight.add_argument("--registry", type=Path)
+    registry_preflight.add_argument("--model-id", required=True)
+    registry_preflight.add_argument("--model-version", required=True)
+    registry_preflight.add_argument("--parameter-set-id", required=True)
+    registry_preflight.add_argument("--parameter-set-version", required=True)
+    registry_preflight.add_argument(
+        "--plugins",
+        choices=("none", "example"),
+        default="none",
+        help="reviewed plugin selection to check (default: zero-plugin core)",
     )
     return parser
 
@@ -307,6 +358,57 @@ def main(argv: Sequence[str] | None = None) -> int:
                 else publish_plugin_verification(arguments.output)
             )
             print(json.dumps(report.model_dump(mode="json"), sort_keys=True))
+            return 0
+        if arguments.command == "registry":
+            if arguments.registry_command == "export":
+                registry_report = publish_builtin_registry(
+                    arguments.output, repository_root
+                )
+            elif arguments.registry_command == "import":
+                registry_report = import_registry(
+                    arguments.source, arguments.output, repository_root
+                )
+            else:
+                registry_path = getattr(arguments, "registry", None)
+                bundle = (
+                    builtin_registry(repository_root)
+                    if registry_path is None
+                    else load_registry(registry_path, repository_root)
+                )
+                if arguments.registry_command == "verify":
+                    registry_report = verify_registry(bundle, repository_root)
+                elif arguments.registry_command == "preflight":
+                    if arguments.plugins == "example":
+                        plugin_manifest = example_plugin_manifest()
+                        trust_policy = builtin_plugin_trust_policy()
+                    else:
+                        plugin_manifest = PluginSetManifest(
+                            schema_version=1, plugins=[]
+                        )
+                        trust_policy = PluginTrustPolicy(
+                            approved_selection_sha256=frozenset()
+                        )
+                    preflight_report = preflight_launch(
+                        bundle,
+                        repository_root=repository_root,
+                        model_id=arguments.model_id,
+                        model_version=arguments.model_version,
+                        parameter_set_id=arguments.parameter_set_id,
+                        parameter_set_version=arguments.parameter_set_version,
+                        plugin_manifest=plugin_manifest,
+                        trust_policy=trust_policy,
+                    )
+                    print(
+                        json.dumps(
+                            preflight_report.model_dump(mode="json"), sort_keys=True
+                        )
+                    )
+                    return 0
+                else:
+                    raise ValueError(
+                        "registry requires verify, export, import, or preflight"
+                    )
+            print(json.dumps(registry_report.model_dump(mode="json"), sort_keys=True))
             return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"biomesh: error: {error}", file=sys.stderr)

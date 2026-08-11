@@ -457,7 +457,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | P4-WP01 | Project and campaign model | COMPLETE |
 | P4-WP02 | Comparison and reports | COMPLETE |
 | P4-WP03 | Plugin API | COMPLETE |
-| P4-WP04 | Model and parameter registry | INCOMPLETE |
+| P4-WP04 | Model and parameter registry | COMPLETE |
 | P4-WP05 | Local run queue | INCOMPLETE |
 | P4-WP06 | Portable projects and packaging | INCOMPLETE |
 | P4-WP07 | Experimental acceleration boundary | INCOMPLETE |
@@ -533,9 +533,35 @@ P4-WP03 validation evidence:
   source files, `git diff --check`, and 215 tests. No P4-WP04 or later behavior
   was added.
 
+P4-WP04 validation evidence:
+
+- Strict immutable schema-version 1 records store named/versioned models and
+  parameter sets with canonical SHA-256 identities. Parameter values retain SI
+  units, source, structured citations, uncertainty, notes, calibration status,
+  and an explicit measured, literature-derived, fitted, assumed, or
+  calibration-required provenance category. Numeric values require citations;
+  unknown records preserve every `CALIBRATION_REQUIRED` placeholder.
+- The built-in catalog validates all five existing parameter documents through
+  their accepted schemas only after their exact P2A file hashes pass. Audited
+  imports must equal a complete code-owned built-in identity; focused tamper
+  and relabelling probes failed closed even when the altered record hash was
+  recomputed. All 45 built-in biological values remain unresolved and no
+  calibration or biological claim is generated.
+- Registry verification, atomic export, validated atomic import, and launch
+  preflight application paths passed. Export/import bytes were identical and
+  retained citations and uncertainty for measured, literature-derived,
+  fitted, assumed, and unresolved test records. Exact model/schema/name/SI-unit
+  checks run before the controlled plugin loader; a unit mismatch loaded no
+  plugin code, and successful preflight required the exact reviewed selection.
+- Registry reports bind registry, model, parameter-set, and plugin-selection
+  identities without launching a simulation or changing P4-WP01 projects,
+  raw-run artifacts, or P4-WP02 reports. Python 3.14.4 passed module help, live
+  built-in verification, Ruff, strict mypy over 48 source files,
+  `git diff --check`, and 223 tests. No P4-WP05 or later behavior was added.
+
 ## Next Work Package
 
-`P4-WP04 – Model and parameter registry`.
+`P4-WP05 – Local run queue`.
 
 ## Remaining Issues
 
@@ -543,8 +569,9 @@ P4-WP03 validation evidence:
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 through P4-WP03 add the local synchronous
+- P3A accepted Phase 3. P4-WP01 through P4-WP04 add the local synchronous
   project/campaign model, presentation-neutral comparison/report data, and a
-  separately verified plugin API. The accepted engine/campaign path still
-  uses zero plugins. The desktop has no report/plugin UI, persistent queue,
-  model registry, portable archive, acceleration, or calibration behavior.
+  separately verified plugin API plus a declarative model/parameter registry.
+  The accepted engine/campaign path still uses zero plugins and is unchanged
+  by registry data. The desktop has no report/plugin/registry UI, persistent
+  queue, portable archive, acceleration, or calibration behavior.

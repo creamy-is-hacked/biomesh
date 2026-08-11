@@ -128,6 +128,13 @@ All notable repository changes are documented here.
   plugins, and exercises a packaged `CALIBRATION_REQUIRED` species/kinetics
   example using only caller-supplied SI/provenance inputs. Existing engine,
   campaign, raw-run, and report contracts remain unchanged.
+- P4-WP04 – Deterministic named/versioned model and parameter-set registry with
+  canonical record hashes, SI compatibility checks, measured,
+  literature-derived, fitted, assumed, and calibration-required provenance,
+  structured citations, uncertainty-preserving import/export, and exact
+  reviewed-plugin preflight. The five existing accepted parameter presets are
+  byte-verified and immutable; registry reports do not launch simulations,
+  alter raw runs/reports, or make calibration or biological claims.
 
 ### Audit findings
 

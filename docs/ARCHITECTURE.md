@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP03
+## Current architecture through P4-WP04
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -45,6 +45,13 @@ entry-point identity, and metadata hash before any plugin code is imported.
 The packaged example consumes only immutable caller-owned SI/provenance values.
 The accepted engine, application, campaign, raw artifacts, and reports remain
 the zero-plugin path.
+P4-WP04 adds a declarative, deterministic registry beside those paths. Strict
+records bind named/versioned models to exact parameter-schema inventories,
+SI units, complete classified provenance, citations, uncertainty, and optional
+reviewed plugin identities. Code-owned hashes protect the five accepted
+parameter presets. Registry preflight validates parameters before invoking the
+P4-WP03 controlled loader and returns traceable content identities without
+launching or changing the accepted execution path.
 
 Dependency direction is intentionally simple:
 
@@ -77,6 +84,10 @@ project state    -> atomic JSON + process lock + append-only audit sequence
 project reports  -> verified project state + immutable raw Parquet artifacts
 plugin verifier  -> reviewed manifest + trust policy + exact entry points
 plugin component -> immutable versioned SI/provenance requests and results
+registry types    -> immutable model/parameter/provenance/hash records
+registry catalog  -> accepted parameter schemas + code-owned preset hashes
+registry service  -> registry catalog + controlled plugin loader
+registry CLI      -> deterministic verify/export/import/preflight reports
 tests           -> public component interfaces
 ```
 
@@ -614,3 +625,38 @@ stages, so the Qt event loop remains responsive. This boundary creates no
 persistent queue, project/campaign model, plugin, live export stream,
 acceleration path, new metric calculation, unit conversion, calibration claim,
 or scientific behavior.
+
+## P4-WP04 model and parameter registry
+
+`biomesh.registry_types` defines strict frozen model, parameter-set, citation,
+plugin-requirement, registry, verification, and launch-preflight records. Every
+stored record and complete registry uses canonical sorted JSON plus SHA-256.
+Parameter provenance explicitly separates measured, literature-derived,
+fitted, assumed, and unresolved values while retaining the existing source,
+uncertainty, notes, SI unit, and calibration-status fields.
+
+`biomesh.registry_catalog` constructs the built-in catalog only from all five
+hash-verified accepted TOML presets. `biomesh.model_registry` verifies and
+exchanges those records and performs preflight. On import, an `audited` record
+must equal one of the complete code-owned identities; a caller cannot create
+audited status by recomputing a content hash. Non-audited versioned records
+remain strictly validated but do not acquire audit trust.
+
+```text
+accepted TOML bytes -> code-owned SHA-256 -> existing frozen schema
+                                        -> audited registry parameter set
+
+registry bundle -> record/hash validation -> audited identity validation
+                -> model/schema/name/SI-unit compatibility
+                -> canonical export/import semantic round-trip
+
+launch preflight -> parameters first -> reviewed plugin loader second
+                 -> exact traceability hashes, no simulation execution
+```
+
+Unknown built-in values remain explicit and block launch preflight. Numeric
+manufactured values may remain labelled `CALIBRATION_REQUIRED`; compatibility
+does not imply calibration. The registry does not mutate P4-WP01 projects,
+canonical run artifacts, or P4-WP02 reports, so their existing raw-byte and
+row/column traceability is unchanged. It adds no queue, archive, package,
+acceleration, GUI, cloud path, biological equation, or automatic plugin trust.

@@ -9,9 +9,9 @@ into a Linux desktop research platform.
 
 The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
 2026-08-10 audit passed with recorded limitations and is represented by the
-`v0.3.1-audit` tag. P4-WP01 – Project and campaign model, P4-WP02 – Comparison
-and reports, and P4-WP03 – Plugin API are complete on the Phase 4 branch.
-P4-WP04 – Model and parameter registry is the next incomplete work package.
+`v0.3.1-audit` tag. P4-WP01 – Project and campaign model through P4-WP04 –
+Model and parameter registry are complete on the Phase 4 branch. P4-WP05 –
+Local run queue is the next incomplete work package.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -64,7 +64,11 @@ The repository currently provides:
 - the P4 versioned plugin boundary for species, kinetics, fields, metrics, and
   exporters, with whole-set compatibility/trust preflight, deterministic
   provenance manifests, zero-plugin operation, and a packaged uncalibrated
-  species/kinetics example.
+  species/kinetics example; and
+- the P4 named/versioned model and parameter registry with hash-bound immutable
+  audited presets, explicit provenance categories, citations and uncertainty,
+  deterministic import/export, SI compatibility checks, and exact reviewed
+  plugin preflight.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -192,6 +196,23 @@ and deterministic self-check. A plugin manifest alone is not trusted:
 incompatible or unreviewed sets fail before any entry point is loaded. See
 [the P4-WP03 plugin contract](docs/P4_WP03_PLUGIN_API.md).
 
+Verify or exchange the deterministic model/parameter registry with:
+
+```bash
+python -m biomesh registry verify
+python -m biomesh registry export --output NEW_REGISTRY_DIRECTORY
+python -m biomesh registry import REGISTRY_FILE_OR_DIRECTORY \
+  --output NEW_REGISTRY_DIRECTORY
+```
+
+The built-in catalog hash-verifies the five accepted biological-parameter
+TOML files, preserves every SI unit and provenance placeholder, and prevents
+modified or relabelled records from acquiring audited status. Preflight can
+check an exact model/parameter-set version and its zero/reviewed plugin set
+before any caller launches work; it emits only traceable content hashes and
+does not itself execute a simulation. See
+[the P4-WP04 registry contract](docs/P4_WP04_MODEL_PARAMETER_REGISTRY.md).
+
 The Simulation Controls dock selects only the 15 existing manufactured P2
 fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
 remain disabled while the Experiment Editor document is invalid or retains
@@ -249,8 +270,8 @@ boundaries.
 
 ## Roadmap
 
-P3 is accepted. P4-WP01 through P4-WP03 are complete on the Phase 4 branch;
-P4-WP04 – Model and parameter registry is next. The remaining P4 items are
+P3 is accepted. P4-WP01 through P4-WP04 are complete on the Phase 4 branch;
+P4-WP05 – Local run queue is next. The remaining P4 items are
 roadmap work, and BioMesh is not called v1.
 
 ## License
