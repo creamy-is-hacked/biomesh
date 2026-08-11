@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP05
+## Current architecture through P4-WP06
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -57,6 +57,13 @@ P4-WP01 campaign boundary. One OS-limited worker selects campaigns by
 priority/FIFO order, publishes atomic queue transitions, exposes atomic
 run-count progress, and reconciles cancelled or stale workers without changing
 completed artifact bytes or introducing another execution path.
+P4-WP06 adds a read/write portable-project boundary around one lock-held,
+fully verified P4-WP01 snapshot. Export embeds exact fixture, manifest,
+artifact, and completion-receipt bytes under a strict per-file checksum
+inventory. Import validates into a temporary project and atomically publishes
+only after the existing campaign verifier passes. A separate Linux packager
+wraps the release wheel in a checksum-indexed installer bundle while rejecting
+generated research data.
 
 Dependency direction is intentionally simple:
 
@@ -98,6 +105,9 @@ queue storage      -> atomic JSON + state lock + single-worker lease
 queue runtime      -> Linux affinity/RLIMIT/process identity
 local queue        -> queue storage/runtime + accepted CampaignService
 queue CLI          -> local create/enqueue/status/run/cancel operations
+portable project   -> lock-held verified project + embedded fixture/artifact bytes
+archive import     -> strict inventory/checksums + existing CampaignService verifier
+Linux packager     -> release wheel + data-exclusion gate + installer checksums
 tests           -> public component interfaces
 ```
 
@@ -716,3 +726,31 @@ Queue records retain local absolute project paths and therefore are not a
 portable archive. P4-WP05 adds no archive, packaging, GUI, cloud service,
 acceleration, scientific behavior, biological value, calibration claim, or
 new plugin trust decision.
+
+## P4-WP06 portable projects and Linux packaging
+
+`biomesh.portable_project_types` owns the immutable archive inventory and
+public result records. `biomesh.portable_project` holds the existing campaign
+lock while it verifies and snapshots a project, rewrites only fixture locations
+to archive-contained relative paths, rebinds the matching definition hash, and
+writes deterministic stored ZIP members. Completed artifact bytes and
+completion receipts remain exact. Import rejects unsafe or mismatched members,
+validates a temporary project through `CampaignService`, then renames it into a
+new target atomically.
+
+The archive manifest states that plugin approval, registry identity, and queue
+state are not embedded or inferred. An imported project therefore remains on
+the accepted zero-plugin campaign path; callers must separately verify registry
+or plugin data and explicitly enqueue the new local path. SHA-256 provides
+corruption detection rather than origin authentication.
+
+`biomesh.linux_packaging` builds a deterministic Linux tar/gzip application
+bundle from one version-matched wheel. It rejects generated research-data
+members, fixes bundle metadata, and includes a shell installer plus
+`SHA256SUMS`. The installer verifies those hashes and installs into a new
+versioned prefix using Python 3.14. Project archives and user outputs are never
+part of the application package.
+
+P4-WP06 adds no desktop UI, new execution engine, queue migration, automatic
+plugin trust, registry mutation, archive signing, remote service, accelerator,
+biological value, calibration claim, or P4-WP07 behavior.

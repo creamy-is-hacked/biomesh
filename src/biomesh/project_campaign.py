@@ -15,7 +15,7 @@ import os
 import shutil
 import tempfile
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
@@ -445,8 +445,16 @@ class CampaignService:
 
     def verified_records(self) -> tuple[ProjectDefinition, ProjectState]:
         """Return validated records after verifying all project artifacts."""
+        with self.verified_snapshot() as records:
+            return records
+
+    @contextmanager
+    def verified_snapshot(
+        self,
+    ) -> Iterator[tuple[ProjectDefinition, ProjectState]]:
+        """Hold the project lock while a caller reads one verified snapshot."""
         with self._lock():
-            return self._load()
+            yield self._load()
 
     def resume(self, campaign_id: str) -> CampaignStatus:
         """Reconcile interrupted work and execute only pending campaign runs."""

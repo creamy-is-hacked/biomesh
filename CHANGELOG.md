@@ -142,6 +142,14 @@ All notable repository changes are documented here.
   campaign service; completed artifacts remain immutable and hash-verified,
   interrupted/cancelled runs remain explicit and retryable, and no remote,
   scientific, plugin-trust, archive, packaging, or acceleration path is added.
+- P4-WP06 – Deterministic portable project export, checksum verification, and
+  atomic import with archive-contained hash-bound fixtures, exact completed-run
+  artifacts/receipts, explicit pending/failed state, and clean-install
+  reproduction. A separate reproducible Linux wheel-installer bundle verifies
+  its own checksums and rejects generated project, queue, report, raw-run,
+  archive, CSV, Parquet, and NumPy research data. Archive exchange grants no
+  plugin trust, registry identity, or queue migration and adds no scientific,
+  calibration, acceleration, P4-WP07, or audit behavior.
 
 ### Audit findings
 

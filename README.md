@@ -9,9 +9,10 @@ into a Linux desktop research platform.
 
 The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
 2026-08-10 audit passed with recorded limitations and is represented by the
-`v0.3.1-audit` tag. The P4-WP01 – Project and campaign model through P4-WP05 –
-Local run queue work packages are complete on the Phase 4 branch. P4-WP06 –
-Portable projects and packaging is the next incomplete work package.
+`v0.3.1-audit` tag. The P4-WP01 – Project and campaign model through P4-WP06 –
+Portable projects and packaging work packages are complete on the Phase 4
+branch. P4-WP07 – Experimental acceleration boundary is the next incomplete
+work package.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -71,7 +72,12 @@ The repository currently provides:
   plugin preflight; and
 - the P4 persistent local campaign queue with deterministic priorities,
   run-level progress, exact Linux CPU/memory enforcement, targeted
-  cancellation, and restart recovery that preserves immutable completed runs.
+  cancellation, and restart recovery that preserves immutable completed runs;
+- deterministic portable project export/verification/import with embedded
+  hash-bound fixtures, exact completed-run artifacts, per-file SHA-256, and
+  clean-install reproduction; and
+- a reproducible Linux wheel-installer bundle whose build gate rejects
+  generated project, queue, report, raw-run, and research-result data.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -235,6 +241,39 @@ restart recovery retain completed artifact bytes and leave interrupted work as
 an explicit retryable failure. Queue references remain local absolute paths.
 See [the P4-WP05 queue contract](docs/P4_WP05_LOCAL_RUN_QUEUE.md).
 
+Exchange a project without depending on its original fixture location:
+
+```bash
+python -m biomesh project export PROJECT_DIRECTORY \
+  --output NEW_PROJECT_ARCHIVE.biomesh
+python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh
+python -m biomesh project import PROJECT_ARCHIVE.biomesh \
+  NEW_PROJECT_DIRECTORY
+```
+
+The archive carries strict self-description, embedded hash-verified fixture
+configuration, project/campaign manifests, exact completed-run artifacts and
+receipts, and a per-file size/SHA-256 inventory. Pending and failed work remains
+explicit. Plugin trust, registry identity, and local queue state are neither
+embedded nor inferred; imported projects must be intentionally re-enqueued.
+See [the P4-WP06 portability and packaging contract](docs/P4_WP06_PORTABLE_PROJECTS_PACKAGING.md).
+
+Build the documented Linux application installer bundle after creating the
+wheel and sdist:
+
+```bash
+python -m hatchling build --clean -d dist
+python -m biomesh package linux --wheel dist/*.whl \
+  --output dist/linux-installer
+tar -xzf dist/linux-installer/biomesh-*-linux-*.tar.gz
+cd biomesh-*-linux-*
+./install.sh
+```
+
+The bundle contains the wheel, installer documentation, and checksums. It
+requires Linux and Python 3.14, and deliberately excludes generated projects,
+archives, queues, reports, raw runs, and research results.
+
 The Simulation Controls dock selects only the 15 existing manufactured P2
 fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
 remain disabled while the Experiment Editor document is invalid or retains
@@ -292,9 +331,9 @@ boundaries.
 
 ## Roadmap
 
-P3 is accepted. P4-WP01 through P4-WP05 are complete on the Phase 4 branch;
-P4-WP06 – Portable projects and packaging is next. The remaining P4 items are
-roadmap work, and BioMesh is not called v1.
+P3 is accepted. P4-WP01 through P4-WP06 are complete on the Phase 4 branch;
+P4-WP07 – Experimental acceleration boundary is next. The remaining P4 items
+are roadmap work, and BioMesh is not called v1.
 
 ## License
 

@@ -1,5 +1,26 @@
 # Limitations
 
+## P4-WP06 – Portable projects and packaging
+
+- Portable archives contain exact hash-verified project configurations,
+  embedded manufactured fixtures, completed artifact bytes, and completion
+  receipts. They can reproduce the accepted software project path on another
+  clean clone or installation; they do not establish biological calibration,
+  experimental validity, or scientific conclusions.
+- Per-file SHA-256 and ZIP integrity detect accidental corruption. Archives are
+  not digitally signed, encrypted, confidential, or proof of author identity.
+  Import does not grant plugin trust or reinterpret registry identities.
+- Queue state is local scheduler metadata and is not portable. Import creates a
+  new project path; callers must explicitly enqueue it under separately chosen
+  local CPU/memory limits. No cancellation or stale-worker state is migrated.
+- The documented Linux bundle targets x86_64 or aarch64 Linux with Python 3.14.
+  Its installer resolves declared dependencies with pip and has no automatic
+  update, system-package integration, rollback, or uninstaller. It deliberately
+  excludes generated projects, archives, reports, queues, and research data.
+- P4-WP06 adds no GUI archive action, cloud exchange, archive signing,
+  acceleration, new biological value, calibration behavior, or P4-WP07/P4A
+  result.
+
 ## P4-WP03 – Plugin API
 
 - The accepted P1--P3 engine, P4 campaign runner, raw artifacts, and reports

@@ -4,20 +4,20 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after P4-WP05 completion on the Phase 4 branch.
+Snapshot verified: 2026-08-11 after P4-WP06 completion on the Phase 4 branch.
 P3 remains the latest audited and accepted phase at accepted main commit
 `ae67b3fb86e61cd75d373d790decdd4008bd3313` and tag `v0.3.1-audit`. The Python
-3.14 full gate passes 227 tests.
+3.14 full gate passes 235 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P4 – Phase 4 – Research Platform (in progress) |
-| Current work package | P4-WP05 – Local run queue is `COMPLETE`; P4-WP06 is the first `INCOMPLETE` item |
+| Current work package | P4-WP06 – Portable projects and packaging is `COMPLETE`; P4-WP07 is the first `INCOMPLETE` item |
 | Current branch | `phase-4-research-platform` |
 | Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
-| Current test count | 227 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | P4-WP06 – Portable projects and packaging |
+| Current test count | 235 passed (`pytest -q`, 2026-08-11) |
+| Next planned work package | P4-WP07 – Experimental acceleration boundary |
 
 ## Outstanding technical debt
 
@@ -88,9 +88,8 @@ P3 remains the latest audited and accepted phase at accepted main commit
   preflight. The accepted engine/campaign path remains zero-plugin; the
   packaged example is `CALIBRATION_REQUIRED` software-extension evidence, not
   biological evidence. Completed run artifacts are immutable and
-  hash-verified, but portable fixture inclusion is intentionally deferred to
-  P4-WP06. P4-WP04 adds a deterministic declarative registry with named and
-  versioned model/parameter records, exact SI compatibility, five distinct
+  hash-verified. P4-WP04 adds a deterministic declarative registry with named
+  and versioned model/parameter records, exact SI compatibility, five distinct
   provenance categories, lossless citations/uncertainty, and code-owned
   immutable audited identities. All 45 built-in values remain unresolved; a
   successful compatibility preflight is not calibration approval. The
@@ -101,9 +100,14 @@ P3 remains the latest audited and accepted phase at accepted main commit
   and stale-worker recovery. It invokes only the accepted P4-WP01 campaign
   service. Completed runs remain hash-verified and immutable; cancelled or
   interrupted unpublished runs remain explicit and retryable. Queue project
-  references are local absolute paths pending P4-WP06. The desktop has no
-  report/plugin/registry/queue UI, portable archive, packaging, acceleration,
-  calibration, cloud, or automatic plugin-trust behavior.
+  references remain local absolute scheduler state and are deliberately not
+  embedded in portable archives. P4-WP06 adds deterministic checksum-verified
+  project archives with embedded hash-bound fixtures and exact completed-run
+  artifacts/receipts, plus a reproducible Linux wheel-installer bundle that
+  rejects generated research data. Import grants no plugin trust or registry
+  identity and does not migrate queue state. The desktop has no
+  report/plugin/registry/queue/archive UI, acceleration, calibration, cloud, or
+  automatic plugin-trust behavior.
 
 ## Update policy
 

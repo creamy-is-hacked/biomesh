@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from biomesh import __version__
+from biomesh.linux_packaging import build_linux_installer
 from biomesh.local_queue import LocalQueueService, create_local_queue
 from biomesh.model_registry import (
     import_registry,
@@ -27,6 +28,11 @@ from biomesh.plugin_api import (
     example_plugin_manifest,
     publish_plugin_verification,
     verify_plugins,
+)
+from biomesh.portable_project import (
+    export_project_archive,
+    import_project_archive,
+    verify_project_archive,
 )
 from biomesh.project_campaign import CampaignService, create_project
 from biomesh.project_reports import generate_campaign_report
@@ -144,6 +150,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     project_create.add_argument("definition_file", type=Path)
     project_create.add_argument("project_directory", type=Path)
+    project_export = project_commands.add_parser(
+        "export", help="export a deterministic checksum-verified portable archive"
+    )
+    project_export.add_argument("project_directory", type=Path)
+    project_export.add_argument("--output", required=True, type=Path)
+    project_verify = project_commands.add_parser(
+        "verify-archive", help="verify every portable archive manifest and checksum"
+    )
+    project_verify.add_argument("archive", type=Path)
+    project_import = project_commands.add_parser(
+        "import", help="atomically import a verified portable project archive"
+    )
+    project_import.add_argument("archive", type=Path)
+    project_import.add_argument("project_directory", type=Path)
 
     campaign_parser = commands.add_parser(
         "campaign", help="inspect, resume, retry, or report a P4 project campaign"
@@ -250,6 +270,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     queue_cancel.add_argument("queue_directory", type=Path)
     queue_cancel.add_argument("queue_id")
+
+    package_parser = commands.add_parser(
+        "package", help="build a data-free BioMesh application package"
+    )
+    package_commands = package_parser.add_subparsers(dest="package_command")
+    package_linux = package_commands.add_parser(
+        "linux", help="build the documented Linux wheel installer bundle"
+    )
+    package_linux.add_argument("--wheel", required=True, type=Path)
+    package_linux.add_argument("--output", required=True, type=Path)
     return parser
 
 
@@ -355,12 +385,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(json.dumps(checkpoint_result, sort_keys=True))
             return 0
         if arguments.command == "project":
-            if arguments.project_command != "create":
-                raise ValueError("project requires create")
-            created = create_project(
-                arguments.definition_file, arguments.project_directory
-            )
-            print(json.dumps({"project_directory": str(created)}, sort_keys=True))
+            if arguments.project_command == "create":
+                created = create_project(
+                    arguments.definition_file, arguments.project_directory
+                )
+                project_result: dict[str, int | str] = {
+                    "project_directory": str(created)
+                }
+            elif arguments.project_command == "export":
+                project_result = export_project_archive(
+                    arguments.project_directory, arguments.output
+                ).as_dict()
+            elif arguments.project_command == "verify-archive":
+                project_result = verify_project_archive(arguments.archive).as_dict()
+            elif arguments.project_command == "import":
+                project_result = import_project_archive(
+                    arguments.archive, arguments.project_directory
+                ).as_dict()
+            else:
+                raise ValueError(
+                    "project requires create, export, verify-archive, or import"
+                )
+            print(json.dumps(project_result, sort_keys=True))
             return 0
         if arguments.command == "campaign":
             if arguments.campaign_command is None:
@@ -422,6 +468,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
                 return 0
             raise AssertionError("unhandled queue command")
+        if arguments.command == "package":
+            if arguments.package_command != "linux":
+                raise ValueError("package requires linux")
+            package_result = build_linux_installer(
+                arguments.wheel, arguments.output
+            )
+            print(json.dumps(package_result.as_dict(), sort_keys=True))
+            return 0
         if arguments.command == "plugins":
             if arguments.plugins_command != "verify":
                 raise ValueError("plugins requires verify")

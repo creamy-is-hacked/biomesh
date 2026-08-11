@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "project": {
+    "schema_version": 1,
+    "project_id": "p4-wp06-portable-validation",
+    "title": "P4-WP06 portable project validation",
+    "description": "Manufactured software-validation project; no biological conclusion or calibration claim."
+  },
+  "experiments": [
+    {
+      "schema_version": 1,
+      "experiment_id": "accepted-producer",
+      "title": "Accepted producer fixture",
+      "fixture_file": "experiments/producer.yaml",
+      "fixture_sha256": "16bc57e1704e57f22a92087901802157a3ce310f4ef0f89b4c83c89266585358",
+      "calibration_status": "CALIBRATION_REQUIRED",
+      "notes": "P2A-accepted manufactured fixture; software validation only."
+    }
+  ],
+  "campaigns": [
+    {
+      "schema_version": 1,
+      "campaign_id": "portable-campaign",
+      "experiment_id": "accepted-producer",
+      "title": "One-run portable archive reproduction",
+      "replicate_count": 1,
+      "seed_policy": {
+        "kind": "explicit",
+        "seeds": [101]
+      },
+      "sweep_matrix": [
+        {
+          "point_id": "producer",
+          "condition_id": "producer",
+          "parameters": []
+        }
+      ]
+    }
+  ]
+}

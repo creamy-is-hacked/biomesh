@@ -459,7 +459,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | P4-WP03 | Plugin API | COMPLETE |
 | P4-WP04 | Model and parameter registry | COMPLETE |
 | P4-WP05 | Local run queue | COMPLETE |
-| P4-WP06 | Portable projects and packaging | INCOMPLETE |
+| P4-WP06 | Portable projects and packaging | COMPLETE |
 | P4-WP07 | Experimental acceleration boundary | INCOMPLETE |
 | P4A | Phase 4 Audit | INCOMPLETE |
 
@@ -584,9 +584,31 @@ P4-WP05 validation evidence:
   passed module help, Ruff, strict mypy over 52 source files,
   `git diff --check`, and 227 tests. No P4-WP06 or later behavior was added.
 
+P4-WP06 validation evidence:
+
+- Strict schema-version 1 `.biomesh` archives carry a portable project
+  definition, definition-bound campaign state, archive-contained hash-bound
+  fixtures, and every artifact plus completion receipt for each verified
+  completed run. Per-file paths, roles, sizes, and SHA-256 identities are
+  cross-checked against the embedded project records; pending and failed runs
+  remain explicit and running or unpublished artifact state fails closed.
+- Stored ZIP metadata is fixed for byte-identical export. Verification rejects
+  duplicate, encrypted, compressed, non-regular, out-of-root, missing, extra,
+  oversized, corrupt, or project-inconsistent members. Import validates into a
+  temporary sibling through the existing `CampaignService` before atomic
+  publication and grants no plugin trust, registry identity, or queue state.
+- A real P3-backed manufactured campaign exported twice byte-identically with
+  20 carried files. The wheel-based Linux bundle verified its checksums,
+  installed outside the clone, passed CLI validation and offscreen GUI smoke,
+  then verified/imported the archive and retained a byte-identical completed
+  artifact tree. The deterministic bundle builder rejects generated project,
+  queue, report, raw-run, archive, CSV, Parquet, and NumPy-result payloads.
+- Python 3.14.4 passed module help, Ruff, strict mypy over 55 source files,
+  `git diff --check`, and 235 tests. No P4-WP07 or P4A behavior was added.
+
 ## Next Work Package
 
-`P4-WP06 – Portable projects and packaging`.
+`P4-WP07 – Experimental acceleration boundary`.
 
 ## Remaining Issues
 
@@ -594,11 +616,12 @@ P4-WP05 validation evidence:
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 through P4-WP05 add the local synchronous
+- P3A accepted Phase 3. P4-WP01 through P4-WP06 add the local synchronous
   project/campaign model, presentation-neutral comparison/report data, and a
   separately verified plugin API plus a declarative model/parameter registry.
   The accepted engine/campaign path still uses zero plugins and is unchanged
   by registry data. P4-WP05 adds the separate persistent OS-limited local queue
-  described above. The desktop has no queue/report/plugin/registry UI, portable
-  archive, packaging, acceleration, cloud, automatic plugin trust, or
-  calibration behavior.
+  described above. P4-WP06 adds explicit portable archive CLI paths and a
+  documented Linux installer bundle without migrating queue state or granting
+  trust. The desktop has no queue/report/plugin/registry/archive UI,
+  acceleration, cloud, automatic plugin trust, or calibration behavior.
