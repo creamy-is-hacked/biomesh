@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from biomesh import __version__
+from biomesh.local_queue import LocalQueueService, create_local_queue
 from biomesh.model_registry import (
     import_registry,
     load_registry,
@@ -215,6 +216,40 @@ def build_parser() -> argparse.ArgumentParser:
         default="none",
         help="reviewed plugin selection to check (default: zero-plugin core)",
     )
+
+    queue_parser = commands.add_parser(
+        "queue", help="manage the persistent OS-limited P4 local campaign queue"
+    )
+    queue_commands = queue_parser.add_subparsers(dest="queue_command")
+    queue_create = queue_commands.add_parser(
+        "create", help="create a persistent local queue with fixed resource limits"
+    )
+    queue_create.add_argument("queue_directory", type=Path)
+    queue_create.add_argument("--cpu-cores", required=True, type=int)
+    queue_create.add_argument("--memory-limit-bytes", required=True, type=int)
+    queue_enqueue = queue_commands.add_parser(
+        "enqueue", help="queue one pending project campaign"
+    )
+    queue_enqueue.add_argument("queue_directory", type=Path)
+    queue_enqueue.add_argument("project_directory", type=Path)
+    queue_enqueue.add_argument("campaign_id")
+    queue_enqueue.add_argument("--priority", default=0, type=int)
+    queue_status = queue_commands.add_parser(
+        "status", help="show persistent queue state and run-level progress"
+    )
+    queue_status.add_argument("queue_directory", type=Path)
+    queue_run = queue_commands.add_parser(
+        "run", help="drain queued campaigns in this local foreground worker"
+    )
+    queue_run.add_argument("queue_directory", type=Path)
+    queue_run.add_argument(
+        "--once", action="store_true", help="execute at most one queued campaign"
+    )
+    queue_cancel = queue_commands.add_parser(
+        "cancel", help="cancel queued work or stop its identified local worker"
+    )
+    queue_cancel.add_argument("queue_directory", type=Path)
+    queue_cancel.add_argument("queue_id")
     return parser
 
 
@@ -349,6 +384,44 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise AssertionError("unhandled campaign command")
             print(json.dumps(status.as_dict(), sort_keys=True))
             return 1 if status.failed and arguments.campaign_command != "status" else 0
+        if arguments.command == "queue":
+            if arguments.queue_command == "create":
+                created_queue = create_local_queue(
+                    arguments.queue_directory,
+                    cpu_cores=arguments.cpu_cores,
+                    memory_limit_bytes=arguments.memory_limit_bytes,
+                )
+                print(
+                    json.dumps(
+                        {"queue_directory": str(created_queue)}, sort_keys=True
+                    )
+                )
+                return 0
+            if arguments.queue_command is None:
+                raise ValueError(
+                    "queue requires create, enqueue, status, run, or cancel"
+                )
+            queue = LocalQueueService(arguments.queue_directory)
+            if arguments.queue_command == "enqueue":
+                queue_item = queue.enqueue(
+                    arguments.project_directory,
+                    arguments.campaign_id,
+                    priority=arguments.priority,
+                )
+                print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
+                return 0
+            if arguments.queue_command == "status":
+                print(json.dumps(queue.status().as_dict(), sort_keys=True))
+                return 0
+            if arguments.queue_command == "run":
+                queue_result = queue.run(once=arguments.once)
+                print(json.dumps(queue_result.as_dict(), sort_keys=True))
+                return 1 if queue_result.failed else 0
+            if arguments.queue_command == "cancel":
+                queue_item = queue.cancel(arguments.queue_id)
+                print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
+                return 0
+            raise AssertionError("unhandled queue command")
         if arguments.command == "plugins":
             if arguments.plugins_command != "verify":
                 raise ValueError("plugins requires verify")

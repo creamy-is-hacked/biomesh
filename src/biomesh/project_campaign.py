@@ -1,8 +1,9 @@
 """Persistent P4-WP01 project and campaign records over the accepted P3 API.
 
-This module plans and executes deterministic local campaigns synchronously.  It
-does not introduce a background queue, reporting, plugins, parameter registry,
-archive format, or a new scientific execution path.
+This module plans and executes deterministic local campaigns synchronously.
+P4-WP05 may schedule this accepted execution boundary from a separate local
+queue, but this module does not introduce reporting, plugins, parameter
+registry, archive format, or a new scientific execution path.
 """
 
 from __future__ import annotations
@@ -416,7 +417,7 @@ def create_project(definition_file: Path, project_directory: Path) -> Path:
 
 
 class CampaignService:
-    """Synchronous, lock-protected P4-WP01 campaign lifecycle service."""
+    """Synchronous, lock-protected campaign lifecycle service."""
 
     def __init__(
         self, project_directory: Path, *, executor: RunExecutor | None = None
@@ -430,6 +431,17 @@ class CampaignService:
             definition, state = self._load()
             _campaign(definition, campaign_id)
             return _campaign_status(state, campaign_id)
+
+    def progress(self, campaign_id: str) -> CampaignStatus:
+        """Return one atomic run-count snapshot without waiting for execution.
+
+        The queue uses this read-only path while a campaign process owns the
+        project lock. Final queue transitions still use :meth:`status`, which
+        verifies every completed artifact.
+        """
+        definition, state = self._load(verify_artifacts=False)
+        _campaign(definition, campaign_id)
+        return _campaign_status(state, campaign_id)
 
     def verified_records(self) -> tuple[ProjectDefinition, ProjectState]:
         """Return validated records after verifying all project artifacts."""
@@ -497,6 +509,20 @@ class CampaignService:
             self._write_state(state)
             return self._execute_pending(definition, state, campaign_id)
 
+    def recover_interrupted(
+        self, campaign_id: str, *, cancellation_requested: bool = False
+    ) -> CampaignStatus:
+        """Reconcile a dead local worker without scheduling additional runs."""
+        with self._lock():
+            definition, state = self._load()
+            _campaign(definition, campaign_id)
+            state = self._reconcile_interrupted(
+                state,
+                campaign_id,
+                cancellation_requested=cancellation_requested,
+            )
+            return _campaign_status(state, campaign_id)
+
     @contextmanager
     def _lock(self) -> Any:
         lock_path = self.project_directory / ".campaign.lock"
@@ -515,7 +541,9 @@ class CampaignService:
         except OSError as error:
             raise ProjectCampaignError(f"unable to lock project: {error}") from error
 
-    def _load(self) -> tuple[ProjectDefinition, ProjectState]:
+    def _load(
+        self, *, verify_artifacts: bool = True
+    ) -> tuple[ProjectDefinition, ProjectState]:
         manifest_path = self.project_directory / PROJECT_MANIFEST
         state_path = self.project_directory / PROJECT_STATE
         artifact_root = self.project_directory / "artifacts"
@@ -545,14 +573,19 @@ class CampaignService:
             _plan_identity(run) for run in planned
         ]:
             raise ProjectCampaignError("project state run plan does not match manifest")
-        self._verify_artifact_layout(state)
+        if verify_artifacts:
+            self._verify_artifact_layout(state)
         return definition, state
 
     def _write_state(self, state: ProjectState) -> None:
         _atomic_write_bytes(self.project_directory / PROJECT_STATE, _model_bytes(state))
 
     def _reconcile_interrupted(
-        self, state: ProjectState, campaign_id: str
+        self,
+        state: ProjectState,
+        campaign_id: str,
+        *,
+        cancellation_requested: bool = False,
     ) -> ProjectState:
         replacements: dict[str, RunRecord] = {}
         audit = list(state.audit)
@@ -574,14 +607,19 @@ class CampaignService:
                     )
                 )
             else:
+                failure_kind = "cancelled" if cancellation_requested else "interrupted"
+                failure_message = (
+                    "local queue cancellation stopped execution before artifact "
+                    "publication"
+                    if cancellation_requested
+                    else "previous execution ended before artifact publication"
+                )
                 failed = run.model_copy(
                     update={
                         "status": CampaignRunStatus.FAILED,
                         "failure": RunFailureRecord(
-                            kind="interrupted",
-                            message=(
-                                "previous execution ended before artifact publication"
-                            ),
+                            kind=failure_kind,
+                            message=failure_message,
                         ),
                     }
                 )

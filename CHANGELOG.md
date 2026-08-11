@@ -135,6 +135,13 @@ All notable repository changes are documented here.
   reviewed-plugin preflight. The five existing accepted parameter presets are
   byte-verified and immutable; registry reports do not launch simulations,
   alter raw runs/reports, or make calibration or biological claims.
+- P4-WP05 – A persistent local campaign queue with deterministic priority/FIFO
+  scheduling, atomic audited state, run-level progress, exact Linux CPU-affinity
+  and address-space limits, single-worker enforcement, targeted cancellation,
+  and stale-worker restart recovery. It schedules only the accepted P4-WP01
+  campaign service; completed artifacts remain immutable and hash-verified,
+  interrupted/cancelled runs remain explicit and retryable, and no remote,
+  scientific, plugin-trust, archive, packaging, or acceleration path is added.
 
 ### Audit findings
 

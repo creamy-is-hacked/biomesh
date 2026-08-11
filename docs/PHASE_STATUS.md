@@ -458,7 +458,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | P4-WP02 | Comparison and reports | COMPLETE |
 | P4-WP03 | Plugin API | COMPLETE |
 | P4-WP04 | Model and parameter registry | COMPLETE |
-| P4-WP05 | Local run queue | INCOMPLETE |
+| P4-WP05 | Local run queue | COMPLETE |
 | P4-WP06 | Portable projects and packaging | INCOMPLETE |
 | P4-WP07 | Experimental acceleration boundary | INCOMPLETE |
 | P4A | Phase 4 Audit | INCOMPLETE |
@@ -559,9 +559,34 @@ P4-WP04 validation evidence:
   built-in verification, Ruff, strict mypy over 48 source files,
   `git diff --check`, and 223 tests. No P4-WP05 or later behavior was added.
 
+P4-WP05 validation evidence:
+
+- Strict schema-version 1 queue/item/resource/audit records persist through
+  atomic replacement under a state lock. Highest integer priority executes
+  first and equal priorities retain FIFO order. A separate nonblocking worker
+  lease permits one local drain process, while status joins each item to an
+  atomic campaign-state snapshot with exact completed/planned run progress.
+- Before claiming work, the worker applies exact Linux CPU affinity and equal
+  soft/hard `RLIMIT_AS` memory limits, reads both settings back, and persists
+  their receipt. Work fails explicitly when current CPU availability or worker
+  virtual-memory requirements cannot satisfy the declared limits; no remote or
+  fallback execution path exists.
+- Queued cancellation changes no project state. Running cancellation targets
+  only a verified PID/process-start identity and stops through the campaign
+  persistence boundary. Published completion receipts recover only after hash
+  verification; otherwise cancelled or stale unpublished runs become explicit
+  retryable `cancelled` or `interrupted` failures. Completed artifact bytes are
+  reverified, never rewritten, and never rerun.
+- The real `queue create`, `enqueue`, `status`, `run`, `run --once`, and
+  `cancel` application paths passed, including priority ordering across worker
+  restarts, live progress, single-worker rejection, queued/running
+  cancellation, and exact one-core/8 GiB OS-limit receipts. Python 3.14.4
+  passed module help, Ruff, strict mypy over 52 source files,
+  `git diff --check`, and 227 tests. No P4-WP06 or later behavior was added.
+
 ## Next Work Package
 
-`P4-WP05 – Local run queue`.
+`P4-WP06 – Portable projects and packaging`.
 
 ## Remaining Issues
 
@@ -569,9 +594,11 @@ P4-WP04 validation evidence:
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 through P4-WP04 add the local synchronous
+- P3A accepted Phase 3. P4-WP01 through P4-WP05 add the local synchronous
   project/campaign model, presentation-neutral comparison/report data, and a
   separately verified plugin API plus a declarative model/parameter registry.
   The accepted engine/campaign path still uses zero plugins and is unchanged
-  by registry data. The desktop has no report/plugin/registry UI, persistent
-  queue, portable archive, acceleration, or calibration behavior.
+  by registry data. P4-WP05 adds the separate persistent OS-limited local queue
+  described above. The desktop has no queue/report/plugin/registry UI, portable
+  archive, packaging, acceleration, cloud, automatic plugin trust, or
+  calibration behavior.

@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP04
+## Current architecture through P4-WP05
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -52,6 +52,11 @@ reviewed plugin identities. Code-owned hashes protect the five accepted
 parameter presets. Registry preflight validates parameters before invoking the
 P4-WP03 controlled loader and returns traceable content identities without
 launching or changing the accepted execution path.
+P4-WP05 adds a separate persistent local queue around the synchronous
+P4-WP01 campaign boundary. One OS-limited worker selects campaigns by
+priority/FIFO order, publishes atomic queue transitions, exposes atomic
+run-count progress, and reconciles cancelled or stale workers without changing
+completed artifact bytes or introducing another execution path.
 
 Dependency direction is intentionally simple:
 
@@ -88,6 +93,11 @@ registry types    -> immutable model/parameter/provenance/hash records
 registry catalog  -> accepted parameter schemas + code-owned preset hashes
 registry service  -> registry catalog + controlled plugin loader
 registry CLI      -> deterministic verify/export/import/preflight reports
+local queue types  -> strict queue/item/resource/audit/status records
+queue storage      -> atomic JSON + state lock + single-worker lease
+queue runtime      -> Linux affinity/RLIMIT/process identity
+local queue        -> queue storage/runtime + accepted CampaignService
+queue CLI          -> local create/enqueue/status/run/cancel operations
 tests           -> public component interfaces
 ```
 
@@ -660,3 +670,49 @@ does not imply calibration. The registry does not mutate P4-WP01 projects,
 canonical run artifacts, or P4-WP02 reports, so their existing raw-byte and
 row/column traceability is unchanged. It adds no queue, archive, package,
 acceleration, GUI, cloud path, biological equation, or automatic plugin trust.
+
+## P4-WP05 local run queue
+
+`biomesh.local_queue_types` owns strict frozen queue, item, resource-limit,
+applied-resource, audit, and public status records.
+`biomesh.local_queue_storage` atomically replaces `queue_state.json` under a
+short-lived state lock and owns the separate nonblocking worker lease.
+`biomesh.local_queue_runtime` owns only Linux resource enforcement and process
+identity. `biomesh.local_queue` composes those boundaries with the accepted
+campaign service, while status and cancellation remain available during work.
+
+```text
+enqueue -> immutable local project/campaign reference + priority + FIFO sequence
+
+single worker lease -> exact CPU affinity + exact RLIMIT_AS -> receipt
+                    -> highest priority / lowest enqueue sequence
+                    -> accepted CampaignService.resume
+
+status -> atomic campaign-state snapshot -> completed / total progress
+final  -> full artifact verification -> terminal queue transition
+
+cancel/restart -> PID + process-start verification -> campaign reconciliation
+               -> completion receipt recovery or retryable explicit failure
+```
+
+The worker does not load a model registry or plugin set and cannot substitute a
+different executor. It invokes the existing accepted fixture-backed campaign
+service, whose project lock, stable run IDs, completion receipts, artifact
+hashes, and retry semantics remain authoritative. The progress-only read avoids
+waiting for that project lock but validates the atomic state against the
+immutable project manifest and run plan; terminal queue state requires the full
+artifact verifier.
+
+Linux affinity constrains the entire queue worker to the requested CPU set.
+Both soft and hard address-space limits equal the requested byte count, and
+work fails before claim if either exact setting cannot be proven. A running
+cancellation targets only the persisted PID/start identity. It unwinds through
+the campaign persistence boundary: a published receipt is recovered as
+completed, otherwise the current run becomes retryable `cancelled`; later runs
+remain pending. A dead un-cancelled worker similarly yields an explicit
+`interrupted` failure. No automatic retry can hide either condition.
+
+Queue records retain local absolute project paths and therefore are not a
+portable archive. P4-WP05 adds no archive, packaging, GUI, cloud service,
+acceleration, scientific behavior, biological value, calibration claim, or
+new plugin trust decision.
