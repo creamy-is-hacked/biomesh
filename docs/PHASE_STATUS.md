@@ -697,9 +697,97 @@ P4A independent audit evidence (2026-08-11):
   portable queue state, installer update/rollback, biological validation, and
   GPU/3D/performance claims remain outside the accepted scope.
 
+## P5 – Phase 5 – Security and Distribution Hardening
+
+Source: `docs/10_PRE_V1_ROADMAP.md`.
+
+| ID | Work package | Status |
+| --- | --- | --- |
+| P5-WP01 | Threat model and security requirements | COMPLETE |
+| P5-WP02 | Installed-build provenance | INCOMPLETE |
+| P5-WP03 | Signed and optionally confidential archives | INCOMPLETE |
+| P5-WP04 | Isolated plugin execution | INCOMPLETE |
+| P5-WP05 | Installer lifecycle and supply-chain verification | INCOMPLETE |
+| P5A | Phase 5 Audit | INCOMPLETE |
+
+P5-WP01 validation evidence:
+
+- `docs/P5_WP01_THREAT_MODEL.md` version 1.0.0 maps all P5-applicable P4A
+  limitations to assets, actors, entry points, trust boundaries, assumptions,
+  abuse cases, required controls, verification, owners, open mitigation status,
+  and residual risks. Queue portability, calibration/validation, and
+  3D/acceleration remain explicitly assigned to P6-P8.
+- The requirements distinguish integrity, authenticity, confidentiality,
+  authorization, trust, provenance, and sandboxing; checksum integrity is not
+  described as a signature. P5-WP02 through P5-WP05 receive 43 normative
+  controls and 49 concrete fail-closed misuse/negative tests before any
+  implementation begins.
+- P5-WP01 adds no security implementation, algorithm choice, key material,
+  scientific behavior, trust grant, calibration change, archive or artifact
+  mutation, UI, cloud, release, or later-work-package behavior.
+- Python 3.14.4 module help, Ruff, strict mypy, `git diff --check`, and all 244
+  tests passed on 2026-08-11.
+
+## P6 – Phase 6 – Portable Operations
+
+Source: `docs/10_PRE_V1_ROADMAP.md`.
+
+| ID | Work package | Status |
+| --- | --- | --- |
+| P6-WP01 | Portable queue-intent schema | INCOMPLETE |
+| P6-WP02 | Explicit import and local rebinding | INCOMPLETE |
+| P6-WP03 | Resume, retry, and recovery across hosts | INCOMPLETE |
+| P6-WP04 | Operational documentation and migration | INCOMPLETE |
+| P6A | Phase 6 Audit | INCOMPLETE |
+
+## P7 – Phase 7 – Calibration and Validation
+
+Source: `docs/10_PRE_V1_ROADMAP.md`.
+
+| ID | Work package | Status |
+| --- | --- | --- |
+| P7-WP01 | Calibration protocol and evidence governance | INCOMPLETE |
+| P7-WP02 | Versioned dataset ingestion and quality control | INCOMPLETE |
+| P7-WP03 | Deterministic parameter estimation and uncertainty | INCOMPLETE |
+| P7-WP04 | Independent validation and applicability domain | INCOMPLETE |
+| P7-WP05 | Registry promotion and scientific reporting | INCOMPLETE |
+| P7A | Phase 7 Audit | INCOMPLETE |
+
+P7 is evidence-blocked until suitable licensed source data and qualified domain
+review are available. Unknown values remain `CALIBRATION_REQUIRED`; software
+work alone cannot satisfy P7 or P7A.
+
+## P8 – Phase 8 – 3D and Accelerated Computing
+
+Source: `docs/10_PRE_V1_ROADMAP.md`.
+
+| ID | Work package | Status |
+| --- | --- | --- |
+| P8-WP01 | 3D model and numerical contract | INCOMPLETE |
+| P8-WP02 | Deterministic 3D CPU reference | INCOMPLETE |
+| P8-WP03 | Accelerated backend and isolation | INCOMPLETE |
+| P8-WP04 | Equivalence, determinism, and performance methodology | INCOMPLETE |
+| P8-WP05 | Application integration and provenance | INCOMPLETE |
+| P8A | Phase 8 Audit | INCOMPLETE |
+
+## P9 – Phase 9 – Version 1 Release
+
+Source: `docs/10_PRE_V1_ROADMAP.md`.
+
+| ID | Work package | Status |
+| --- | --- | --- |
+| P9-WP01 | Version 1 scope, API, and schema freeze | INCOMPLETE |
+| P9-WP02 | Migration and backward compatibility | INCOMPLETE |
+| P9-WP03 | Release packaging and platform matrix | INCOMPLETE |
+| P9-WP04 | Documentation, examples, and claim review | INCOMPLETE |
+| P9-WP05 | Release-candidate rehearsal | INCOMPLETE |
+| P9A | Version 1 Release Audit | INCOMPLETE |
+
 ## Next Work Package
 
-No later phase or work package is authorized by the current repository plans.
+`P5-WP02 – Installed-build provenance` is the first incomplete pre-v1 work
+package. P5-WP01 did not implement it; P5-WP03 and every later package remain
+blocked by strict phase order.
 
 ## Remaining Issues
 

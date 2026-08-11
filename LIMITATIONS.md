@@ -1,5 +1,36 @@
 # Limitations
 
+## Pre-v1 roadmap
+
+- `docs/10_PRE_V1_ROADMAP.md` plans security/distribution hardening, portable
+  operations, calibration/validation, 3D/acceleration, and v1 release gates.
+  Planning does not close any P4A limitation; each remains in force until its
+  implementation phase passes an independent audit.
+- P7 cannot be completed by software work alone. It requires suitable licensed
+  source data, predeclared methods, and qualified independent domain review.
+- No new UI, cloud, clinical, automatic-parameter, post-v1, calibrated-science,
+  GPU, 3D, or performance claim is authorized by the roadmap itself.
+
+## P5-WP01 – Threat model and security requirements
+
+- `docs/P5_WP01_THREAT_MODEL.md` version 1.0.0 maps the P4A installed-build
+  provenance, archive authenticity/confidentiality, plugin sandboxing, and
+  installer lifecycle limitations to explicit future controls, owners,
+  verification, and residual risk. It defines requirements only: every
+  mitigation remains `OPEN / REQUIREMENTS DEFINED` until its owning P5 work
+  package is implemented, verified, and independently accepted by P5A.
+- P5-WP01 adds no installed provenance, signature, encryption, key material,
+  sandbox, lifecycle behavior, incident evidence, or security guarantee.
+  Checksums remain integrity evidence rather than signatures; provenance,
+  authenticity, confidentiality, authorization, trust, and sandboxing remain
+  separate properties.
+- Residual risks include trusted-host/kernel compromise, unauthenticated legacy
+  archive origin under explicit compatibility policy, deceptive but
+  schema-valid sandboxed plugin output, bounded denial of service, and the
+  inability of build provenance or archive signatures to establish scientific
+  validity or calibration. Queue portability, biological validation, and
+  3D/acceleration limitations remain assigned to P6-P8.
+
 ## P4A – Phase 4 Audit
 
 - The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations

@@ -4,21 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after the independent P4A rerun accepted Phase 4
-from exact pushed prerequisite
-`b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`. The canonical accepted-audit
-workflow publishes tag `v0.4.1-audit`. The Python 3.14 full gate passes 244
-tests.
+Snapshot verified: 2026-08-11 after P5-WP01 completed the versioned threat
+model and security-requirements baseline over the P4A-accepted platform. The
+latest accepted phase remains P4 at exact implementation prerequisite
+`b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`; the accepted audit is represented
+by tag `v0.4.1-audit`. No P5 security control has been implemented. The latest
+verified Python 3.14 full gate passes 244 tests.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P4 – Phase 4 – Research Platform (accepted) |
-| Current work package | P4A is `COMPLETE`; the independent rerun passed with recorded limitations |
-| Current branch | `main` after the canonical accepted-audit merge |
+| Current phase | P5 – Phase 5 – Security and Distribution Hardening (in progress) |
+| Current work package | P5-WP01 – Threat model and security requirements (`COMPLETE`) |
+| Current branch | `phase-5-security-distribution` |
 | Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
 | Current test count | 244 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | None; no later phase or work package is authorized by the current plans |
+| Next planned work package | P5-WP02 – Installed-build provenance (not started) |
 
 ## Outstanding technical debt
 
@@ -131,6 +132,25 @@ tests.
   archive from an external wheel, preserved a 111-file completed project tree,
   and reproduced wheel, sdist, and installer bytes without a Critical or Major
   finding.
+- P5-WP01 version 1.0.0 defines requirements only. Installed-build provenance,
+  archive authenticity/confidentiality, plugin isolation, and installer
+  lifecycle mitigations remain open until P5-WP02 through P5-WP05 implement
+  and verify them and P5A independently accepts the phase. The threat model
+  does not grant trust, introduce an algorithm or key, alter accepted
+  artifacts, or close P6-P8 limitations.
+
+## Pre-v1 roadmap boundary
+
+- `docs/10_PRE_V1_ROADMAP.md` authorizes P5 through P9 in strict order with a
+  blocking independent audit after every phase. Only the first `INCOMPLETE`
+  package in `docs/PHASE_STATUS.md` may execute.
+- P5 addresses security and distribution hardening; P6 addresses portable
+  queue intent; P7 is an evidence-gated calibration and validation program; P8
+  provides separately audited 3D and acceleration work; and P9 freezes and
+  audits the v1 release candidate.
+- The roadmap itself adds no code, security guarantee, calibrated value,
+  dataset, scientific behavior, 3D/GPU implementation, UI feature, release,
+  or post-v1 authority.
 
 ## Update policy
 

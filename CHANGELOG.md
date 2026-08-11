@@ -6,6 +6,17 @@ All notable repository changes are documented here.
 
 ### Added
 
+- Pre-v1 governance roadmap – Strict P5-P9 work-package ordering with canonical
+  implementation/audit branches and tags, threat-derived security hardening,
+  portable operations, evidence-gated biological calibration and validation,
+  separately audited 3D/acceleration, and a blocking version 1 release audit.
+  This planning change adds no implementation or post-v1 authority.
+- P5-WP01 – Versioned the P4A-derived threat model for build provenance,
+  archive authenticity/confidentiality, plugin isolation, installer lifecycle,
+  and local execution. It defines assets, actors, entry points, trust
+  boundaries, assumptions, abuse cases, owners, open mitigation status,
+  residual risks, and 49 fail-closed misuse tests required before P5-WP02
+  through P5-WP05 implementation. No security control or algorithm was added.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

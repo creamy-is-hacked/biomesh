@@ -362,8 +362,12 @@ boundaries.
 
 ## Roadmap
 
-P4 is accepted. No later phase or work package is authorized by the current
-repository plans. BioMesh is not called v1.
+P4 is accepted. The governance-only [pre-v1 roadmap](docs/10_PRE_V1_ROADMAP.md)
+now authorizes five strictly ordered, audit-blocked phases: security and
+distribution hardening, portable operations, calibration and validation, 3D
+and accelerated computing, and the final version 1 release. The first
+executable package is `P5-WP01 – Threat model and security requirements`.
+BioMesh is not called v1, and no post-v1 or new UI work is authorized.
 
 ## License
 

@@ -111,6 +111,15 @@ Use a fresh session per work package or audit. Prefer the lowest-cost model capa
 | P4 – Phase 4 – Research Platform (P4.1, P4.3, P4.5, P4.7) | GPT-5.6 Sol | High | Project schema, plugins, queue recovery, acceleration boundary. |
 | P4 – Phase 4 – Research Platform (P4.2, P4.4, P4.6) | GPT-5.6 Terra | High | Reports, registry UI/data, portability, and packaging. |
 | P4A – Phase 4 Audit | GPT-5.6 Sol | Max | Independent release and reproducibility audit. |
+| P5 – Security and Distribution Hardening (P5-WP01, P5-WP02, P5-WP05) | GPT-5.6 Terra | High | Threat requirements, build provenance, and installer lifecycle. |
+| P5 – Security and Distribution Hardening (P5-WP03, P5-WP04) | GPT-5.6 Sol | Max | Cryptographic archive policy and plugin isolation are security-critical. |
+| P5A – Phase 5 Audit | GPT-5.6 Sol | Max | Fresh security-focused reviewer; challenge trust boundaries and failure isolation. |
+| P6 – Portable Operations | GPT-5.6 Sol | High | Queue persistence, rebinding, recovery, and artifact separation. |
+| P6A – Phase 6 Audit | GPT-5.6 Sol | Max | Fresh cross-install portability and recovery audit. |
+| P7/P7A – Calibration and Validation | GPT-5.6 Sol plus qualified domain review | Max | Evidence, statistics, identifiability, held-out validation, and scientific claims. |
+| P8/P8A – 3D and Accelerated Computing | GPT-5.6 Sol | Max | Numerical contracts, conservation, backend equivalence, failure isolation, and performance methodology. |
+| P9 – Version 1 Release | GPT-5.6 Terra | High | Contract freeze, migrations, packaging, documentation, and rehearsal only. |
+| P9A – Version 1 Release Audit | GPT-5.6 Sol | Max | Fresh independent release audit; sole authority for `v1.0.0`. |
 | Mechanical formatting or typo fixes | GPT-5.6 Luna | Low/Medium | Never use Luna for scientific design or audit sign-off. |
 
 ### Capability Fallback
