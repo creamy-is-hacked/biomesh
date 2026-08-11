@@ -31,6 +31,26 @@
   validity or calibration. Queue portability, biological validation, and
   3D/acceleration limitations remain assigned to P6-P8.
 
+## P5-WP02 – Installed-build provenance
+
+- A publishable P5 build now requires one complete wheel/sdist/Linux-installer
+  publication directory and canonical manifest. The manifest and embedded
+  records identify exact clean source and final artifact bytes, but SHA-256
+  provenance is integrity evidence, not distributor authenticity,
+  authorization, or trust. A consistently repackaged self-asserted set still
+  requires an external release/authenticity policy.
+- Build identity depends on the declared trusted Git, Python 3.14, Hatchling,
+  and BioMesh builder toolchain. Root, host, runtime, or build-tool compromise
+  is outside the control boundary.
+- The embedded record is generated distribution metadata and therefore is not
+  part of the committed source-tree identity. The external publication
+  manifest carries each final raw artifact hash because an artifact cannot
+  embed its own final raw hash without changing those bytes.
+- P5-WP02 adds no signature, key, confidentiality, archive envelope, plugin
+  sandbox, upgrade, rollback, uninstall, automatic update, or broader
+  installer supply-chain policy. Those remain P5-WP03 through P5-WP05 and must
+  pass P5A before Phase 5 is accepted.
+
 ## P4A – Phase 4 Audit
 
 - The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations
@@ -41,11 +61,10 @@
   three-fixed-seed software-validation project. Its SI/provenance records and
   deterministic completion do not make it a biological experiment, calibration
   result, benchmark, or scientific conclusion.
-- Installed distributions cannot discover a source Git checkout and therefore
-  record `commit_hash` as `UNKNOWN`; the audit separately binds the exact wheel
-  SHA-256 and package/dependency/environment versions. In-clone runs record the
-  exact prerequisite commit. Scientific/request bytes matched across both
-  environments; only this metadata and its checksum receipt differed.
+- P4A recorded that installed distributions reported `commit_hash` as
+  `UNKNOWN`. P5-WP02 closes that prospective installed-provenance limitation
+  for verified BioMesh 0.5.0 publication sets by embedding the exact commit;
+  historical P4 artifacts remain unchanged and are not backfilled.
 
 ## P4-WP07 – Experimental acceleration boundary
 

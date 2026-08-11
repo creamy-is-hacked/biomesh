@@ -15,6 +15,7 @@ import pytest
 
 from biomesh import __version__
 from biomesh.__main__ import main
+from biomesh.build_identity import SOURCE_IDENTITY_POLICY, BuildIdentity, BuildTool
 from biomesh.portable_project import (
     export_project_archive,
     import_project_archive,
@@ -270,6 +271,26 @@ def test_clean_install_style_completes_imported_pending_multicondition_campaign(
         Path("src/biomesh"),
         installed_package,
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    synthetic_build = BuildIdentity(
+        package_name="biomesh",
+        package_version=__version__,
+        source_commit="a" * 40,
+        source_tree_sha256="b" * 64,
+        source_identity_policy=SOURCE_IDENTITY_POLICY,
+        build_tools=tuple(
+            sorted(
+                (
+                    BuildTool("biomesh-provenance-builder", __version__),
+                    BuildTool("git", "test"),
+                    BuildTool("hatchling", "test"),
+                    BuildTool("python", "3.14.0"),
+                )
+            )
+        ),
+    )
+    (installed_package / "_build_provenance.json").write_bytes(
+        synthetic_build.to_bytes()
     )
     resources = installed_package / "resources"
     shutil.copytree(Path("experiments"), resources / "experiments")

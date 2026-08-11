@@ -19,7 +19,6 @@ import json
 import math
 import os
 import platform
-import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, replace
@@ -71,6 +70,7 @@ from biomesh.physiology import (
     initialize_physiological_states,
     metabolic_activity_fractions,
 )
+from biomesh.provenance import exact_runtime_source_commit
 from biomesh.quorum import (
     CellQuorumState,
     QuorumObservation,
@@ -1051,14 +1051,7 @@ def _observations(
 
 
 def _commit_hash() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
-    )
-    return (
-        result.stdout.strip()
-        if result.returncode == 0 and result.stdout.strip()
-        else "UNKNOWN"
-    )
+    return exact_runtime_source_commit(None)
 
 
 def _validate_campaign_artifacts(output_directory: Path) -> None:

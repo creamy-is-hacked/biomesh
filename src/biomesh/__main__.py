@@ -10,6 +10,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from biomesh import __version__
+from biomesh.distribution_build import (
+    build_publication,
+    runtime_build_identity,
+    verify_publication,
+)
 from biomesh.linux_packaging import build_linux_installer
 from biomesh.local_queue import LocalQueueService, create_local_queue
 from biomesh.model_registry import (
@@ -57,7 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="biomesh",
         description=(
             "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
-            "P3 verification, and P4 project tools."
+            "P3 verification, P4 project tools, and P5 build provenance."
         ),
     )
     parser.add_argument(
@@ -280,6 +285,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     package_linux.add_argument("--wheel", required=True, type=Path)
     package_linux.add_argument("--output", required=True, type=Path)
+    package_linux.add_argument("--build-provenance", required=True, type=Path)
+    package_linux.add_argument("--artifact-binding", required=True, type=Path)
+
+    provenance_parser = commands.add_parser(
+        "provenance", help="build, expose, and verify exact P5 distributions"
+    )
+    provenance_commands = provenance_parser.add_subparsers(dest="provenance_command")
+    provenance_commands.add_parser(
+        "show", help="show exact clean-clone or installed build provenance"
+    )
+    provenance_build = provenance_commands.add_parser(
+        "build", help="atomically build the bound wheel, sdist, and Linux installer"
+    )
+    provenance_build.add_argument("--source", default=Path.cwd(), type=Path)
+    provenance_build.add_argument("--output", required=True, type=Path)
+    provenance_verify = provenance_commands.add_parser(
+        "verify", help="verify a complete publication manifest and every artifact"
+    )
+    provenance_verify.add_argument("manifest", type=Path)
 
     benchmark_parser = commands.add_parser(
         "benchmark", help="run an isolated P4 experimental-feasibility benchmark"
@@ -376,8 +400,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             output = arguments.output
             if output is None:
-                output = working_directory / "outputs" / (
-                    f"{fixture_file.stem}-{arguments.command}"
+                output = (
+                    working_directory
+                    / "outputs"
+                    / (f"{fixture_file.stem}-{arguments.command}")
                 )
             fixture_output = run_fixture_command(
                 fixture_file=fixture_file,
@@ -395,8 +421,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             output = arguments.output
             if output is None:
-                output = working_directory / "outputs" / (
-                    f"p3a-reference-seed-{arguments.seed}"
+                output = (
+                    working_directory
+                    / "outputs"
+                    / (f"p3a-reference-seed-{arguments.seed}")
                 )
             comparison_result = compare_frontends(
                 reference_file=reference_file,
@@ -463,9 +491,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     memory_limit_bytes=arguments.memory_limit_bytes,
                 )
                 print(
-                    json.dumps(
-                        {"queue_directory": str(created_queue)}, sort_keys=True
-                    )
+                    json.dumps({"queue_directory": str(created_queue)}, sort_keys=True)
                 )
                 return 0
             if arguments.queue_command is None:
@@ -497,10 +523,29 @@ def main(argv: Sequence[str] | None = None) -> int:
             if arguments.package_command != "linux":
                 raise ValueError("package requires linux")
             package_result = build_linux_installer(
-                arguments.wheel, arguments.output
+                arguments.wheel,
+                arguments.output,
+                build_provenance=arguments.build_provenance.read_bytes(),
+                artifact_binding=arguments.artifact_binding.read_bytes(),
             )
             print(json.dumps(package_result.as_dict(), sort_keys=True))
             return 0
+        if arguments.command == "provenance":
+            if arguments.provenance_command == "show":
+                identity = runtime_build_identity()
+                print(json.dumps(identity.as_dict(), sort_keys=True))
+                return 0
+            if arguments.provenance_command == "build":
+                publication_result = build_publication(
+                    arguments.source, arguments.output
+                )
+                print(json.dumps(publication_result.as_dict(), sort_keys=True))
+                return 0
+            if arguments.provenance_command == "verify":
+                manifest = verify_publication(arguments.manifest)
+                print(json.dumps(manifest.as_dict(), sort_keys=True))
+                return 0
+            raise ValueError("provenance requires show, build, or verify")
         if arguments.command == "benchmark":
             from biomesh.acceleration_benchmark import (
                 publish_acceleration_benchmark,
@@ -521,11 +566,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     timing_samples=arguments.timing_samples,
                 )
             )
-            print(
-                json.dumps(
-                    benchmark_report.model_dump(mode="json"), sort_keys=True
-                )
-            )
+            print(json.dumps(benchmark_report.model_dump(mode="json"), sort_keys=True))
             return 0 if benchmark_report.passed else 1
         if arguments.command == "plugins":
             if arguments.plugins_command != "verify":

@@ -17,6 +17,16 @@ All notable repository changes are documented here.
   boundaries, assumptions, abuse cases, owners, open mitigation status,
   residual risks, and 49 fail-closed misuse tests required before P5-WP02
   through P5-WP05 implementation. No security control or algorithm was added.
+- P5-WP02 – Added deterministic whole-set building and fail-closed verification
+  for BioMesh 0.5.0 wheels, sdists, and Linux installers. Canonical embedded
+  records bind the exact clean Git commit, SHA-256 source-tree identity, and
+  Python/Git/Hatchling/BioMesh builder versions; the publication manifest binds
+  final artifact SHA-256 values and sizes. Installed execution exposes the
+  embedded identity without Git and records the exact commit instead of an
+  unavailable placeholder. Focused MT-BP-01 through MT-BP-08 tests cover dirty,
+  missing, changed, tampered, malformed, duplicate, repeated-build, and
+  clean-install behavior without adding authenticity, signing, lifecycle, or
+  scientific claims.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

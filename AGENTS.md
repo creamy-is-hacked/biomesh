@@ -34,7 +34,7 @@
 
 P4A is accepted. Pre-v1 work is specified in
 `docs/10_PRE_V1_ROADMAP.md` and tracked in `docs/PHASE_STATUS.md`. Execute only
-the first `INCOMPLETE` work package in strict phase order. P5-WP01 is the first
-authorized package and is limited to the threat model and testable security
-requirements; it must not implement P5-WP02 or later behavior. No post-v1 or
-new UI work is authorized.
+the first `INCOMPLETE` work package in strict phase order. P5-WP01 and P5-WP02
+are complete; P5-WP03 is the first incomplete package. It requires a fresh
+work-package task and must not implement P5-WP04 or later behavior. No post-v1
+or new UI work is authorized.

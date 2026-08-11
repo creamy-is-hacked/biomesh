@@ -704,7 +704,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | ID | Work package | Status |
 | --- | --- | --- |
 | P5-WP01 | Threat model and security requirements | COMPLETE |
-| P5-WP02 | Installed-build provenance | INCOMPLETE |
+| P5-WP02 | Installed-build provenance | COMPLETE |
 | P5-WP03 | Signed and optionally confidential archives | INCOMPLETE |
 | P5-WP04 | Isolated plugin execution | INCOMPLETE |
 | P5-WP05 | Installer lifecycle and supply-chain verification | INCOMPLETE |
@@ -727,6 +727,27 @@ P5-WP01 validation evidence:
   mutation, UI, cloud, release, or later-work-package behavior.
 - Python 3.14.4 module help, Ruff, strict mypy, `git diff --check`, and all 244
   tests passed on 2026-08-11.
+
+P5-WP02 validation evidence:
+
+- BioMesh 0.5.0 publication now atomically produces exactly one wheel, sdist,
+  Linux installer, and canonical cross-artifact manifest from a pre-resolved
+  clean Git commit. Embedded records bind the exact commit, deterministic
+  SHA-256 source-tree identity, and exact Python, Git, Hatchling, and BioMesh
+  builder versions without requiring Git after installation.
+- Verification rejects dirty tracked/untracked source, missing Git identity,
+  changed-during-build source, altered artifact bytes, missing/malformed or
+  inconsistent fields, duplicate/mismatched records, package-version drift,
+  and embedded/external substitutions. Failed builds publish no output.
+- Two full builds from separate clean clones of one commit produced equal
+  wheel, sdist, installer, and manifest bytes. External wheel, sdist, and
+  checksum-verified Linux-installer paths exposed the same source/build
+  identity, and in-clone/installed P1 reference artifacts matched byte for
+  byte. Focused and full Python 3.14.4 gates passed 256 tests, Ruff, strict mypy,
+  module help, and `git diff --check` on 2026-08-11.
+- This is integrity/provenance evidence, not authenticity, signing,
+  confidentiality, trust, calibration, or installer lifecycle assurance.
+  P5-WP03 through P5-WP05 and P5A remain incomplete.
 
 ## P6 – Phase 6 – Portable Operations
 
@@ -785,9 +806,9 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P5-WP02 – Installed-build provenance` is the first incomplete pre-v1 work
-package. P5-WP01 did not implement it; P5-WP03 and every later package remain
-blocked by strict phase order.
+`P5-WP03 – Signed and optionally confidential archives` is the first
+incomplete pre-v1 work package. It and every later package remain blocked until
+a fresh work-package task begins in strict phase order.
 
 ## Remaining Issues
 

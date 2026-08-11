@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after P5-WP01 completed the versioned threat
-model and security-requirements baseline over the P4A-accepted platform. The
+Snapshot verified: 2026-08-11 after P5-WP02 implemented deterministic
+installed-build provenance over the P4A-accepted platform. The
 latest accepted phase remains P4 at exact implementation prerequisite
 `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`; the accepted audit is represented
-by tag `v0.4.1-audit`. No P5 security control has been implemented. The latest
-verified Python 3.14 full gate passes 244 tests.
+by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
+3.14 full gate passes 256 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P5 – Phase 5 – Security and Distribution Hardening (in progress) |
-| Current work package | P5-WP01 – Threat model and security requirements (`COMPLETE`) |
+| Current work package | P5-WP02 – Installed-build provenance (`COMPLETE`) |
 | Current branch | `phase-5-security-distribution` |
 | Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
-| Current test count | 244 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | P5-WP02 – Installed-build provenance (not started) |
+| Current test count | 256 passed (`pytest -q`, 2026-08-11) |
+| Next planned work package | P5-WP03 – Signed and optionally confidential archives (blocked pending a fresh task) |
 
 ## Outstanding technical debt
 
@@ -132,12 +132,16 @@ verified Python 3.14 full gate passes 244 tests.
   archive from an external wheel, preserved a 111-file completed project tree,
   and reproduced wheel, sdist, and installer bytes without a Critical or Major
   finding.
-- P5-WP01 version 1.0.0 defines requirements only. Installed-build provenance,
-  archive authenticity/confidentiality, plugin isolation, and installer
-  lifecycle mitigations remain open until P5-WP02 through P5-WP05 implement
-  and verify them and P5A independently accepts the phase. The threat model
-  does not grant trust, introduce an algorithm or key, alter accepted
-  artifacts, or close P6-P8 limitations.
+- P5-WP02 implements deterministic whole-set provenance for BioMesh 0.5.0
+  wheel, sdist, and Linux-installer artifacts. A canonical external manifest
+  binds final artifact hashes/sizes while embedded records expose the exact
+  clean commit, SHA-256 source-tree identity, package version, and declared
+  tool versions without Git. In-clone and installed reference bytes remain
+  equal, and installed run metadata uses the embedded exact commit. This
+  provides integrity/provenance only: archive authenticity/confidentiality,
+  plugin isolation, installer lifecycle, and P5 acceptance remain open through
+  P5-WP03-P5A. No trust, signing algorithm, key, calibration status, scientific
+  behavior, queue portability, or 3D/acceleration status changes.
 
 ## Pre-v1 roadmap boundary
 

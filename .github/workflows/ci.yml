@@ -24,32 +24,34 @@ jobs:
       - run: mypy src
       - run: pytest -q
       - run: git diff --check
-      - name: Build wheel and sdist
-        run: python -m hatchling build --clean -d dist
+      - name: Build and verify provenance-bound distributions
+        run: |
+          python -m biomesh provenance show
+          python -m biomesh provenance build --source . --output dist
+          python -m biomesh provenance verify dist/*-provenance.json
       - name: Install and smoke-test wheel and sdist outside the repository
         run: |
           package_root="$(mktemp -d)"
-          for package_artifact in dist/*.whl dist/*.tar.gz; do
+          for package_artifact in dist/*.whl dist/biomesh-0.5.0.tar.gz; do
             package_name="$(basename "$package_artifact")"
             package_env="$package_root/${package_name//[^A-Za-z0-9]/_}"
             python -m venv "$package_env"
             "$package_env/bin/python" -m pip install "$package_artifact"
             (
               cd "$package_root"
-              test "$("$package_env/bin/biomesh" --version)" = "biomesh 0.2.1"
+              test "$("$package_env/bin/biomesh" --version)" = "biomesh 0.5.0"
+              "$package_env/bin/biomesh" provenance show
               "$package_env/bin/biomesh" validate all
               "$package_env/bin/biomesh" experiment experiments/producer.yaml \
                 --output "$package_root/output-${package_name//[^A-Za-z0-9]/_}"
               QT_QPA_PLATFORM=offscreen "$package_env/bin/biomesh-gui" --smoke-test
-              test "$("$package_env/bin/biomesh-gui" --version)" = "biomesh-gui 0.2.1"
+              test "$("$package_env/bin/biomesh-gui" --version)" = "biomesh-gui 0.5.0"
             )
           done
       - name: Build and install the Linux application bundle
         run: |
-          python -m biomesh package linux --wheel dist/*.whl \
-            --output dist/linux-installer
           bundle_root="$(mktemp -d)"
-          tar -xzf dist/linux-installer/*.tar.gz -C "$bundle_root"
+          tar -xzf dist/*-linux-*.tar.gz -C "$bundle_root"
           installer="$(find "$bundle_root" -type f -name install.sh -print)"
           bash -n "$installer"
           "$installer" --prefix "$bundle_root/prefix" \
@@ -57,7 +59,8 @@ jobs:
           (
             cd "$bundle_root"
             test "$("$bundle_root/prefix/bin/biomesh" --version)" = \
-              "biomesh 0.2.1"
+              "biomesh 0.5.0"
+            "$bundle_root/prefix/bin/biomesh" provenance show
             "$bundle_root/prefix/bin/biomesh" validate all
             QT_QPA_PLATFORM=offscreen \
               "$bundle_root/prefix/bin/biomesh-gui" --smoke-test
@@ -71,7 +74,7 @@ jobs:
             portable-campaign
           python -m biomesh project export "$archive_root/source-project" \
             --output "$archive_root/project.biomesh"
-          installer="$(find dist/linux-installer -type f -name '*.tar.gz' -print)"
+          installer="$(find dist -maxdepth 1 -type f -name '*-linux-*.tar.gz' -print)"
           extract_root="$(mktemp -d)"
           tar -xzf "$installer" -C "$extract_root"
           install_script="$(find "$extract_root" -type f -name install.sh -print)"

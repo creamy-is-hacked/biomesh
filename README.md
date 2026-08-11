@@ -11,6 +11,9 @@ The latest accepted phase is **P4 – Phase 4 – Research Platform**. Its
 independent 2026-08-11 audit rerun passed with recorded limitations and is
 represented by the `v0.4.1-audit` tag. The rerun closed the three findings from
 the first P4A attempt without expanding the scientific or platform scope.
+P5-WP01 and P5-WP02 are complete on the in-progress P5 implementation branch:
+the threat-derived requirements now have deterministic clean-source provenance
+for wheel, sdist, and Linux-installer publication sets. Phase 5 is not accepted.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -362,12 +365,13 @@ boundaries.
 
 ## Roadmap
 
-P4 is accepted. The governance-only [pre-v1 roadmap](docs/10_PRE_V1_ROADMAP.md)
-now authorizes five strictly ordered, audit-blocked phases: security and
+P4 is accepted. The [pre-v1 roadmap](docs/10_PRE_V1_ROADMAP.md) authorizes five
+strictly ordered, audit-blocked phases: security and
 distribution hardening, portable operations, calibration and validation, 3D
-and accelerated computing, and the final version 1 release. The first
-executable package is `P5-WP01 – Threat model and security requirements`.
-BioMesh is not called v1, and no post-v1 or new UI work is authorized.
+and accelerated computing, and the final version 1 release. The next package
+is `P5-WP03 – Signed and optionally confidential archives`, which must begin in
+a fresh task. BioMesh is not called v1, and no post-v1 or new UI work is
+authorized.
 
 ## License
 

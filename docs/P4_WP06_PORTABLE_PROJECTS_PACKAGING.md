@@ -91,8 +91,9 @@ validity.
 
 The Linux build consumes exactly one BioMesh wheel and publishes a new
 architecture-labelled `.tar.gz` containing the wheel, `install.sh`,
-`INSTALL.md`, and `SHA256SUMS`. Tar and gzip timestamps, ownership, permissions,
-and member order are fixed for reproducible bundle bytes.
+`INSTALL.md`, `PROVENANCE.json`, and `SHA256SUMS`. Tar and gzip timestamps,
+ownership, permissions, and member order are fixed for reproducible bundle
+bytes.
 
 Build with Python 3.14 from a clean clone:
 
@@ -101,15 +102,14 @@ python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]" hatchling
-python -m hatchling build --clean -d dist
-python -m biomesh package linux --wheel dist/*.whl \
-  --output dist/linux-installer
+python -m biomesh provenance build --source . --output dist
+python -m biomesh provenance verify dist/biomesh-0.5.0-provenance.json
 ```
 
 Extract and install for the current user:
 
 ```bash
-tar -xzf dist/linux-installer/biomesh-*-linux-*.tar.gz
+tar -xzf dist/biomesh-*-linux-*.tar.gz
 cd biomesh-*-linux-*
 ./install.sh
 biomesh --version
@@ -122,6 +122,12 @@ directory, and creates CLI/GUI launchers. `--prefix ABSOLUTE_PATH` and
 `--python PYTHON3.14` select an alternate new location/interpreter. The
 `--no-deps` option is only for controlled verification where the exact runtime
 dependencies already exist.
+
+P5-WP02 supersedes the former direct Hatchling/`package linux` publication
+path with the provenance-bound whole-set command above. The accepted P4-WP06
+archive and installer behavior is unchanged; publishable P5 artifacts now
+require the additional exact clean-source and cross-artifact verification in
+`docs/P5_WP02_INSTALLED_BUILD_PROVENANCE.md`.
 
 The bundle builder fails if the wheel contains generated project, queue,
 report, raw-run, archive, CSV, Parquet, or NumPy-result data. Packaged
