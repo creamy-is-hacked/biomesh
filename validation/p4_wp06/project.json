@@ -1,0 +1,104 @@
+{
+  "schema_version": 2,
+  "project": {
+    "schema_version": 1,
+    "project_id": "p4-wp06-portable-validation",
+    "title": "P4-WP06 portable project validation",
+    "description": "Manufactured software-validation project; no biological conclusion or calibration claim."
+  },
+  "experiments": [
+    {
+      "schema_version": 1,
+      "experiment_id": "accepted-producer",
+      "title": "Accepted producer fixture",
+      "fixture_file": "experiments/producer.yaml",
+      "fixture_sha256": "16bc57e1704e57f22a92087901802157a3ce310f4ef0f89b4c83c89266585358",
+      "calibration_status": "CALIBRATION_REQUIRED",
+      "notes": "P2A-accepted manufactured fixture; software validation only."
+    }
+  ],
+  "campaigns": [
+    {
+      "schema_version": 1,
+      "campaign_id": "portable-campaign",
+      "experiment_id": "accepted-producer",
+      "title": "One-run portable archive reproduction",
+      "replicate_count": 1,
+      "seed_policy": {
+        "kind": "explicit",
+        "seeds": [101]
+      },
+      "sweep_matrix": [
+        {
+          "point_id": "producer",
+          "condition_id": "producer",
+          "parameters": []
+        }
+      ]
+    }
+  ],
+  "execution_identity": {
+    "schema_version": 1,
+    "executor_id": "org.biomesh.accepted-p2-fixture",
+    "executor_version": "1.0.0",
+    "registry_schema_version": 1,
+    "registry_sha256": "4db58d6beacc58d4b5944a0ba27369e3f9f86fd1c8f253fb4bbf0e8542c9782c",
+    "models": [
+      {
+        "model_id": "org.biomesh.p1-core",
+        "model_version": "1.0.0",
+        "model_record_sha256": "998284ad2e926db1d9e075a069c06a2275c23467bca19d1aaffaa0f0d244c57f",
+        "parameter_set_id": "org.biomesh.audited.p1-core",
+        "parameter_set_version": "1.0.0",
+        "parameter_set_record_sha256": "ee9d3a972752a9723182cdfc87b6b42c9647eceb8885e046a66467fba9b7fa56",
+        "parameter_source": "parameters/p1_core_model.toml",
+        "parameter_source_sha256": "b732b8547b8a36951a30ced085a14782538901790444dd1fb3d7e44b4145ebef"
+      },
+      {
+        "model_id": "org.biomesh.p2-eps",
+        "model_version": "1.0.0",
+        "model_record_sha256": "fdec517128c4afe8dff339285f5ed5a09abe4ac1c340869431797200e6cff0dc",
+        "parameter_set_id": "org.biomesh.audited.p2-eps",
+        "parameter_set_version": "1.0.0",
+        "parameter_set_record_sha256": "2b4582c5319865924b06d71b08b491d7d23f96aabb88f75f4109766827e96c55",
+        "parameter_source": "parameters/p2_eps_model.toml",
+        "parameter_source_sha256": "58d1181c95095e6edf7b91197998d759d8ba2f2130059e4b18420b04ef73d253"
+      },
+      {
+        "model_id": "org.biomesh.p2-physiology",
+        "model_version": "1.0.0",
+        "model_record_sha256": "83035f23926109ccf122e456f41e9d3e18748dd65b8794588073d98013846d35",
+        "parameter_set_id": "org.biomesh.audited.p2-physiology",
+        "parameter_set_version": "1.0.0",
+        "parameter_set_record_sha256": "562dc67afebe78d418124c43c4889fb4f688699d3a00a9efca7ebc4b74aa19a2",
+        "parameter_source": "parameters/p2_physiological_states.toml",
+        "parameter_source_sha256": "2344c5a84a15edb29a8a22cb8a2daaf9facd00aefc88737f3f2bb927cff8a2ad"
+      },
+      {
+        "model_id": "org.biomesh.p2-quorum",
+        "model_version": "1.0.0",
+        "model_record_sha256": "4f11f694035f263c8d1427991de9a9c34c60c80bd787c4fd344ed890bd93b73b",
+        "parameter_set_id": "org.biomesh.audited.p2-quorum",
+        "parameter_set_version": "1.0.0",
+        "parameter_set_record_sha256": "58809bc55174f69b58f9556b4d685abb149a99d119b78870d416f108f503eae1",
+        "parameter_source": "parameters/p2_quorum_signal.toml",
+        "parameter_source_sha256": "48e4dabfe0e5c54f3923762229f8c4465da41549b4a7c2b641ceb6f1296c4119"
+      },
+      {
+        "model_id": "org.biomesh.p2-waste-shear",
+        "model_version": "1.0.0",
+        "model_record_sha256": "aeae517c712d4d0d875c16c297d9b6ecc4ce8dde17293d14c798b6b4b867a824",
+        "parameter_set_id": "org.biomesh.audited.p2-waste-shear",
+        "parameter_set_version": "1.0.0",
+        "parameter_set_record_sha256": "260622404059dab6a0b34f4cc7d06cde61514c67e0471356f462f425b6154261",
+        "parameter_source": "parameters/p2_waste_shear.toml",
+        "parameter_source_sha256": "bba3923da9894ddf2d2493ea0dd38cfdbbf801ed1cf87814d8f546280c5da799"
+      }
+    ],
+    "plugin_api_version": 1,
+    "plugin_set_kind": "zero_plugin_core",
+    "plugin_set_sha256": "1919457d222318dd73626ea9b92a26b0697d1b96230dff5ed254842ca9b310a0",
+    "plugin_selection_sha256": [],
+    "calibration_status": "CALIBRATION_REQUIRED"
+  }
+}

@@ -1,5 +1,94 @@
 # Limitations
 
+## P4A – Phase 4 Audit
+
+- The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations
+  from exact pushed prerequisite
+  `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`. No Critical or Major finding
+  remains; `P4A-001`, `P4A-002`, and `P4A-003` are closed by fresh evidence.
+- `experiments/platform_reference.yaml` is a manufactured two-condition,
+  three-fixed-seed software-validation project. Its SI/provenance records and
+  deterministic completion do not make it a biological experiment, calibration
+  result, benchmark, or scientific conclusion.
+- Installed distributions cannot discover a source Git checkout and therefore
+  record `commit_hash` as `UNKNOWN`; the audit separately binds the exact wheel
+  SHA-256 and package/dependency/environment versions. In-clone runs record the
+  exact prerequisite commit. Scientific/request bytes matched across both
+  environments; only this metadata and its checksum receipt differed.
+
+## P4-WP07 – Experimental acceleration boundary
+
+- The fixed benchmark is a synthetic dimensionless 48 by 48 two-dimensional
+  software stencil. It does not execute or validate the BioMesh model and is
+  not a biological, scientific, three-dimensional, or production workload.
+- Experimental execution is disabled by default. The only opt-in candidate is
+  NumPy float64 slice evaluation on the CPU; no GPU is detected, selected,
+  exercised, supported, or claimed.
+- CPU equivalence is limited to the declared case and `1e-12` absolute and
+  relative engineering tolerances. The validated case measured zero divergence
+  across 2,304 values, but this is not evidence for other inputs, models,
+  hardware, precision, or scientific accuracy.
+- Timing is optional and records raw local elapsed nanoseconds only. There is
+  no warm-up, controlled environment, statistical inference, speedup ratio,
+  transfer-cost study, scaling study, production performance claim, or hardware
+  comparison.
+- The benchmark module is not imported by accepted model execution. It cannot
+  alter completed runs, projects, reports, plugin trust, registry identities,
+  queue limits/recovery, archives, packages, or desktop behavior. Any future
+  3D/GPU path requires separate implementation and audit.
+
+## P4-WP06 – Portable projects and packaging
+
+- Portable archives contain exact hash-verified project configurations,
+  embedded manufactured fixtures, every required biological parameter
+  document, completed artifact bytes, and completion receipts. They can execute
+  a pending accepted software campaign on another clean clone or installation;
+  they do not establish biological calibration, experimental validity, or
+  scientific conclusions.
+- Per-file SHA-256 and ZIP integrity detect accidental corruption. Archives are
+  not digitally signed, encrypted, confidential, or proof of author identity.
+  Import does not grant plugin trust or reinterpret registry identities.
+- Queue state is local scheduler metadata and is not portable. Import creates a
+  new project path; callers must explicitly enqueue it under separately chosen
+  local CPU/memory limits. No cancellation or stale-worker state is migrated.
+- New project/receipt schema version 2 records exact built-in registry,
+  named/versioned model and parameter-set, and canonical empty plugin-set
+  identities. These are provenance only: no registry bundle, registry trust,
+  plugin code, or plugin approval is transferred. Legacy version 1 completed
+  projects remain verifiable but cannot resume unfinished work or acquire
+  backfilled provenance.
+- The documented Linux bundle targets x86_64 or aarch64 Linux with Python 3.14.
+  Its installer resolves declared dependencies with pip and has no automatic
+  update, system-package integration, rollback, or uninstaller. It deliberately
+  excludes generated projects, archives, reports, queues, and research data.
+- P4-WP06 adds no GUI archive action, cloud exchange, archive signing,
+  acceleration, new biological value, calibration behavior, or P4-WP07/P4A
+  result.
+
+## P4-WP03 – Plugin API
+
+- The accepted P1--P3 engine, P4 campaign runner, raw artifacts, and reports
+  remain the zero-plugin path. P4-WP03 defines and verifies extension
+  interfaces; it does not silently compose plugins into audited simulations or
+  reinterpret completed runs.
+- The complete plugin-set SHA-256 explicitly identifies an empty selection.
+  This proves which set was selected; it is not approval, sandboxing, or
+  evidence that any plugin code ran.
+- The packaged species/kinetics plugin is a software extension example. Its
+  species identity is non-taxonomic, all numeric kinetics inputs remain
+  caller-supplied and provenance-complete, and its status remains
+  `CALIBRATION_REQUIRED`. Passing its self-check is not biological validation,
+  calibration, or benchmark evidence.
+- Compatibility preflight validates the complete set before loading any entry
+  point, including exact API, metadata hash, distribution/version,
+  entry-point, and explicit review-policy identities. This prevents accidental
+  incompatible or unreviewed loading; it is not a security sandbox.
+- Approved Python plugin code executes with the BioMesh process's permissions.
+  P4-WP03 automatically trusts only the packaged example. Third-party review,
+  containment, revocation, signing, and permission isolation are not claimed.
+- No model/parameter registry, persistent queue, portable archive, Linux
+  application packaging, or acceleration behavior is added by P4-WP03.
+
 ## P3A – Phase 3 Audit
 
 - The independent 2026-08-10 clean-clone rerun accepted Phase 3 with recorded

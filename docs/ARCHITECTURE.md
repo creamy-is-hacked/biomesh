@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P3-WP06
+## Current architecture through P4-WP07
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -27,6 +27,52 @@ cell-click inspection without changing the application or scientific layers.
 P3-WP06 adds snapshot-only live analytics and one cancellable completed-run
 export command on that existing worker. Canonical fields, tables, and run
 metadata still originate only from the public application export operation.
+P4-WP01 adds a versioned local project/campaign persistence layer above the
+same synchronous public application service. It expands explicit sweep points
+and deterministic seed policies into immutable run identities, records atomic
+lifecycle transitions, and hash-verifies every completed artifact without
+changing any accepted engine or GUI contract.
+P4-WP02 adds a read-only comparison/report layer over those verified records.
+It extracts only declared SI scalar columns from canonical raw Parquet files,
+retains artifact/hash/row/column/run/seed traceability for every value, and
+publishes presentation-neutral JSON and CSV atomically. Statistical summaries
+and pairwise effect data do not feed the engine or encode conclusions in the
+GUI.
+P4-WP03 adds a separate plugin API boundary for versioned species, kinetics,
+field, metric, and exporter components. A complete declarative plugin set must
+match an explicit review policy, API version, distribution/version,
+entry-point identity, and metadata hash before any plugin code is imported.
+The packaged example consumes only immutable caller-owned SI/provenance values.
+The accepted engine, application, campaign, raw artifacts, and reports remain
+the zero-plugin path.
+P4-WP04 adds a declarative, deterministic registry beside those paths. Strict
+records bind named/versioned models to exact parameter-schema inventories,
+SI units, complete classified provenance, citations, uncertainty, and optional
+reviewed plugin identities. Code-owned hashes protect the five accepted
+parameter presets. Registry preflight validates parameters before invoking the
+P4-WP03 controlled loader and returns traceable content identities without
+launching or changing the accepted execution path.
+P4-WP05 adds a separate persistent local queue around the synchronous
+P4-WP01 campaign boundary. One OS-limited worker selects campaigns by
+priority/FIFO order, publishes atomic queue transitions, exposes atomic
+run-count progress, and reconciles cancelled or stale workers without changing
+completed artifact bytes or introducing another execution path.
+P4-WP06 adds a read/write portable-project boundary around one lock-held,
+fully verified P4-WP01 snapshot. Export embeds exact fixture, manifest,
+biological-parameter, artifact, and completion-receipt bytes under a strict
+per-file checksum inventory. Import validates into a temporary project and
+atomically publishes only after the existing campaign verifier passes. New
+execution records bind the complete built-in registry/model/parameter
+selection and canonical empty plugin set before launch and in completion
+receipts; legacy completed records are never rewritten. A separate Linux
+packager wraps the release wheel in a checksum-indexed installer bundle while
+rejecting generated research data.
+P4-WP07 adds an isolated benchmark API beside every accepted execution path.
+The default command runs only a scalar-loop CPU reference over a synthetic
+dimensionless 2D stencil. An explicit flag enables a NumPy CPU candidate and
+records pointwise divergence; optional raw timings carry limitations and no
+performance comparison. Neither backend can be selected by the simulation,
+campaign, queue, plugin, registry, archive, package, or GUI.
 
 Dependency direction is intentionally simple:
 
@@ -54,6 +100,28 @@ GUI worker      -> public ApplicationService operations only
 GUI inspector   -> immutable CellInspection records only
 GUI analytics   -> immutable RunSnapshot metrics only
 GUI export      -> public completed export + immutable snapshot history
+project/campaign -> public ApplicationService + accepted fixture identities
+execution identity -> built-in registry/model/parameter hashes + empty plugin-set hash
+project state    -> atomic JSON + process lock + append-only audit sequence
+project reports  -> verified project state + immutable raw Parquet artifacts
+plugin verifier  -> reviewed manifest + trust policy + exact entry points
+plugin component -> immutable versioned SI/provenance requests and results
+registry types    -> immutable model/parameter/provenance/hash records
+registry catalog  -> accepted parameter schemas + code-owned preset hashes
+registry service  -> registry catalog + controlled plugin loader
+registry CLI      -> deterministic verify/export/import/preflight reports
+local queue types  -> strict queue/item/resource/audit/status records
+queue storage      -> atomic JSON + state lock + single-worker lease
+queue runtime      -> Linux affinity/RLIMIT/process identity
+local queue        -> queue storage/runtime + accepted CampaignService
+queue CLI          -> local create/enqueue/status/run/cancel operations
+portable project   -> lock-held verified project + embedded fixture/artifact bytes
+portable resources -> contained fixture-relative parameter documents + checksums
+archive import     -> strict inventory/checksums + existing CampaignService verifier
+Linux packager     -> release wheel + data-exclusion gate + installer checksums
+benchmark types    -> strict case/backend/observation/divergence records
+benchmark runner   -> synthetic CPU reference + explicitly enabled CPU candidate
+benchmark CLI      -> stdout or atomic JSON artifact; no model execution
 tests           -> public component interfaces
 ```
 
@@ -591,3 +659,123 @@ stages, so the Qt event loop remains responsive. This boundary creates no
 persistent queue, project/campaign model, plugin, live export stream,
 acceleration path, new metric calculation, unit conversion, calibration claim,
 or scientific behavior.
+
+## P4-WP04 model and parameter registry
+
+`biomesh.registry_types` defines strict frozen model, parameter-set, citation,
+plugin-requirement, registry, verification, and launch-preflight records. Every
+stored record and complete registry uses canonical sorted JSON plus SHA-256.
+Parameter provenance explicitly separates measured, literature-derived,
+fitted, assumed, and unresolved values while retaining the existing source,
+uncertainty, notes, SI unit, and calibration-status fields.
+
+`biomesh.registry_catalog` constructs the built-in catalog only from all five
+hash-verified accepted TOML presets. `biomesh.model_registry` verifies and
+exchanges those records and performs preflight. On import, an `audited` record
+must equal one of the complete code-owned identities; a caller cannot create
+audited status by recomputing a content hash. Non-audited versioned records
+remain strictly validated but do not acquire audit trust.
+
+Top-level project schema version 2 prospectively records the complete built-in
+registry SHA-256, all five named/versioned model and parameter-set identities,
+their exact parameter-source hashes, and the canonical SHA-256 of an empty
+`PluginSetManifest`. The accepted campaign path compares this code-owned
+selection and the resolved parameter bytes before execution, writes it to
+`run_request.json`, and repeats it in a version 2 completion receipt. It still
+loads no plugin. Version 1 completed projects remain verifiable and are not
+mutated; unfinished version 1 execution fails explicitly.
+
+```text
+accepted TOML bytes -> code-owned SHA-256 -> existing frozen schema
+                                        -> audited registry parameter set
+
+registry bundle -> record/hash validation -> audited identity validation
+                -> model/schema/name/SI-unit compatibility
+                -> canonical export/import semantic round-trip
+
+launch preflight -> parameters first -> reviewed plugin loader second
+                 -> exact traceability hashes, no simulation execution
+```
+
+Unknown built-in values remain explicit and block launch preflight. Numeric
+manufactured values may remain labelled `CALIBRATION_REQUIRED`; compatibility
+does not imply calibration. The registry does not mutate P4-WP01 projects,
+canonical run artifacts, or P4-WP02 reports, so their existing raw-byte and
+row/column traceability is unchanged. It adds no queue, archive, package,
+acceleration, GUI, cloud path, biological equation, or automatic plugin trust.
+
+## P4-WP05 local run queue
+
+`biomesh.local_queue_types` owns strict frozen queue, item, resource-limit,
+applied-resource, audit, and public status records.
+`biomesh.local_queue_storage` atomically replaces `queue_state.json` under a
+short-lived state lock and owns the separate nonblocking worker lease.
+`biomesh.local_queue_runtime` owns only Linux resource enforcement and process
+identity. `biomesh.local_queue` composes those boundaries with the accepted
+campaign service, while status and cancellation remain available during work.
+
+```text
+enqueue -> immutable local project/campaign reference + priority + FIFO sequence
+
+single worker lease -> exact CPU affinity + exact RLIMIT_AS -> receipt
+                    -> highest priority / lowest enqueue sequence
+                    -> accepted CampaignService.resume
+
+status -> atomic campaign-state snapshot -> completed / total progress
+final  -> full artifact verification -> terminal queue transition
+
+cancel/restart -> PID + process-start verification -> campaign reconciliation
+               -> completion receipt recovery or retryable explicit failure
+```
+
+The worker does not load a model registry or plugin set and cannot substitute a
+different executor. It invokes the existing accepted fixture-backed campaign
+service, whose project lock, stable run IDs, completion receipts, artifact
+hashes, and retry semantics remain authoritative. The progress-only read avoids
+waiting for that project lock but validates the atomic state against the
+immutable project manifest and run plan; terminal queue state requires the full
+artifact verifier.
+
+Linux affinity constrains the entire queue worker to the requested CPU set.
+Both soft and hard address-space limits equal the requested byte count, and
+work fails before claim if either exact setting cannot be proven. A running
+cancellation targets only the persisted PID/start identity. It unwinds through
+the campaign persistence boundary: a published receipt is recovered as
+completed, otherwise the current run becomes retryable `cancelled`; later runs
+remain pending. A dead un-cancelled worker similarly yields an explicit
+`interrupted` failure. No automatic retry can hide either condition.
+
+Queue records retain local absolute project paths and therefore are not a
+portable archive. P4-WP05 adds no archive, packaging, GUI, cloud service,
+acceleration, scientific behavior, biological value, calibration claim, or
+new plugin trust decision.
+
+## P4-WP06 portable projects and Linux packaging
+
+`biomesh.portable_project_types` owns the immutable archive inventory and
+public result records. `biomesh.portable_project` holds the existing campaign
+lock while it verifies and snapshots a project, rewrites only fixture locations
+to archive-contained relative paths, carries the five exact parameter documents
+at the contained locations required by those fixture references, rebinds the
+matching definition hash, and writes deterministic stored ZIP members.
+Completed artifact bytes and completion receipts remain exact. Import rejects
+unsafe or mismatched members, validates a temporary project through
+`CampaignService`, then renames it into a new target atomically.
+
+The archive manifest states that plugin approval, registry documents/trust, and
+queue state are not embedded or inferred. Exact registry and empty-plugin-set
+hashes remain provenance, not transferred trust. An imported project therefore
+remains on the accepted zero-plugin campaign path; callers must explicitly
+enqueue the new local path. SHA-256 provides corruption detection rather than
+origin authentication.
+
+`biomesh.linux_packaging` builds a deterministic Linux tar/gzip application
+bundle from one version-matched wheel. It rejects generated research-data
+members, fixes bundle metadata, and includes a shell installer plus
+`SHA256SUMS`. The installer verifies those hashes and installs into a new
+versioned prefix using Python 3.14. Project archives and user outputs are never
+part of the application package.
+
+P4-WP06 adds no desktop UI, new execution engine, queue migration, automatic
+plugin trust, registry mutation, archive signing, remote service, accelerator,
+biological value, calibration claim, or P4-WP07 behavior.

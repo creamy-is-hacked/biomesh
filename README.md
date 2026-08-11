@@ -7,10 +7,10 @@ into a Linux desktop research platform.
 
 ## Current status
 
-The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
-2026-08-10 audit passed with recorded limitations and is represented by the
-`v0.3.1-audit` tag. P4-WP01 – Project and campaign model is the next incomplete
-work package; no P4 behavior is implemented yet.
+The latest accepted phase is **P4 – Phase 4 – Research Platform**. Its
+independent 2026-08-11 audit rerun passed with recorded limitations and is
+represented by the `v0.4.1-audit` tag. The rerun closed the three findings from
+the first P4A attempt without expanding the scientific or platform scope.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -56,7 +56,31 @@ The repository currently provides:
   export bundle with PNG, CSV, Parquet, canonical fields/tables, hashes,
   calibration status, seed, commit, and software-version provenance; and
 - deterministic P3 frontend-equivalence and checkpoint-replay verification
-  commands over a manufactured `CALIBRATION_REQUIRED` reference selector.
+  commands over a manufactured `CALIBRATION_REQUIRED` reference selector; and
+- the P4 versioned local project/campaign model plus presentation-neutral
+  comparison/report JSON and CSV with raw-run hash/row traceability, explicit
+  missing-run coverage, single-seed warnings, and prospective exact
+  model/parameter-registry plus zero-plugin-set execution identity; and
+- the P4 versioned plugin boundary for species, kinetics, fields, metrics, and
+  exporters, with whole-set compatibility/trust preflight, deterministic
+  provenance manifests, zero-plugin operation, and a packaged uncalibrated
+  species/kinetics example; and
+- the P4 named/versioned model and parameter registry with hash-bound immutable
+  audited presets, explicit provenance categories, citations and uncertainty,
+  deterministic import/export, SI compatibility checks, and exact reviewed
+  plugin preflight; and
+- the P4 persistent local campaign queue with deterministic priorities,
+  run-level progress, exact Linux CPU/memory enforcement, targeted
+  cancellation, and restart recovery that preserves immutable completed runs;
+- deterministic portable project export/verification/import with embedded
+  hash-bound fixtures and all required biological parameter documents, exact
+  completed-run artifacts, per-file SHA-256, and clean-install execution of
+  imported pending campaigns; and
+- a reproducible Linux wheel-installer bundle whose build gate rejects
+  generated project, queue, report, raw-run, and research-result data; and
+- an isolated versioned benchmark interface with a disabled-by-default NumPy
+  CPU feasibility candidate, explicit CPU divergence measurement, optional raw
+  timing observations, and no 3D/GPU/scientific/performance claim.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -154,6 +178,133 @@ second reconstructs that checkpoint and byte-compares the replay with the
 stored uninterrupted application artifacts. Both outputs remain manufactured
 software-verification evidence and preserve `CALIBRATION_REQUIRED` status.
 
+For a completed P4 project campaign, generate a new comparison/report data
+directory with:
+
+```bash
+python -m biomesh campaign report PROJECT_DIRECTORY CAMPAIGN_ID \
+  --output NEW_REPORT_DIRECTORY
+```
+
+The report contains deterministic JSON plus CSV coverage, observations,
+condition summaries, and pairwise comparisons. Each value retains raw artifact
+hash and row provenance. Missing runs and single-seed limitations remain
+visible; the report does not generate a scientific conclusion or calibration
+claim. See [the P4-WP01 project model](docs/P4_WP01_PROJECT_CAMPAIGN.md) and
+[the P4-WP02 report contract](docs/P4_WP02_COMPARISON_REPORTS.md).
+
+The tracked P4 platform reference is
+`experiments/platform_reference.yaml`. It selects two accepted manufactured
+quorum-threshold conditions at fixed seeds 101, 202, and 303. It is a
+deterministic, multi-condition software-validation project with complete SI and
+provenance records; its biological inputs remain `CALIBRATION_REQUIRED`. It is
+not a biological experiment or calibration result.
+
+Verify the zero-plugin core contract and the exact reviewed packaged example
+with:
+
+```bash
+python -m biomesh plugins verify
+python -m biomesh plugins verify --output NEW_DIRECTORY
+```
+
+The optional output is atomically published as `plugin_manifest.json` with the
+plugin API/version, distribution and entry-point identity,
+selection/metadata SHA-256, review reference, calibration status, limitations,
+and deterministic self-check. A plugin manifest alone is not trusted:
+incompatible or unreviewed sets fail before any entry point is loaded. See
+[the P4-WP03 plugin contract](docs/P4_WP03_PLUGIN_API.md).
+
+Verify or exchange the deterministic model/parameter registry with:
+
+```bash
+python -m biomesh registry verify
+python -m biomesh registry export --output NEW_REGISTRY_DIRECTORY
+python -m biomesh registry import REGISTRY_FILE_OR_DIRECTORY \
+  --output NEW_REGISTRY_DIRECTORY
+```
+
+The built-in catalog hash-verifies the five accepted biological-parameter
+TOML files, preserves every SI unit and provenance placeholder, and prevents
+modified or relabelled records from acquiring audited status. Preflight can
+check an exact model/parameter-set version and its zero/reviewed plugin set
+before any caller launches work; it emits only traceable content hashes and
+does not itself execute a simulation. See
+[the P4-WP04 registry contract](docs/P4_WP04_MODEL_PARAMETER_REGISTRY.md).
+
+Create and operate one local queue with explicit worker resource limits:
+
+```bash
+python -m biomesh queue create QUEUE_DIRECTORY \
+  --cpu-cores CPU_COUNT --memory-limit-bytes BYTES
+python -m biomesh queue enqueue QUEUE_DIRECTORY PROJECT_DIRECTORY CAMPAIGN_ID \
+  --priority PRIORITY
+python -m biomesh queue status QUEUE_DIRECTORY
+python -m biomesh queue run QUEUE_DIRECTORY
+python -m biomesh queue cancel QUEUE_DIRECTORY QUEUE_ID
+```
+
+The worker applies exact Linux CPU affinity and an address-space byte cap before
+claiming work. Higher priorities run first and equal priorities remain FIFO.
+Queue status exposes campaign run counts during execution; cancellation and
+restart recovery retain completed artifact bytes and leave interrupted work as
+an explicit retryable failure. Queue references remain local absolute paths.
+See [the P4-WP05 queue contract](docs/P4_WP05_LOCAL_RUN_QUEUE.md).
+
+Exchange a project without depending on its original fixture location:
+
+```bash
+python -m biomesh project export PROJECT_DIRECTORY \
+  --output NEW_PROJECT_ARCHIVE.biomesh
+python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh
+python -m biomesh project import PROJECT_ARCHIVE.biomesh \
+  NEW_PROJECT_DIRECTORY
+```
+
+The archive carries strict self-description, embedded hash-verified fixture
+configuration, every required hash-verified biological parameter document,
+project/campaign manifests, exact completed-run artifacts and receipts, and a
+per-file size/SHA-256 inventory. Pending and failed work remains explicit.
+Plugin code/trust, registry documents/trust, and local queue state are neither
+embedded nor inferred; imported projects must be intentionally re-enqueued.
+New runs record the exact built-in registry/model/parameter selections and the
+canonical empty plugin-set identity before execution and in their completion
+receipts. Legacy completed runs remain readable and are never backfilled.
+See [the P4-WP06 portability and packaging contract](docs/P4_WP06_PORTABLE_PROJECTS_PACKAGING.md).
+
+Build the documented Linux application installer bundle after creating the
+wheel and sdist:
+
+```bash
+python -m hatchling build --clean -d dist
+python -m biomesh package linux --wheel dist/*.whl \
+  --output dist/linux-installer
+tar -xzf dist/linux-installer/biomesh-*-linux-*.tar.gz
+cd biomesh-*-linux-*
+./install.sh
+```
+
+The bundle contains the wheel, installer documentation, and checksums. It
+requires Linux and Python 3.14, and deliberately excludes generated projects,
+archives, queues, reports, raw runs, and research results.
+
+Run the isolated benchmark reference, or explicitly enable the CPU-only
+feasibility candidate, with:
+
+```bash
+python -m biomesh benchmark acceleration
+python -m biomesh benchmark acceleration --experimental
+python -m biomesh benchmark acceleration --experimental \
+  --timing-samples 3 --output NEW_BENCHMARK_DIRECTORY
+```
+
+Experimental execution is disabled by default. The fixed case is a synthetic
+dimensionless 2D stencil and is not connected to model execution. The report
+measures candidate divergence from the CPU reference. Optional timings are raw
+local observations only: no speedup, GPU support, 3D validation, production
+performance, or scientific accuracy is claimed. See
+[the P4-WP07 benchmark contract](docs/P4_WP07_EXPERIMENTAL_ACCELERATION.md).
+
 The Simulation Controls dock selects only the 15 existing manufactured P2
 fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
 remain disabled while the Experiment Editor document is invalid or retains
@@ -211,9 +362,8 @@ boundaries.
 
 ## Roadmap
 
-P3 is accepted. P4 covers the broader research platform and begins with
-P4-WP01 – Project and campaign model. These are roadmap items, not completed
-functionality. BioMesh is not called v1; no v1 milestone has been reached.
+P4 is accepted. No later phase or work package is authorized by the current
+repository plans. BioMesh is not called v1.
 
 ## License
 

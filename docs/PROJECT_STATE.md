@@ -4,24 +4,25 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-10 after the accepted P3A clean-clone audit. P3 is
-the latest audited and accepted phase at implementation commit
-`ed062935552c6a5df639c56474c7854cac91bd69`. The Python 3.14 full gate passes
-195 tests.
+Snapshot verified: 2026-08-11 after the independent P4A rerun accepted Phase 4
+from exact pushed prerequisite
+`b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`. The canonical accepted-audit
+workflow publishes tag `v0.4.1-audit`. The Python 3.14 full gate passes 244
+tests.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P4 – Phase 4 – Research Platform (not started) |
-| Current work package | P4-WP01 – Project and campaign model is the first `INCOMPLETE` item |
-| Current branch | `main` after the accepted-audit merge |
-| Latest accepted phase | P3 – Phase 3 – Desktop GUI, accepted by P3A on 2026-08-10 as `PASS WITH RECORDED LIMITATIONS` |
-| Latest version tag | `v0.3.1-audit` (P3A release, 2026-08-10) |
-| Current test count | 195 passed (`pytest -q`, 2026-08-10) |
-| Next planned work package | P4-WP01 – Project and campaign model |
+| Current phase | P4 – Phase 4 – Research Platform (accepted) |
+| Current work package | P4A is `COMPLETE`; the independent rerun passed with recorded limitations |
+| Current branch | `main` after the canonical accepted-audit merge |
+| Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
+| Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
+| Current test count | 244 passed (`pytest -q`, 2026-08-11) |
+| Next planned work package | None; no later phase or work package is authorized by the current plans |
 
 ## Outstanding technical debt
 
-- License selection is pending; no license was added by this remediation pass.
+- License selection is pending; no license was added by the audit.
 
 ## Known limitations
 
@@ -73,6 +74,63 @@ the latest audited and accepted phase at implementation commit
   behavior is not established by the current contracts. P3A closes BM-010:
   direct worker, stop, export-cancellation, responsiveness, and error probes
   passed without adding scientific or P4 behavior.
+- P4-WP01 projects reference accepted application fixtures by SHA-256 and
+  execute synchronously through `ApplicationService`. Sweep points must match
+  existing fixture conditions exactly; they do not apply arbitrary editor
+  documents or invent biological inputs. P4-WP02 reports only 16 exact stored
+  SI scalar metrics from hash-verified completed runs; every observation traces
+  to raw bytes, missing runs remain explicit, and single-seed evidence cannot
+  acquire an uncertainty estimate or replicated claim. Its JSON/CSV data is
+  presentation-neutral and creates no scientific conclusion or calibration
+  result. P4-WP02 itself adds no project archive, persistent queue, report UI,
+  model registry, packaging, or acceleration behavior.
+  P4-WP03 adds versioned species, kinetics, field, metric, and exporter
+  interfaces behind a whole-set compatibility and explicit review-policy
+  preflight. The accepted engine/campaign path remains zero-plugin; the
+  packaged example is `CALIBRATION_REQUIRED` software-extension evidence, not
+  biological evidence. Completed run artifacts are immutable and
+  hash-verified. P4-WP04 adds a deterministic declarative registry with named
+  and versioned model/parameter records, exact SI compatibility, five distinct
+  provenance categories, lossless citations/uncertainty, and code-owned
+  immutable audited identities. All 45 built-in values remain unresolved; a
+  successful compatibility preflight is not calibration approval. The
+  registry launches no simulation and does not alter existing projects, raw
+  artifacts, reports, or their traceability. P4-WP05 adds a separate persistent
+  local queue with deterministic priority/FIFO ordering, exact Linux CPU
+  affinity and address-space limits, run-count progress, targeted cancellation,
+  and stale-worker recovery. It invokes only the accepted P4-WP01 campaign
+  service. Completed runs remain hash-verified and immutable; cancelled or
+  interrupted unpublished runs remain explicit and retryable. Queue project
+  references remain local absolute scheduler state and are deliberately not
+  embedded in portable archives. P4-WP06 adds deterministic checksum-verified
+  project archives with embedded hash-bound fixtures, required biological
+  parameter documents, and exact completed-run artifacts/receipts, plus a
+  reproducible Linux wheel-installer bundle that rejects generated research
+  data. Import grants no plugin or registry trust and does not migrate queue
+  state. The desktop has no
+  report/plugin/registry/queue/archive UI, calibration, cloud, or automatic
+  plugin-trust behavior. P4-WP07 adds a separate benchmark API with a scalar
+  CPU reference and an explicitly enabled NumPy CPU feasibility candidate over
+  a synthetic dimensionless 2D stencil. The fixed 2,304-value case measured
+  zero divergence at `1e-12` absolute/relative engineering tolerances. Optional
+  timings are raw local observations only. No benchmark backend enters model,
+  campaign, queue, plugin, registry, archive, package, or GUI execution; no
+  3D/GPU, production performance, or scientific-accuracy claim is made.
+- P4A independently accepted the prospective schema-version 2 execution
+  identity and portability. New projects bind the complete built-in registry,
+  all five named/versioned model/parameter-set and parameter-source hashes, and
+  the canonical explicit zero-plugin set before execution; run requests and
+  completion receipts repeat that identity. New archives embed all five exact
+  fixture-relative biological parameter documents and execute pending
+  multi-condition campaigns from a clean wheel installation. Historical
+  completed schema-version 1 projects remain byte-preserved and readable;
+  missing provenance is never backfilled. Plugin code/trust, registry
+  documents/trust, queue state, SI/calibration boundaries, and the isolated
+  acceleration boundary remain unchanged. The rerun retraced 288 report
+  observations, verified six request/receipt identities, completed the pending
+  archive from an external wheel, preserved a 111-file completed project tree,
+  and reproduced wheel, sdist, and installer bytes without a Critical or Major
+  finding.
 
 ## Update policy
 

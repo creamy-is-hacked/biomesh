@@ -454,18 +454,252 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 
 | ID | Work package | Status |
 | --- | --- | --- |
-| P4-WP01 | Project and campaign model | INCOMPLETE |
-| P4-WP02 | Comparison and reports | INCOMPLETE |
-| P4-WP03 | Plugin API | INCOMPLETE |
-| P4-WP04 | Model and parameter registry | INCOMPLETE |
-| P4-WP05 | Local run queue | INCOMPLETE |
-| P4-WP06 | Portable projects and packaging | INCOMPLETE |
-| P4-WP07 | Experimental acceleration boundary | INCOMPLETE |
-| P4A | Phase 4 Audit | INCOMPLETE |
+| P4-WP01 | Project and campaign model | COMPLETE |
+| P4-WP02 | Comparison and reports | COMPLETE |
+| P4-WP03 | Plugin API | COMPLETE |
+| P4-WP04 | Model and parameter registry | COMPLETE |
+| P4-WP05 | Local run queue | COMPLETE |
+| P4-WP06 | Portable projects and packaging | COMPLETE |
+| P4-WP07 | Experimental acceleration boundary | COMPLETE |
+| P4A | Phase 4 Audit | COMPLETE |
+
+P4-WP01 validation evidence:
+
+- Versioned strict records cover projects, accepted-fixture experiments,
+  campaigns, expanded runs, SHA-256/size-bound artifacts, retryable failures,
+  and deterministic audit transitions. Explicit and arithmetic seed policies
+  expand to one stable seed per replicate, while SI/provenance-complete sweep
+  points must exactly match accepted P2 fixture conditions.
+- Project creation and state replacement are atomic. A process lock serializes
+  campaign mutation; interrupted runs become explicit retryable failures, and
+  a crash after artifact publication recovers only a hash-verified completion
+  receipt. Completed runs are skipped by resume/retry and artifact drift fails
+  closed.
+- The `project create` and `campaign status`, `resume`, and `retry` CLI paths
+  passed using the real P3 `ApplicationService`. A controlled fixture-drift
+  failure remained visible and retried successfully after restoration. The
+  Python 3.14.4 full gate passed module help, Ruff, strict mypy,
+  `git diff --check`, and 204 tests. No P4-WP02 or later behavior was added.
+
+P4-WP02 validation evidence:
+
+- The read-only report service consumes only hash-verified P4-WP01 completed
+  runs. Sixteen declared scalar metrics retain their existing SI units and
+  trace every replicate value to the raw artifact path, SHA-256, byte size,
+  Parquet row and column, run ID, seed, and replicate index. Project state and
+  raw artifacts are unchanged by reporting.
+- Condition distributions expose every replicate plus mean, median, range,
+  sample variance, standard deviation, and two-sided 95% Student-t intervals.
+  Pairwise condition data exposes the unit-aware difference in means, Hedges g
+  where defined, and a Welch Student-t interval. These are descriptive report
+  data only; no significance decision, scientific conclusion, calibration, or
+  GUI inference is generated.
+- Every planned run remains in report coverage with its completed, pending,
+  running, or failed status and explicit failure record. Per-summary missing
+  run IDs are retained, and all one-observation summaries/comparisons are
+  labelled `SINGLE_SEED_ONLY` with unavailable uncertainty rather than a
+  manufactured estimate.
+- The real `campaign report` application path used four P3-backed runs and
+  produced 192 traced observations, 96 condition summaries, and 48 pairwise
+  comparisons. A second report was byte-identical; all five data files matched
+  the report manifest, and atomic failure cleanup passed. The Python 3.14.4
+  full gate passed module help, Ruff, strict mypy, `git diff --check`, and 208
+  tests. No P4-WP03 or later behavior was added.
+
+P4-WP03 validation evidence:
+
+- Version 1 immutable component contracts cover species, kinetics, fields,
+  metrics, and exporters. Plugin metadata records exact ID/version/API,
+  component kinds, source, `CALIBRATION_REQUIRED` status, limitations, and a
+  canonical SHA-256. Kinetics execution requires SI-explicit state plus
+  complete biological-parameter provenance and rejects unresolved values.
+- Controlled loading validates the complete manifest and explicit code-owned
+  trust policy before importing any selected entry point. Exact API version,
+  metadata hash, distribution/version, and entry-point identity fail closed;
+  focused probes confirmed incompatible and unreviewed sets load no code.
+  Runtime metadata and every declared component interface must equal the
+  reviewed declaration.
+- The accepted engine and campaign runner remain the zero-plugin core path.
+  The packaged example exposes an uncalibrated non-taxonomic species and the
+  existing dual-substrate rate equation using only caller-owned SI/provenance
+  inputs; it adds no biological constant or accepted-engine behavior.
+- `plugins verify` passed both stdout and atomic-output application paths. Two
+  published manifests were byte-identical and retained plugin distribution,
+  entry-point, review, selection/metadata hashes, limitations, calibration,
+  and self-check provenance. A no-dependency wheel build/install exposed the
+  declared entry point and passed the verification path from an external
+  working directory.
+  Python 3.14.4 passed module help, `validate all`, Ruff, strict mypy over 45
+  source files, `git diff --check`, and 215 tests. No P4-WP04 or later behavior
+  was added.
+
+P4-WP04 validation evidence:
+
+- Strict immutable schema-version 1 records store named/versioned models and
+  parameter sets with canonical SHA-256 identities. Parameter values retain SI
+  units, source, structured citations, uncertainty, notes, calibration status,
+  and an explicit measured, literature-derived, fitted, assumed, or
+  calibration-required provenance category. Numeric values require citations;
+  unknown records preserve every `CALIBRATION_REQUIRED` placeholder.
+- The built-in catalog validates all five existing parameter documents through
+  their accepted schemas only after their exact P2A file hashes pass. Audited
+  imports must equal a complete code-owned built-in identity; focused tamper
+  and relabelling probes failed closed even when the altered record hash was
+  recomputed. All 45 built-in biological values remain unresolved and no
+  calibration or biological claim is generated.
+- Registry verification, atomic export, validated atomic import, and launch
+  preflight application paths passed. Export/import bytes were identical and
+  retained citations and uncertainty for measured, literature-derived,
+  fitted, assumed, and unresolved test records. Exact model/schema/name/SI-unit
+  checks run before the controlled plugin loader; a unit mismatch loaded no
+  plugin code, and successful preflight required the exact reviewed selection.
+- Registry reports bind registry, model, parameter-set, and plugin-selection
+  identities without launching a simulation or changing P4-WP01 projects,
+  raw-run artifacts, or P4-WP02 reports. Python 3.14.4 passed module help, live
+  built-in verification, Ruff, strict mypy over 48 source files,
+  `git diff --check`, and 223 tests. No P4-WP05 or later behavior was added.
+
+P4-WP05 validation evidence:
+
+- Strict schema-version 1 queue/item/resource/audit records persist through
+  atomic replacement under a state lock. Highest integer priority executes
+  first and equal priorities retain FIFO order. A separate nonblocking worker
+  lease permits one local drain process, while status joins each item to an
+  atomic campaign-state snapshot with exact completed/planned run progress.
+- Before claiming work, the worker applies exact Linux CPU affinity and equal
+  soft/hard `RLIMIT_AS` memory limits, reads both settings back, and persists
+  their receipt. Work fails explicitly when current CPU availability or worker
+  virtual-memory requirements cannot satisfy the declared limits; no remote or
+  fallback execution path exists.
+- Queued cancellation changes no project state. Running cancellation targets
+  only a verified PID/process-start identity and stops through the campaign
+  persistence boundary. Published completion receipts recover only after hash
+  verification; otherwise cancelled or stale unpublished runs become explicit
+  retryable `cancelled` or `interrupted` failures. Completed artifact bytes are
+  reverified, never rewritten, and never rerun.
+- The real `queue create`, `enqueue`, `status`, `run`, `run --once`, and
+  `cancel` application paths passed, including priority ordering across worker
+  restarts, live progress, single-worker rejection, queued/running
+  cancellation, and exact one-core/8 GiB OS-limit receipts. Python 3.14.4
+  passed module help, Ruff, strict mypy over 52 source files,
+  `git diff --check`, and 227 tests. No P4-WP06 or later behavior was added.
+
+P4-WP06 validation evidence:
+
+- Strict schema-version 1 `.biomesh` archives carry a portable project
+  definition, definition-bound campaign state, archive-contained hash-bound
+  fixtures, and every artifact plus completion receipt for each verified
+  completed run. Per-file paths, roles, sizes, and SHA-256 identities are
+  cross-checked against the embedded project records; pending and failed runs
+  remain explicit and running or unpublished artifact state fails closed.
+- Stored ZIP metadata is fixed for byte-identical export. Verification rejects
+  duplicate, encrypted, compressed, non-regular, out-of-root, missing, extra,
+  oversized, corrupt, or project-inconsistent members. Import validates into a
+  temporary sibling through the existing `CampaignService` before atomic
+  publication and grants no plugin trust, registry identity, or queue state.
+- A real P3-backed manufactured campaign exported twice byte-identically with
+  20 carried files. The wheel-based Linux bundle verified its checksums,
+  installed outside the clone, passed CLI validation and offscreen GUI smoke,
+  then verified/imported the archive and retained a byte-identical completed
+  artifact tree. The deterministic bundle builder rejects generated project,
+  queue, report, raw-run, archive, CSV, Parquet, and NumPy-result payloads.
+- Python 3.14.4 passed module help, Ruff, strict mypy over 55 source files,
+  `git diff --check`, and 235 tests. No P4-WP07 or P4A behavior was added.
+
+P4-WP07 validation evidence:
+
+- Benchmark API version 1 defines strict immutable case, backend, output,
+  environment, timing-observation, and divergence records. The fixed input is
+  SHA-256-bound deterministic dimensionless 48 by 48 synthetic 2D stencil for
+  four steps with `1e-12` absolute and relative engineering tolerances; it is
+  not a model, biological input, 3D workload, or scientific result.
+- The default `benchmark acceleration` application path executed only the
+  scalar-loop CPU reference and recorded the experimental candidate as
+  disabled. The candidate ran only with `--experimental`, declared NumPy
+  float64 CPU/2D execution and `gpu_used: false`, and measured zero absolute
+  and relative divergence with zero mismatches across all 2,304 values.
+- Stdout, atomic artifact publication, explicit overwrite rejection, candidate
+  divergence failure, invalid-output rejection, and opt-in timing paths passed.
+  Timings remain raw local nanosecond observations with no warm-up, comparison
+  ratio, inference, performance claim, GPU/3D claim, or scientific-accuracy
+  claim. Accepted engine, campaign, plugin, registry, queue, archive, package,
+  completed-run, and desktop paths remain unchanged.
+- Python 3.14.4 passed module and benchmark help, Ruff, strict mypy over 57
+  source files, `git diff --check`, and 242 tests. P4A was not begun; no merge
+  or tag was created.
+
+P4A production-remediation evidence (2026-08-11; audit remains incomplete):
+
+- `P4A-001` is remediated prospectively by project/archive schema version 2.
+  The pending platform-reference archive contains the project/state records,
+  accepted fixture, and all five exact biological parameter documents under a
+  strict eight-file checksum inventory. A clean installed wheel imported the
+  archive outside the clone and completed all six runs. A completed 110-file
+  archive reimported with zero byte mismatches, and pending/completed exports
+  each reproduced byte-identically (`ed10fa93...f1f0d` and
+  `3b402104...bce38`, respectively). The final Linux installer bundle was
+  checksum-verified as `3f07fc4d...b1763` before its documented isolated
+  install, validation, and offscreen GUI smoke paths passed.
+- `P4A-002` is remediated prospectively by a strict execution identity that
+  binds the complete built-in registry, all five named/versioned model and
+  parameter-set records, parameter-source hashes, and canonical empty plugin
+  set (`1919457d...10a0`) before work starts. All six real run requests and
+  version 2 completion receipts repeated one exact execution identity
+  (`cd8515f0...00a22`). Legacy version 1 completed projects/receipts remain
+  readable and byte-unchanged; unfinished execution and backfilling fail.
+- `P4A-003` is remediated by tracked
+  `experiments/platform_reference.yaml` and the accepted command surface in
+  `docs/09_PHASE_FOUR_AUDIT.md`. The reference is two manufactured SI-labelled
+  conditions at seeds 101, 202, and 303, remains
+  `CALIBRATION_REQUIRED`, and makes no biological-experiment claim.
+- Focused project/archive/plugin/registry/queue/report tests passed. The full
+  Python 3.14.4 gate passed 244 tests, Ruff, strict mypy over 57 source files,
+  `git diff --check`, and module help. All 11 P2 fixture/report paths, P1
+  validators and zero-mismatch replay, P3 zero-mismatch frontend/checkpoint
+  paths and GUI gates, queue recovery, plugin/registry checks, default-disabled
+  and opt-in isolated acceleration, clean wheel/Linux-installer paths, and the
+  corrected P4A application commands passed.
+- These are production remediation results only. P4A remains `INCOMPLETE` and
+  must rerun independently from the exact pushed remediation commit; no audit
+  result, merge, or tag is claimed here.
+
+P4A independent audit evidence (2026-08-11):
+
+- Audit result: `PASS WITH RECORDED LIMITATIONS`; Phase 4 is accepted at exact
+  pushed prerequisite `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`.
+- A fresh Python 3.14.4 environment passed module help, Ruff, strict mypy over
+  57 source files, `git diff --check`, and all 244 tests. P1 validators and
+  zero-mismatch replay, all 11 P2 fixture/report paths, P3 zero-mismatch
+  frontend/checkpoint verification, GUI/integration tests, and offscreen GUI
+  smoke passed.
+- The strict eight-file pending archive reproduced byte-identically at
+  `ed10fa93...f1f0d`, carried the fixture and all five required parameter
+  resources, and completed six runs from a clean external wheel installation.
+  The external 110-file completed archive reproduced at `3795db66...4c37`,
+  and completed export/import preserved the full 111-file project tree with
+  zero byte mismatches. Corruption and path traversal failed explicitly.
+- All six run requests and six schema-version 2 receipts repeated the exact
+  five-model execution identity `cd8515f0...00a22`, registry identity, source
+  hashes, and canonical empty-plugin identity `1919457d...10a0`. Legacy
+  schema-version 1 completed bytes remained readable and unchanged; unfinished
+  execution/backfilling failed explicitly.
+- Independent report inspection retraced all 288 observations to raw hashes,
+  sizes, Parquet rows, columns, and values. All six planned runs were covered,
+  with 96 summaries, 48 pairwise comparisons, and no missing run. Plugin trust,
+  registry immutability/SI checks, queue ordering/resources/cancellation/retry/
+  recovery, and disabled-by-default acceleration isolation/equivalence passed.
+- Repeated wheel, sdist, and Linux installer outputs were byte-identical at
+  `12e69544...effb`, `c70ca745...424f`, and `4ff5aedc...f69d`. Fresh external
+  wheel, sdist, and checksum-verified installer CLI/GUI paths passed. No
+  generated research output was bundled or tracked.
+- No Critical or Major finding remains. Biological values remain
+  `CALIBRATION_REQUIRED`; plugin sandboxing, archive signing/confidentiality,
+  portable queue state, installer update/rollback, biological validation, and
+  GPU/3D/performance claims remain outside the accepted scope.
 
 ## Next Work Package
 
-`P4-WP01 – Project and campaign model`.
+No later phase or work package is authorized by the current repository plans.
 
 ## Remaining Issues
 
@@ -473,6 +707,15 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 is the first incomplete item. The desktop has no
-  project/campaign model, persistent queue, plugin system, acceleration,
-  calibration behavior, or P4 feature.
+- P4A accepted Phase 4. P4-WP01 through P4-WP06 add the local synchronous
+  project/campaign model, presentation-neutral comparison/report data, and a
+  separately verified plugin API plus a declarative model/parameter registry.
+  The accepted engine/campaign path still uses zero plugins and is unchanged
+  by registry data. P4-WP05 adds the separate persistent OS-limited local queue
+  described above. P4-WP06 adds explicit portable archive CLI paths and a
+  documented Linux installer bundle without migrating queue state or granting
+  trust. P4-WP07 adds only an isolated disabled-by-default synthetic 2D
+  benchmark and opt-in NumPy CPU candidate; no benchmark backend enters model
+  execution and no GPU, 3D, performance, or scientific claim is made. The
+  desktop has no queue/report/plugin/registry/archive UI, cloud, automatic
+  plugin trust, or calibration behavior.

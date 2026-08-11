@@ -10,14 +10,39 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from biomesh import __version__
+from biomesh.linux_packaging import build_linux_installer
+from biomesh.local_queue import LocalQueueService, create_local_queue
+from biomesh.model_registry import (
+    import_registry,
+    load_registry,
+    preflight_launch,
+    publish_builtin_registry,
+    verify_registry,
+)
 from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
 from biomesh.p3_verification import compare_frontends, verify_checkpoint
+from biomesh.plugin_api import (
+    PluginSetManifest,
+    PluginTrustPolicy,
+    builtin_plugin_trust_policy,
+    example_plugin_manifest,
+    publish_plugin_verification,
+    verify_plugins,
+)
+from biomesh.portable_project import (
+    export_project_archive,
+    import_project_archive,
+    verify_project_archive,
+)
+from biomesh.project_campaign import CampaignService, create_project
+from biomesh.project_reports import generate_campaign_report
 from biomesh.reference import (
     DEFAULT_REFERENCE_PARAMETER_FILE,
     default_output_directory,
     reproduce_reference,
     run_reference,
 )
+from biomesh.registry_catalog import builtin_registry
 from biomesh.runtime_resources import runtime_root
 from biomesh.validation import (
     validate_diffusion,
@@ -32,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="biomesh",
         description=(
             "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
-            "and P3 verification tools."
+            "P3 verification, and P4 project tools."
         ),
     )
     parser.add_argument(
@@ -115,6 +140,171 @@ def build_parser() -> argparse.ArgumentParser:
         help="replay and byte-verify a P3 frontend-comparison checkpoint",
     )
     checkpoint_parser.add_argument("run_directory", type=Path)
+
+    project_parser = commands.add_parser(
+        "project", help="create a versioned local P4 research project"
+    )
+    project_commands = project_parser.add_subparsers(dest="project_command")
+    project_create = project_commands.add_parser(
+        "create", help="create a project from a strict JSON definition"
+    )
+    project_create.add_argument("definition_file", type=Path)
+    project_create.add_argument("project_directory", type=Path)
+    project_export = project_commands.add_parser(
+        "export", help="export a deterministic checksum-verified portable archive"
+    )
+    project_export.add_argument("project_directory", type=Path)
+    project_export.add_argument("--output", required=True, type=Path)
+    project_verify = project_commands.add_parser(
+        "verify-archive", help="verify every portable archive manifest and checksum"
+    )
+    project_verify.add_argument("archive", type=Path)
+    project_import = project_commands.add_parser(
+        "import", help="atomically import a verified portable project archive"
+    )
+    project_import.add_argument("archive", type=Path)
+    project_import.add_argument("project_directory", type=Path)
+
+    campaign_parser = commands.add_parser(
+        "campaign", help="inspect, resume, retry, or report a P4 project campaign"
+    )
+    campaign_commands = campaign_parser.add_subparsers(dest="campaign_command")
+    for operation in ("status", "resume", "retry", "report"):
+        operation_parser = campaign_commands.add_parser(operation)
+        operation_parser.add_argument("project_directory", type=Path)
+        operation_parser.add_argument("campaign_id")
+        if operation == "retry":
+            operation_parser.add_argument(
+                "--run-id",
+                action="append",
+                dest="run_ids",
+                help="retry one failed run ID; repeat to select multiple runs",
+            )
+        if operation == "report":
+            operation_parser.add_argument(
+                "--output",
+                required=True,
+                type=Path,
+                help="publish comparison/report data to this new directory",
+            )
+
+    plugins_parser = commands.add_parser(
+        "plugins", help="verify the reviewed P4 plugin boundary"
+    )
+    plugins_commands = plugins_parser.add_subparsers(dest="plugins_command")
+    plugins_verify = plugins_commands.add_parser(
+        "verify", help="verify zero-plugin compatibility and the packaged example"
+    )
+    plugins_verify.add_argument(
+        "--output",
+        type=Path,
+        help="atomically publish plugin_manifest.json to this new directory",
+    )
+
+    registry_parser = commands.add_parser(
+        "registry", help="verify and exchange the P4 model/parameter registry"
+    )
+    registry_commands = registry_parser.add_subparsers(dest="registry_command")
+    registry_verify = registry_commands.add_parser(
+        "verify", help="verify registry integrity, provenance, units, and compatibility"
+    )
+    registry_verify.add_argument(
+        "--registry",
+        type=Path,
+        help="registry file or directory (default: built-in audited catalog)",
+    )
+    registry_export = registry_commands.add_parser(
+        "export", help="atomically export the built-in audited registry"
+    )
+    registry_export.add_argument("--output", required=True, type=Path)
+    registry_import = registry_commands.add_parser(
+        "import", help="validate and atomically import a registry"
+    )
+    registry_import.add_argument("source", type=Path)
+    registry_import.add_argument("--output", required=True, type=Path)
+    registry_preflight = registry_commands.add_parser(
+        "preflight", help="prove exact model, parameter, unit, and plugin compatibility"
+    )
+    registry_preflight.add_argument("--registry", type=Path)
+    registry_preflight.add_argument("--model-id", required=True)
+    registry_preflight.add_argument("--model-version", required=True)
+    registry_preflight.add_argument("--parameter-set-id", required=True)
+    registry_preflight.add_argument("--parameter-set-version", required=True)
+    registry_preflight.add_argument(
+        "--plugins",
+        choices=("none", "example"),
+        default="none",
+        help="reviewed plugin selection to check (default: zero-plugin core)",
+    )
+
+    queue_parser = commands.add_parser(
+        "queue", help="manage the persistent OS-limited P4 local campaign queue"
+    )
+    queue_commands = queue_parser.add_subparsers(dest="queue_command")
+    queue_create = queue_commands.add_parser(
+        "create", help="create a persistent local queue with fixed resource limits"
+    )
+    queue_create.add_argument("queue_directory", type=Path)
+    queue_create.add_argument("--cpu-cores", required=True, type=int)
+    queue_create.add_argument("--memory-limit-bytes", required=True, type=int)
+    queue_enqueue = queue_commands.add_parser(
+        "enqueue", help="queue one pending project campaign"
+    )
+    queue_enqueue.add_argument("queue_directory", type=Path)
+    queue_enqueue.add_argument("project_directory", type=Path)
+    queue_enqueue.add_argument("campaign_id")
+    queue_enqueue.add_argument("--priority", default=0, type=int)
+    queue_status = queue_commands.add_parser(
+        "status", help="show persistent queue state and run-level progress"
+    )
+    queue_status.add_argument("queue_directory", type=Path)
+    queue_run = queue_commands.add_parser(
+        "run", help="drain queued campaigns in this local foreground worker"
+    )
+    queue_run.add_argument("queue_directory", type=Path)
+    queue_run.add_argument(
+        "--once", action="store_true", help="execute at most one queued campaign"
+    )
+    queue_cancel = queue_commands.add_parser(
+        "cancel", help="cancel queued work or stop its identified local worker"
+    )
+    queue_cancel.add_argument("queue_directory", type=Path)
+    queue_cancel.add_argument("queue_id")
+
+    package_parser = commands.add_parser(
+        "package", help="build a data-free BioMesh application package"
+    )
+    package_commands = package_parser.add_subparsers(dest="package_command")
+    package_linux = package_commands.add_parser(
+        "linux", help="build the documented Linux wheel installer bundle"
+    )
+    package_linux.add_argument("--wheel", required=True, type=Path)
+    package_linux.add_argument("--output", required=True, type=Path)
+
+    benchmark_parser = commands.add_parser(
+        "benchmark", help="run an isolated P4 experimental-feasibility benchmark"
+    )
+    benchmark_commands = benchmark_parser.add_subparsers(dest="benchmark_command")
+    acceleration_parser = benchmark_commands.add_parser(
+        "acceleration",
+        help="compare the CPU reference with an explicitly enabled CPU candidate",
+    )
+    acceleration_parser.add_argument(
+        "--experimental",
+        action="store_true",
+        help="enable the isolated NumPy CPU feasibility candidate",
+    )
+    acceleration_parser.add_argument(
+        "--timing-samples",
+        default=0,
+        type=int,
+        help="record raw local elapsed times without a performance claim",
+    )
+    acceleration_parser.add_argument(
+        "--output",
+        type=Path,
+        help="atomically publish acceleration_benchmark.json to a new directory",
+    )
     return parser
 
 
@@ -218,6 +408,185 @@ def main(argv: Sequence[str] | None = None) -> int:
         if arguments.command == "verify-checkpoint":
             checkpoint_result = verify_checkpoint(arguments.run_directory)
             print(json.dumps(checkpoint_result, sort_keys=True))
+            return 0
+        if arguments.command == "project":
+            if arguments.project_command == "create":
+                created = create_project(
+                    arguments.definition_file, arguments.project_directory
+                )
+                project_result: dict[str, int | str] = {
+                    "project_directory": str(created)
+                }
+            elif arguments.project_command == "export":
+                project_result = export_project_archive(
+                    arguments.project_directory, arguments.output
+                ).as_dict()
+            elif arguments.project_command == "verify-archive":
+                project_result = verify_project_archive(arguments.archive).as_dict()
+            elif arguments.project_command == "import":
+                project_result = import_project_archive(
+                    arguments.archive, arguments.project_directory
+                ).as_dict()
+            else:
+                raise ValueError(
+                    "project requires create, export, verify-archive, or import"
+                )
+            print(json.dumps(project_result, sort_keys=True))
+            return 0
+        if arguments.command == "campaign":
+            if arguments.campaign_command is None:
+                raise ValueError("campaign requires status, resume, retry, or report")
+            if arguments.campaign_command == "report":
+                report_result = generate_campaign_report(
+                    arguments.project_directory,
+                    arguments.campaign_id,
+                    arguments.output,
+                )
+                print(json.dumps(report_result.as_dict(), sort_keys=True))
+                return 0
+            service = CampaignService(arguments.project_directory)
+            if arguments.campaign_command == "status":
+                status = service.status(arguments.campaign_id)
+            elif arguments.campaign_command == "resume":
+                status = service.resume(arguments.campaign_id)
+            elif arguments.campaign_command == "retry":
+                status = service.retry(arguments.campaign_id, arguments.run_ids)
+            else:
+                raise AssertionError("unhandled campaign command")
+            print(json.dumps(status.as_dict(), sort_keys=True))
+            return 1 if status.failed and arguments.campaign_command != "status" else 0
+        if arguments.command == "queue":
+            if arguments.queue_command == "create":
+                created_queue = create_local_queue(
+                    arguments.queue_directory,
+                    cpu_cores=arguments.cpu_cores,
+                    memory_limit_bytes=arguments.memory_limit_bytes,
+                )
+                print(
+                    json.dumps(
+                        {"queue_directory": str(created_queue)}, sort_keys=True
+                    )
+                )
+                return 0
+            if arguments.queue_command is None:
+                raise ValueError(
+                    "queue requires create, enqueue, status, run, or cancel"
+                )
+            queue = LocalQueueService(arguments.queue_directory)
+            if arguments.queue_command == "enqueue":
+                queue_item = queue.enqueue(
+                    arguments.project_directory,
+                    arguments.campaign_id,
+                    priority=arguments.priority,
+                )
+                print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
+                return 0
+            if arguments.queue_command == "status":
+                print(json.dumps(queue.status().as_dict(), sort_keys=True))
+                return 0
+            if arguments.queue_command == "run":
+                queue_result = queue.run(once=arguments.once)
+                print(json.dumps(queue_result.as_dict(), sort_keys=True))
+                return 1 if queue_result.failed else 0
+            if arguments.queue_command == "cancel":
+                queue_item = queue.cancel(arguments.queue_id)
+                print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
+                return 0
+            raise AssertionError("unhandled queue command")
+        if arguments.command == "package":
+            if arguments.package_command != "linux":
+                raise ValueError("package requires linux")
+            package_result = build_linux_installer(
+                arguments.wheel, arguments.output
+            )
+            print(json.dumps(package_result.as_dict(), sort_keys=True))
+            return 0
+        if arguments.command == "benchmark":
+            from biomesh.acceleration_benchmark import (
+                publish_acceleration_benchmark,
+                run_acceleration_benchmark,
+            )
+
+            if arguments.benchmark_command != "acceleration":
+                raise ValueError("benchmark requires acceleration")
+            benchmark_report = (
+                run_acceleration_benchmark(
+                    enable_experimental=arguments.experimental,
+                    timing_samples=arguments.timing_samples,
+                )
+                if arguments.output is None
+                else publish_acceleration_benchmark(
+                    arguments.output,
+                    enable_experimental=arguments.experimental,
+                    timing_samples=arguments.timing_samples,
+                )
+            )
+            print(
+                json.dumps(
+                    benchmark_report.model_dump(mode="json"), sort_keys=True
+                )
+            )
+            return 0 if benchmark_report.passed else 1
+        if arguments.command == "plugins":
+            if arguments.plugins_command != "verify":
+                raise ValueError("plugins requires verify")
+            report = (
+                verify_plugins()
+                if arguments.output is None
+                else publish_plugin_verification(arguments.output)
+            )
+            print(json.dumps(report.model_dump(mode="json"), sort_keys=True))
+            return 0
+        if arguments.command == "registry":
+            if arguments.registry_command == "export":
+                registry_report = publish_builtin_registry(
+                    arguments.output, repository_root
+                )
+            elif arguments.registry_command == "import":
+                registry_report = import_registry(
+                    arguments.source, arguments.output, repository_root
+                )
+            else:
+                registry_path = getattr(arguments, "registry", None)
+                bundle = (
+                    builtin_registry(repository_root)
+                    if registry_path is None
+                    else load_registry(registry_path, repository_root)
+                )
+                if arguments.registry_command == "verify":
+                    registry_report = verify_registry(bundle, repository_root)
+                elif arguments.registry_command == "preflight":
+                    if arguments.plugins == "example":
+                        plugin_manifest = example_plugin_manifest()
+                        trust_policy = builtin_plugin_trust_policy()
+                    else:
+                        plugin_manifest = PluginSetManifest(
+                            schema_version=1, plugins=[]
+                        )
+                        trust_policy = PluginTrustPolicy(
+                            approved_selection_sha256=frozenset()
+                        )
+                    preflight_report = preflight_launch(
+                        bundle,
+                        repository_root=repository_root,
+                        model_id=arguments.model_id,
+                        model_version=arguments.model_version,
+                        parameter_set_id=arguments.parameter_set_id,
+                        parameter_set_version=arguments.parameter_set_version,
+                        plugin_manifest=plugin_manifest,
+                        trust_policy=trust_policy,
+                    )
+                    print(
+                        json.dumps(
+                            preflight_report.model_dump(mode="json"), sort_keys=True
+                        )
+                    )
+                    return 0
+                else:
+                    raise ValueError(
+                        "registry requires verify, export, import, or preflight"
+                    )
+            print(json.dumps(registry_report.model_dump(mode="json"), sort_keys=True))
             return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"biomesh: error: {error}", file=sys.stderr)

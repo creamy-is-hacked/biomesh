@@ -44,3 +44,45 @@ jobs:
               test "$("$package_env/bin/biomesh-gui" --version)" = "biomesh-gui 0.2.1"
             )
           done
+      - name: Build and install the Linux application bundle
+        run: |
+          python -m biomesh package linux --wheel dist/*.whl \
+            --output dist/linux-installer
+          bundle_root="$(mktemp -d)"
+          tar -xzf dist/linux-installer/*.tar.gz -C "$bundle_root"
+          installer="$(find "$bundle_root" -type f -name install.sh -print)"
+          bash -n "$installer"
+          "$installer" --prefix "$bundle_root/prefix" \
+            --python "$(command -v python)" --no-deps
+          (
+            cd "$bundle_root"
+            test "$("$bundle_root/prefix/bin/biomesh" --version)" = \
+              "biomesh 0.2.1"
+            "$bundle_root/prefix/bin/biomesh" validate all
+            QT_QPA_PLATFORM=offscreen \
+              "$bundle_root/prefix/bin/biomesh-gui" --smoke-test
+          )
+      - name: Reproduce a portable project from the installed Linux bundle
+        run: |
+          archive_root="$(mktemp -d)"
+          python -m biomesh project create validation/p4_wp06/project.json \
+            "$archive_root/source-project"
+          python -m biomesh campaign resume "$archive_root/source-project" \
+            portable-campaign
+          python -m biomesh project export "$archive_root/source-project" \
+            --output "$archive_root/project.biomesh"
+          installer="$(find dist/linux-installer -type f -name '*.tar.gz' -print)"
+          extract_root="$(mktemp -d)"
+          tar -xzf "$installer" -C "$extract_root"
+          install_script="$(find "$extract_root" -type f -name install.sh -print)"
+          "$install_script" --prefix "$extract_root/prefix" \
+            --python "$(command -v python)" --no-deps
+          (
+            cd "$archive_root"
+            "$extract_root/prefix/bin/biomesh" project verify-archive \
+              project.biomesh
+            "$extract_root/prefix/bin/biomesh" project import project.biomesh \
+              imported-project
+            "$extract_root/prefix/bin/biomesh" campaign status \
+              imported-project portable-campaign
+          )

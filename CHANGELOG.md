@@ -105,8 +105,81 @@ All notable repository changes are documented here.
   parameter hashes, calibration status, and software versions. Cancellation
   and failure leave no partial target; no scientific behavior or future-phase
   model was added.
+- P4-WP01 – Versioned local project, experiment, campaign, run, artifact, and
+  audit records with deterministic explicit/sequence seed policies and
+  SI/provenance-complete sweep points. Campaign state is lock-protected and
+  atomically replaced; interrupted publication is reconciled from a completion
+  receipt, completed artifacts are hash-verified and never rerun, and partial
+  failures remain explicit until an intentional retry. The synchronous runner
+  uses only the accepted P3 application service and adds no queue, report,
+  plugin, registry, archive, acceleration, calibration, or scientific behavior.
+- P4-WP02 – Presentation-neutral JSON and CSV comparison/report data over
+  hash-verified P4 project runs. Exact SI scalar observations retain raw
+  artifact SHA-256, size, row, column, run, seed, and replicate traceability;
+  condition distributions, Student-t uncertainty, pairwise mean differences,
+  and Hedges g remain descriptive. Incomplete runs and single-seed evidence are
+  explicit, report publication is atomic and deterministic, and no scientific
+  conclusion or calibration claim is generated.
+- P4-WP03 – Version 1 immutable plugin interfaces for species, kinetics,
+  fields, metrics, and exporters. Whole-set API, metadata-hash, exact
+  distribution/entry-point, and code-owned trust-policy checks complete before
+  any plugin import. The deterministic `plugins verify` path records plugin
+  provenance and limitations atomically, verifies core operation with zero
+  plugins, and exercises a packaged `CALIBRATION_REQUIRED` species/kinetics
+  example using only caller-supplied SI/provenance inputs. Existing engine,
+  campaign, raw-run, and report contracts remain unchanged.
+- P4-WP04 – Deterministic named/versioned model and parameter-set registry with
+  canonical record hashes, SI compatibility checks, measured,
+  literature-derived, fitted, assumed, and calibration-required provenance,
+  structured citations, uncertainty-preserving import/export, and exact
+  reviewed-plugin preflight. The five existing accepted parameter presets are
+  byte-verified and immutable; registry reports do not launch simulations,
+  alter raw runs/reports, or make calibration or biological claims.
+- P4-WP05 – A persistent local campaign queue with deterministic priority/FIFO
+  scheduling, atomic audited state, run-level progress, exact Linux CPU-affinity
+  and address-space limits, single-worker enforcement, targeted cancellation,
+  and stale-worker restart recovery. It schedules only the accepted P4-WP01
+  campaign service; completed artifacts remain immutable and hash-verified,
+  interrupted/cancelled runs remain explicit and retryable, and no remote,
+  scientific, plugin-trust, archive, packaging, or acceleration path is added.
+- P4-WP06 – Deterministic portable project export, checksum verification, and
+  atomic import with archive-contained hash-bound fixtures, exact completed-run
+  artifacts/receipts, explicit pending/failed state, and clean-install
+  reproduction. A separate reproducible Linux wheel-installer bundle verifies
+  its own checksums and rejects generated project, queue, report, raw-run,
+  archive, CSV, Parquet, and NumPy research data. Archive exchange grants no
+  plugin trust, registry identity, or queue migration and adds no scientific,
+  calibration, acceleration, P4-WP07, or audit behavior.
+- P4-WP07 – A versioned, isolated benchmark boundary with a deterministic
+  scalar-loop CPU reference and an explicitly enabled NumPy CPU feasibility
+  candidate over one synthetic dimensionless 2D stencil. Reports measure
+  pointwise divergence and optional raw local timings, publish atomically, and
+  state accuracy/performance limitations without a speedup, GPU, 3D,
+  production, or scientific claim. The accepted engine and all completed-run,
+  plugin, registry, queue, archive, package, and desktop contracts remain
+  unchanged.
 
 ### Audit findings
+
+- P4A – The independent rerun of exact pushed prerequisite
+  `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4` passed with recorded
+  limitations and accepted Phase 4. Python 3.14.4, all 244 tests, complete
+  P1-P3 regressions, all 11 P2 fixture/report paths, six-run external wheel
+  archive completion, 288 raw-retraced report observations, six exact
+  request/receipt identities, queue/plugin/registry/acceleration controls,
+  corruption/traversal rejection, a byte-identical 111-file completed project
+  reimport, and reproducible wheel/sdist/installer bytes passed. No Critical or
+  Major finding remains; biological/calibration, plugin sandboxing, archive
+  signing, portable queue, installer lifecycle, GPU/3D, and performance claims
+  remain outside scope.
+
+- P4A – The first independent audit identified `P4A-001` (pending portable
+  campaigns omitted the five fixture-relative biological parameter documents),
+  `P4A-002` (completed-run provenance did not explicitly identify the complete
+  named/versioned model/parameter registry selection or the empty plugin set),
+  and `P4A-003` (the audit authority named unsupported commands and a missing
+  platform reference). The independent rerun recorded above closes all three
+  findings.
 
 - P3A – Independent clean-clone audit of pushed implementation commit
   `ed062935552c6a5df639c56474c7854cac91bd69` passed with recorded
@@ -149,6 +222,25 @@ All notable repository changes are documented here.
   campaign conditions.
 
 ### Fixed
+
+- P4A remediation – New schema-version 2 project definitions bind the complete
+  built-in registry, all five named/versioned model and parameter-set records,
+  exact parameter-source hashes, and the canonical zero-plugin-set hash before
+  execution. Real run requests and version 2 completion receipts repeat that
+  identity. Historical schema-version 1 completed projects and receipts remain
+  byte-preserved and readable; unfinished legacy execution/backfilling fails
+  explicitly.
+- P4A remediation – New deterministic archive schema version 2 embeds all five
+  fixture-required biological parameter documents at contained relative paths,
+  inventories and cross-checks every byte, preserves completed artifacts and
+  receipts, and allows an imported pending multi-condition campaign to complete
+  from an installed-layout package. Plugin code/trust, registry documents/trust,
+  and queue state remain non-transferable.
+- P4A remediation – Added `experiments/platform_reference.yaml`, a strict
+  two-condition, three-fixed-seed manufactured software-validation project with
+  SI/provenance-complete sweep records and `CALIBRATION_REQUIRED` boundaries,
+  and aligned `docs/09_PHASE_FOUR_AUDIT.md` with the accepted project, campaign,
+  archive, report, plugin, registry, benchmark, and Hatchling command surface.
 
 - P3 pre-audit blocker remediation adds strict manufactured reference
   selection, atomic CLI/application byte-equivalence evidence, hash-verified
