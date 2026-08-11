@@ -9,9 +9,9 @@ into a Linux desktop research platform.
 
 The latest accepted phase is **P3 – Phase 3 – Desktop GUI**. Its independent
 2026-08-10 audit passed with recorded limitations and is represented by the
-`v0.3.1-audit` tag. P4-WP01 – Project and campaign model and P4-WP02 –
-Comparison and reports are complete on the Phase 4 branch. P4-WP03 – Plugin API
-is the next incomplete work package.
+`v0.3.1-audit` tag. P4-WP01 – Project and campaign model, P4-WP02 – Comparison
+and reports, and P4-WP03 – Plugin API are complete on the Phase 4 branch.
+P4-WP04 – Model and parameter registry is the next incomplete work package.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -60,7 +60,11 @@ The repository currently provides:
   commands over a manufactured `CALIBRATION_REQUIRED` reference selector; and
 - the P4 versioned local project/campaign model plus presentation-neutral
   comparison/report JSON and CSV with raw-run hash/row traceability, explicit
-  missing-run coverage, and single-seed warnings.
+  missing-run coverage, and single-seed warnings; and
+- the P4 versioned plugin boundary for species, kinetics, fields, metrics, and
+  exporters, with whole-set compatibility/trust preflight, deterministic
+  provenance manifests, zero-plugin operation, and a packaged uncalibrated
+  species/kinetics example.
 
 These are software capabilities and reproducibility contracts. They do not by
 themselves establish that the model is biologically calibrated or experimentally
@@ -173,6 +177,21 @@ visible; the report does not generate a scientific conclusion or calibration
 claim. See [the P4-WP01 project model](docs/P4_WP01_PROJECT_CAMPAIGN.md) and
 [the P4-WP02 report contract](docs/P4_WP02_COMPARISON_REPORTS.md).
 
+Verify the zero-plugin core contract and the exact reviewed packaged example
+with:
+
+```bash
+python -m biomesh plugins verify
+python -m biomesh plugins verify --output NEW_DIRECTORY
+```
+
+The optional output is atomically published as `plugin_manifest.json` with the
+plugin API/version, distribution and entry-point identity,
+selection/metadata SHA-256, review reference, calibration status, limitations,
+and deterministic self-check. A plugin manifest alone is not trusted:
+incompatible or unreviewed sets fail before any entry point is loaded. See
+[the P4-WP03 plugin contract](docs/P4_WP03_PLUGIN_API.md).
+
 The Simulation Controls dock selects only the 15 existing manufactured P2
 fixture conditions and fixed seeds 101, 202, or 303. Run and checkpoint-resume
 remain disabled while the Experiment Editor document is invalid or retains
@@ -230,9 +249,9 @@ boundaries.
 
 ## Roadmap
 
-P3 is accepted. P4-WP01 – Project and campaign model and P4-WP02 – Comparison
-and reports are complete on the Phase 4 branch; P4-WP03 – Plugin API is next.
-The remaining P4 items are roadmap work, and BioMesh is not called v1.
+P3 is accepted. P4-WP01 through P4-WP03 are complete on the Phase 4 branch;
+P4-WP04 – Model and parameter registry is next. The remaining P4 items are
+roadmap work, and BioMesh is not called v1.
 
 ## License
 

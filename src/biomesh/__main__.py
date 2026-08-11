@@ -12,6 +12,7 @@ from pathlib import Path
 from biomesh import __version__
 from biomesh.p2_campaign import report_campaign, run_fixture_command, validate_all
 from biomesh.p3_verification import compare_frontends, verify_checkpoint
+from biomesh.plugin_api import publish_plugin_verification, verify_plugins
 from biomesh.project_campaign import CampaignService, create_project
 from biomesh.project_reports import generate_campaign_report
 from biomesh.reference import (
@@ -150,6 +151,19 @@ def build_parser() -> argparse.ArgumentParser:
                 type=Path,
                 help="publish comparison/report data to this new directory",
             )
+
+    plugins_parser = commands.add_parser(
+        "plugins", help="verify the reviewed P4 plugin boundary"
+    )
+    plugins_commands = plugins_parser.add_subparsers(dest="plugins_command")
+    plugins_verify = plugins_commands.add_parser(
+        "verify", help="verify zero-plugin compatibility and the packaged example"
+    )
+    plugins_verify.add_argument(
+        "--output",
+        type=Path,
+        help="atomically publish plugin_manifest.json to this new directory",
+    )
     return parser
 
 
@@ -284,6 +298,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise AssertionError("unhandled campaign command")
             print(json.dumps(status.as_dict(), sort_keys=True))
             return 1 if status.failed and arguments.campaign_command != "status" else 0
+        if arguments.command == "plugins":
+            if arguments.plugins_command != "verify":
+                raise ValueError("plugins requires verify")
+            report = (
+                verify_plugins()
+                if arguments.output is None
+                else publish_plugin_verification(arguments.output)
+            )
+            print(json.dumps(report.model_dump(mode="json"), sort_keys=True))
+            return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"biomesh: error: {error}", file=sys.stderr)
         return 2

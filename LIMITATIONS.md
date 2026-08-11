@@ -1,5 +1,26 @@
 # Limitations
 
+## P4-WP03 – Plugin API
+
+- The accepted P1--P3 engine, P4 campaign runner, raw artifacts, and reports
+  remain the zero-plugin path. P4-WP03 defines and verifies extension
+  interfaces; it does not silently compose plugins into audited simulations or
+  reinterpret completed runs.
+- The packaged species/kinetics plugin is a software extension example. Its
+  species identity is non-taxonomic, all numeric kinetics inputs remain
+  caller-supplied and provenance-complete, and its status remains
+  `CALIBRATION_REQUIRED`. Passing its self-check is not biological validation,
+  calibration, or benchmark evidence.
+- Compatibility preflight validates the complete set before loading any entry
+  point, including exact API, metadata hash, distribution/version,
+  entry-point, and explicit review-policy identities. This prevents accidental
+  incompatible or unreviewed loading; it is not a security sandbox.
+- Approved Python plugin code executes with the BioMesh process's permissions.
+  P4-WP03 automatically trusts only the packaged example. Third-party review,
+  containment, revocation, signing, and permission isolation are not claimed.
+- No model/parameter registry, persistent queue, portable archive, Linux
+  application packaging, or acceleration behavior is added by P4-WP03.
+
 ## P3A – Phase 3 Audit
 
 - The independent 2026-08-10 clean-clone rerun accepted Phase 3 with recorded

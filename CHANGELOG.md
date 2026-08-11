@@ -120,6 +120,14 @@ All notable repository changes are documented here.
   and Hedges g remain descriptive. Incomplete runs and single-seed evidence are
   explicit, report publication is atomic and deterministic, and no scientific
   conclusion or calibration claim is generated.
+- P4-WP03 – Version 1 immutable plugin interfaces for species, kinetics,
+  fields, metrics, and exporters. Whole-set API, metadata-hash, exact
+  distribution/entry-point, and code-owned trust-policy checks complete before
+  any plugin import. The deterministic `plugins verify` path records plugin
+  provenance and limitations atomically, verifies core operation with zero
+  plugins, and exercises a packaged `CALIBRATION_REQUIRED` species/kinetics
+  example using only caller-supplied SI/provenance inputs. Existing engine,
+  campaign, raw-run, and report contracts remain unchanged.
 
 ### Audit findings
 

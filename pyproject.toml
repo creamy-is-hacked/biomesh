@@ -30,6 +30,9 @@ dev = [
 biomesh = "biomesh.__main__:main"
 biomesh-gui = "biomesh.gui.__main__:main"
 
+[project.entry-points."biomesh.plugins"]
+example-species-kinetics = "biomesh.example_species_kinetics:create_plugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/biomesh"]
 

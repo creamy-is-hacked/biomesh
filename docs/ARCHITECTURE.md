@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP02
+## Current architecture through P4-WP03
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -38,6 +38,13 @@ retains artifact/hash/row/column/run/seed traceability for every value, and
 publishes presentation-neutral JSON and CSV atomically. Statistical summaries
 and pairwise effect data do not feed the engine or encode conclusions in the
 GUI.
+P4-WP03 adds a separate plugin API boundary for versioned species, kinetics,
+field, metric, and exporter components. A complete declarative plugin set must
+match an explicit review policy, API version, distribution/version,
+entry-point identity, and metadata hash before any plugin code is imported.
+The packaged example consumes only immutable caller-owned SI/provenance values.
+The accepted engine, application, campaign, raw artifacts, and reports remain
+the zero-plugin path.
 
 Dependency direction is intentionally simple:
 
@@ -68,6 +75,8 @@ GUI export      -> public completed export + immutable snapshot history
 project/campaign -> public ApplicationService + accepted fixture identities
 project state    -> atomic JSON + process lock + append-only audit sequence
 project reports  -> verified project state + immutable raw Parquet artifacts
+plugin verifier  -> reviewed manifest + trust policy + exact entry points
+plugin component -> immutable versioned SI/provenance requests and results
 tests           -> public component interfaces
 ```
 

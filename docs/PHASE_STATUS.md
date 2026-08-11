@@ -456,7 +456,7 @@ Source: `docs/08_PHASE_FOUR_RESEARCH_PLATFORM.md`.
 | --- | --- | --- |
 | P4-WP01 | Project and campaign model | COMPLETE |
 | P4-WP02 | Comparison and reports | COMPLETE |
-| P4-WP03 | Plugin API | INCOMPLETE |
+| P4-WP03 | Plugin API | COMPLETE |
 | P4-WP04 | Model and parameter registry | INCOMPLETE |
 | P4-WP05 | Local run queue | INCOMPLETE |
 | P4-WP06 | Portable projects and packaging | INCOMPLETE |
@@ -506,9 +506,36 @@ P4-WP02 validation evidence:
   full gate passed module help, Ruff, strict mypy, `git diff --check`, and 208
   tests. No P4-WP03 or later behavior was added.
 
+P4-WP03 validation evidence:
+
+- Version 1 immutable component contracts cover species, kinetics, fields,
+  metrics, and exporters. Plugin metadata records exact ID/version/API,
+  component kinds, source, `CALIBRATION_REQUIRED` status, limitations, and a
+  canonical SHA-256. Kinetics execution requires SI-explicit state plus
+  complete biological-parameter provenance and rejects unresolved values.
+- Controlled loading validates the complete manifest and explicit code-owned
+  trust policy before importing any selected entry point. Exact API version,
+  metadata hash, distribution/version, and entry-point identity fail closed;
+  focused probes confirmed incompatible and unreviewed sets load no code.
+  Runtime metadata and every declared component interface must equal the
+  reviewed declaration.
+- The accepted engine and campaign runner remain the zero-plugin core path.
+  The packaged example exposes an uncalibrated non-taxonomic species and the
+  existing dual-substrate rate equation using only caller-owned SI/provenance
+  inputs; it adds no biological constant or accepted-engine behavior.
+- `plugins verify` passed both stdout and atomic-output application paths. Two
+  published manifests were byte-identical and retained plugin distribution,
+  entry-point, review, selection/metadata hashes, limitations, calibration,
+  and self-check provenance. A no-dependency wheel build/install exposed the
+  declared entry point and passed the verification path from an external
+  working directory.
+  Python 3.14.4 passed module help, `validate all`, Ruff, strict mypy over 45
+  source files, `git diff --check`, and 215 tests. No P4-WP04 or later behavior
+  was added.
+
 ## Next Work Package
 
-`P4-WP03 – Plugin API`.
+`P4-WP04 – Model and parameter registry`.
 
 ## Remaining Issues
 
@@ -516,7 +543,8 @@ P4-WP02 validation evidence:
   non-scientific software/replay fixture.
 - The canonical P1A tag `v0.1.1-audit` is present at the accepted P1A commit;
   P2A does not retroactively change that historical audit.
-- P3A accepted Phase 3. P4-WP01 and P4-WP02 add the local synchronous
-  project/campaign model and presentation-neutral comparison/report data. The
-  desktop has no report UI, persistent queue, plugin system, model registry,
-  portable archive, acceleration, or calibration behavior.
+- P3A accepted Phase 3. P4-WP01 through P4-WP03 add the local synchronous
+  project/campaign model, presentation-neutral comparison/report data, and a
+  separately verified plugin API. The accepted engine/campaign path still
+  uses zero plugins. The desktop has no report/plugin UI, persistent queue,
+  model registry, portable archive, acceleration, or calibration behavior.
