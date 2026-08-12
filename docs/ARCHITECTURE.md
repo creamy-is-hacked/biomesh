@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP07
+## Current architecture through P5-WP04
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -73,6 +73,15 @@ dimensionless 2D stencil. An explicit flag enables a NumPy CPU candidate and
 records pointwise divergence; optional raw timings carry limitations and no
 performance comparison. Neither backend can be selected by the simulation,
 campaign, queue, plugin, registry, archive, package, or GUI.
+P5-WP02 adds deterministic clean-source and installed-build provenance without
+changing runtime science. P5-WP03 wraps exact P4 archive bytes in separately
+requested authenticity and confidentiality policy. P5-WP04 replaces host
+plugin imports with proxies whose complete reviewed-set preflight precedes a
+fresh least-privilege Linux sandbox for every non-empty operation. Versioned,
+bounded JSON messages carry only immutable interface values; validated results
+and explicit execution receipts return to the host. Empty selection starts no
+process, so accepted project/campaign execution remains the P4A zero-plugin
+path.
 
 Dependency direction is intentionally simple:
 
@@ -106,6 +115,8 @@ project state    -> atomic JSON + process lock + append-only audit sequence
 project reports  -> verified project state + immutable raw Parquet artifacts
 plugin verifier  -> reviewed manifest + trust policy + exact entry points
 plugin component -> immutable versioned SI/provenance requests and results
+plugin proxy     -> versioned bounded messages + Linux sandbox runtime
+plugin worker    -> declared read-only runtime + immutable component values
 registry types    -> immutable model/parameter/provenance/hash records
 registry catalog  -> accepted parameter schemas + code-owned preset hashes
 registry service  -> registry catalog + controlled plugin loader

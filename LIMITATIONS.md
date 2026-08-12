@@ -79,6 +79,25 @@
   resource exhaustion. Python 3.14, `cryptography`, OpenSSL, the OS CSPRNG, and
   the supported local host remain in the trusted computing base.
 
+## P5-WP04 – Isolated plugin execution
+
+- Reviewed non-empty plugins now execute only through Linux Bubblewrap policy
+  1.0.0, util-linux `prlimit`, and libseccomp. Linux, those enforcement tools,
+  Python, the kernel, and explicitly mounted read-only runtime dependencies
+  remain trusted; root, kernel, runtime, or same-account host compromise is
+  outside the boundary.
+- The sandbox denies project/host files, caller environment secrets, host
+  network, mutable engine/completed state, and undeclared process capabilities.
+  It does not make reviewed code benign or prevent deceptive but schema-valid
+  output. Review, authorization, containment, calibration, and scientific
+  validity remain separate.
+- Wall, CPU, address-space, message/output, file-descriptor, and process limits
+  bound one operation but cannot guarantee availability under host-wide
+  exhaustion. A bounded plugin failure remains possible and explicit.
+- Empty plugin selection starts no process and retains the accepted zero-plugin
+  identity/path. No plugin is embedded in or trusted by project archives, no UI
+  was added, and P5A still determines whether Phase 5 is accepted.
+
 ## P4A – Phase 4 Audit
 
 - The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations

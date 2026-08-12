@@ -41,6 +41,14 @@ All notable repository changes are documented here.
   MT-AR-01 through MT-AR-14 tests preserve inner archive and completed-run
   bytes and keep authenticity, confidentiality, trust, authorization,
   provenance, sandboxing, and scientific validity distinct.
+- P5-WP04 – Moved every reviewed non-empty plugin operation behind Linux
+  Bubblewrap policy 1.0.0 with read-only declared runtime mounts, a cleared
+  environment, network/PID isolation, dropped capabilities, libseccomp syscall
+  denial, explicit wall/CPU/address-space/message limits, and no in-process
+  fallback. Versioned messages and secret-free receipts bind exact selection,
+  policy, request/result identities, outcomes, SI/provenance, and
+  `CALIBRATION_REQUIRED`; invalid or failed operations publish no result. The
+  canonical empty-plugin path starts no process and remains unchanged.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-12 after P5-WP03 implemented signed and optionally
-confidential archive envelopes over exact deterministic P4 payload bytes. The
+Snapshot verified: 2026-08-12 after P5-WP04 moved reviewed plugin operations
+behind the versioned least-privilege Linux sandbox. The
 latest accepted phase remains P4 at exact implementation prerequisite
 `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`; the accepted audit is represented
 by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
-3.14 full gate passes 270 tests.
+3.14 full gate passes 285 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P5 – Phase 5 – Security and Distribution Hardening (in progress) |
-| Current work package | P5-WP03 – Signed and optionally confidential archives (`COMPLETE`) |
+| Current work package | P5-WP04 – Isolated plugin execution (`COMPLETE`) |
 | Current branch | `phase-5-security-distribution` |
 | Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
-| Current test count | 270 passed (`pytest -q`, 2026-08-12) |
-| Next planned work package | P5-WP04 – Isolated plugin execution (blocked pending a fresh task) |
+| Current test count | 285 passed (`pytest -q`, 2026-08-12) |
+| Next planned work package | P5-WP05 – Installer lifecycle and supply-chain verification (blocked pending a fresh task) |
 
 ## Outstanding technical debt
 
@@ -155,9 +155,21 @@ by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
   plugin/registry trust, sandboxing, calibration, or scientific validity.
   Private keys remain externally owned and are neither serialized nor logged.
   Host/runtime compromise, post-decryption disclosure, key custody, replay-store
-  policy, and bounded resource exhaustion remain residual risks. Plugin
-  isolation, installer lifecycle, queue portability, validation, and 3D/
-  acceleration remain P5-WP04 through P8.
+  policy, and bounded resource exhaustion remain residual risks. Installer
+  lifecycle, queue portability, validation, and 3D/acceleration remain
+  P5-WP05 through P8; plugin isolation is addressed below.
+- P5-WP04 sandbox policy 1.0.0 moves every reviewed non-empty plugin operation
+  behind a fresh Bubblewrap/libseccomp Linux boundary. Whole-set review and
+  compatibility preflight precede code startup; read-only declared runtime
+  mounts, a cleared environment, network/PID isolation, dropped capabilities,
+  syscall denial, and explicit wall/CPU/address-space/message/process limits
+  contain plugin code. Versioned request/result messages bind exact identities,
+  validate units/provenance/shape/path/calibration boundaries, and produce
+  secret-free outcome receipts before result publication. Empty selection
+  starts no process and preserves the P4A core path. This does not establish
+  plugin scientific validity or close host/kernel and bounded-denial-of-service
+  residual risks. Installer lifecycle, queue portability, validation, and 3D/
+  acceleration remain P5-WP05 through P8.
 
 ## Pre-v1 roadmap boundary
 

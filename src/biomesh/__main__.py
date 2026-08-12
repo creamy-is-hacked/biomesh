@@ -246,11 +246,11 @@ def build_parser() -> argparse.ArgumentParser:
             )
 
     plugins_parser = commands.add_parser(
-        "plugins", help="verify the reviewed P4 plugin boundary"
+        "plugins", help="verify the reviewed isolated plugin boundary"
     )
     plugins_commands = plugins_parser.add_subparsers(dest="plugins_command")
     plugins_verify = plugins_commands.add_parser(
-        "verify", help="verify zero-plugin compatibility and the packaged example"
+        "verify", help="sandbox the packaged example and verify zero-plugin identity"
     )
     plugins_verify.add_argument(
         "--output",

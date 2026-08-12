@@ -44,6 +44,8 @@ Each phase has a blocking audit. Later phases may not weaken earlier validation.
 - `10_PRE_V1_ROADMAP.md`
 - `P5_WP01_THREAT_MODEL.md`
 - `P5_WP02_INSTALLED_BUILD_PROVENANCE.md`
+- `P5_WP03_ARCHIVE_SECURITY_POLICY.md`
+- `P5_WP04_ISOLATED_PLUGIN_EXECUTION.md`
 
 ## Token Discipline
 Load only `AGENTS.md`, `PHASE_STATUS.md`, one work-package section, and affected interfaces/tests. Request patches, store evidence in the repository, summarize logs, and escalate model strength only when a defined gate remains unresolved.

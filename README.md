@@ -11,9 +11,10 @@ The latest accepted phase is **P4 – Phase 4 – Research Platform**. Its
 independent 2026-08-11 audit rerun passed with recorded limitations and is
 represented by the `v0.4.1-audit` tag. The rerun closed the three findings from
 the first P4A attempt without expanding the scientific or platform scope.
-P5-WP01 and P5-WP02 are complete on the in-progress P5 implementation branch:
-the threat-derived requirements now have deterministic clean-source provenance
-for wheel, sdist, and Linux-installer publication sets. Phase 5 is not accepted.
+P5-WP01 through P5-WP04 are complete on the in-progress P5 implementation
+branch: threat-derived requirements now have deterministic installed-build
+provenance, authenticated and optionally confidential archives, and isolated
+reviewed-plugin execution. Phase 5 is not accepted.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -68,6 +69,9 @@ The repository currently provides:
   exporters, with whole-set compatibility/trust preflight, deterministic
   provenance manifests, zero-plugin operation, and a packaged uncalibrated
   species/kinetics example; and
+- the P5 least-privilege Linux plugin runtime with out-of-process Bubblewrap/
+  libseccomp isolation, versioned bounded immutable messages, explicit resource
+  limits and receipts, atomic failure, and a no-process zero-plugin path; and
 - the P4 named/versioned model and parameter registry with hash-bound immutable
   audited presets, explicit provenance categories, citations and uncertainty,
   deterministic import/export, SI compatibility checks, and exact reviewed
@@ -124,6 +128,10 @@ python -m pip install -e ".[dev]"
 The project uses the newest stable Python version fully supported by all
 required dependencies. Do not silently substitute another Python version if a
 dependency compatibility problem appears.
+
+Reviewed non-empty plugin execution additionally requires Linux Bubblewrap
+0.8.0 or newer, util-linux `prlimit`, and libseccomp. Missing or mismatched
+sandbox enforcement fails before plugin code runs.
 
 ## Quick start
 

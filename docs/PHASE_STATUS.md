@@ -706,7 +706,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | P5-WP01 | Threat model and security requirements | COMPLETE |
 | P5-WP02 | Installed-build provenance | COMPLETE |
 | P5-WP03 | Signed and optionally confidential archives | COMPLETE |
-| P5-WP04 | Isolated plugin execution | INCOMPLETE |
+| P5-WP04 | Isolated plugin execution | COMPLETE |
 | P5-WP05 | Installer lifecycle and supply-chain verification | INCOMPLETE |
 | P5A | Phase 5 Audit | INCOMPLETE |
 
@@ -780,6 +780,34 @@ P5-WP03 validation evidence:
   new science, calibration, UI, cloud, remote execution, or P5 acceptance.
   P5-WP04, P5-WP05, and P5A remain incomplete.
 
+P5-WP04 validation evidence:
+
+- Every reviewed non-empty operation now passes whole-set review/API/
+  distribution/entry-point/root preflight before code starts, then executes in
+  a fresh Bubblewrap 0.11.1 boundary under sandbox policy 1.0.0. Read-only
+  declared runtime mounts, a read-only root, private temporary/output paths,
+  cleared environment, isolated network/PID namespaces, dropped capabilities,
+  and libseccomp syscall denial prevent access to arbitrary host/project files,
+  secrets, network, mutable engine state, and undeclared child capabilities.
+  Enforcement failure has no fallback.
+- Schema 1 canonical messages are request/response bounded and bind the plugin,
+  selection, policy, operation, and request identity. The host revalidates
+  schema, units, complete biological provenance, `CALIBRATION_REQUIRED`, field
+  identity/shape, safe paths, and exporter bytes before atomic publication.
+  Secret-free receipts distinguish preflight denial, setup, policy, timeout,
+  crash, resource, malformed-output, communication, and success outcomes.
+- MT-PL-01 through MT-PL-13 cover denied file/network/environment/state/process
+  attempts, policy mismatch, SI/provenance kinetics, malformed/oversized/wrong
+  identity output, crash, wall timeout, CPU/memory exhaustion, interruption
+  boundaries, unchanged completed bytes, and empty-set no-process behavior.
+  The canonical empty-plugin SHA-256 remains
+  `1919457d222318dd73626ea9b92a26b0697d1b96230dff5ed254842ca9b310a0`.
+- P5-WP04 adds no plugin approval, archive trust, installer lifecycle, queue
+  portability, new science, calibration, UI, cloud, remote execution, or P5
+  acceptance. Python 3.14.4 passed 285 tests, Ruff, strict mypy over 64 source
+  files, module help, plugin CLI receipt inspection, and `git diff --check` on
+  2026-08-12. P5-WP05 and P5A remain incomplete.
+
 ## P6 – Phase 6 – Portable Operations
 
 Source: `docs/10_PRE_V1_ROADMAP.md`.
@@ -837,7 +865,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P5-WP04 – Isolated plugin execution` is the first
+`P5-WP05 – Installer lifecycle and supply-chain verification` is the first
 incomplete pre-v1 work package. It and every later package remain blocked until
 a fresh work-package task begins in strict phase order.
 
