@@ -89,12 +89,16 @@ class PortableArchiveResult:
     file_count: int
     completed_run_count: int
     project_id: str
+    authenticity_status: Literal["UNAUTHENTICATED"] = "UNAUTHENTICATED"
+    confidentiality_status: Literal["PLAINTEXT"] = "PLAINTEXT"
 
     def as_dict(self) -> dict[str, int | str]:
         return {
             "archive": self.archive,
             "archive_sha256": self.archive_sha256,
+            "authenticity_status": self.authenticity_status,
             "completed_run_count": self.completed_run_count,
+            "confidentiality_status": self.confidentiality_status,
             "file_count": self.file_count,
             "project_id": self.project_id,
         }
@@ -108,10 +112,14 @@ class PortableImportResult:
     project_id: str
     completed_run_count: int
     file_count: int
+    authenticity_status: Literal["UNAUTHENTICATED"] = "UNAUTHENTICATED"
+    confidentiality_status: Literal["PLAINTEXT"] = "PLAINTEXT"
 
     def as_dict(self) -> dict[str, int | str]:
         return {
+            "authenticity_status": self.authenticity_status,
             "completed_run_count": self.completed_run_count,
+            "confidentiality_status": self.confidentiality_status,
             "file_count": self.file_count,
             "project_directory": self.project_directory,
             "project_id": self.project_id,

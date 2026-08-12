@@ -38,6 +38,7 @@ _FORBIDDEN_DATA_NAMES = frozenset(
     }
 )
 _FORBIDDEN_DATA_SUFFIXES = frozenset({".biomesh", ".csv", ".npy", ".npz", ".parquet"})
+_FORBIDDEN_SECRET_SUFFIXES = frozenset({".key", ".p8", ".p12", ".pem", ".pk8"})
 
 
 class LinuxPackagingError(ValueError):
@@ -235,6 +236,10 @@ def _validate_wheel_member(info: zipfile.ZipInfo) -> None:
     ):
         raise LinuxPackagingError(
             f"installer wheel contains generated research data: {info.filename}"
+        )
+    if path.suffix.lower() in _FORBIDDEN_SECRET_SUFFIXES:
+        raise LinuxPackagingError(
+            "installer wheel contains a prohibited secret-bearing path"
         )
 
 

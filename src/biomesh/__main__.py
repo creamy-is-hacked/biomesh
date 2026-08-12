@@ -6,10 +6,23 @@ import argparse
 import json
 import sys
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 
 from biomesh import __version__
+from biomesh.archive_security import (
+    create_secure_archive,
+    import_secure_archive,
+    verify_secure_archive,
+)
+from biomesh.archive_security_types import (
+    ConfidentialityRequest,
+    RecipientDecryptionKey,
+    load_archive_trust_policy,
+    read_exact_private_key,
+    read_exact_public_key,
+)
 from biomesh.distribution_build import (
     build_publication,
     runtime_build_identity,
@@ -62,7 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="biomesh",
         description=(
             "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
-            "P3 verification, P4 project tools, and P5 build provenance."
+            "P3 verification, P4 project tools, and P5 provenance/archive security."
         ),
     )
     parser.add_argument(
@@ -164,11 +177,50 @@ def build_parser() -> argparse.ArgumentParser:
         "verify-archive", help="verify every portable archive manifest and checksum"
     )
     project_verify.add_argument("archive", type=Path)
+    project_verify.add_argument(
+        "--allow-unauthenticated",
+        action="store_true",
+        help="explicitly accept legacy unsigned input as UNAUTHENTICATED",
+    )
     project_import = project_commands.add_parser(
         "import", help="atomically import a verified portable project archive"
     )
     project_import.add_argument("archive", type=Path)
     project_import.add_argument("project_directory", type=Path)
+    project_import.add_argument(
+        "--allow-unauthenticated",
+        action="store_true",
+        help="explicitly import legacy unsigned input as UNAUTHENTICATED",
+    )
+    project_secure = project_commands.add_parser(
+        "secure-archive",
+        help="sign an exact P4 archive and optionally encrypt it for one recipient",
+    )
+    project_secure.add_argument("archive", type=Path)
+    project_secure.add_argument("--output", required=True, type=Path)
+    project_secure.add_argument("--signer-id", required=True)
+    project_secure.add_argument("--signing-private-key", required=True, type=Path)
+    project_secure.add_argument("--recipient-id")
+    project_secure.add_argument("--recipient-public-key", type=Path)
+    project_verify_secure = project_commands.add_parser(
+        "verify-secure-archive",
+        help="verify host trust and optional confidentiality before P4 validation",
+    )
+    project_verify_secure.add_argument("archive", type=Path)
+    project_verify_secure.add_argument("--trust-policy", required=True, type=Path)
+    project_verify_secure.add_argument("--recipient-id")
+    project_verify_secure.add_argument("--recipient-private-key", type=Path)
+    project_verify_secure.add_argument("--require-confidentiality", action="store_true")
+    project_import_secure = project_commands.add_parser(
+        "import-secure-archive",
+        help="authenticate and atomically import a secure P4 archive",
+    )
+    project_import_secure.add_argument("archive", type=Path)
+    project_import_secure.add_argument("project_directory", type=Path)
+    project_import_secure.add_argument("--trust-policy", required=True, type=Path)
+    project_import_secure.add_argument("--recipient-id")
+    project_import_secure.add_argument("--recipient-private-key", type=Path)
+    project_import_secure.add_argument("--require-confidentiality", action="store_true")
 
     campaign_parser = commands.add_parser(
         "campaign", help="inspect, resume, retry, or report a P4 project campaign"
@@ -442,7 +494,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 created = create_project(
                     arguments.definition_file, arguments.project_directory
                 )
-                project_result: dict[str, int | str] = {
+                project_result: Mapping[str, object] = {
                     "project_directory": str(created)
                 }
             elif arguments.project_command == "export":
@@ -450,14 +502,53 @@ def main(argv: Sequence[str] | None = None) -> int:
                     arguments.project_directory, arguments.output
                 ).as_dict()
             elif arguments.project_command == "verify-archive":
-                project_result = verify_project_archive(arguments.archive).as_dict()
+                project_result = verify_project_archive(
+                    arguments.archive,
+                    allow_unauthenticated=arguments.allow_unauthenticated,
+                ).as_dict()
             elif arguments.project_command == "import":
                 project_result = import_project_archive(
-                    arguments.archive, arguments.project_directory
+                    arguments.archive,
+                    arguments.project_directory,
+                    allow_unauthenticated=arguments.allow_unauthenticated,
+                ).as_dict()
+            elif arguments.project_command == "secure-archive":
+                confidentiality = _confidentiality_request(arguments)
+                project_result = create_secure_archive(
+                    arguments.archive,
+                    arguments.output,
+                    signer_id=arguments.signer_id,
+                    signing_private_key=read_exact_private_key(
+                        arguments.signing_private_key,
+                        label="Ed25519 signing private key",
+                    ),
+                    confidentiality=confidentiality,
+                ).as_dict()
+            elif arguments.project_command == "verify-secure-archive":
+                project_result = verify_secure_archive(
+                    arguments.archive,
+                    load_archive_trust_policy(
+                        arguments.trust_policy,
+                        verification_time_utc=datetime.now(UTC),
+                    ),
+                    decryption_key=_recipient_decryption_key(arguments),
+                    require_confidentiality=arguments.require_confidentiality,
+                ).as_dict()
+            elif arguments.project_command == "import-secure-archive":
+                project_result = import_secure_archive(
+                    arguments.archive,
+                    arguments.project_directory,
+                    load_archive_trust_policy(
+                        arguments.trust_policy,
+                        verification_time_utc=datetime.now(UTC),
+                    ),
+                    decryption_key=_recipient_decryption_key(arguments),
+                    require_confidentiality=arguments.require_confidentiality,
                 ).as_dict()
             else:
                 raise ValueError(
-                    "project requires create, export, verify-archive, or import"
+                    "project requires create, export, legacy verify/import, or "
+                    "secure archive processing"
                 )
             print(json.dumps(project_result, sort_keys=True))
             return 0
@@ -641,6 +732,44 @@ def _resolve_runtime_path(path: Path, repository_root: Path) -> Path:
         return path
     packaged_candidate = repository_root / path
     return packaged_candidate if packaged_candidate.exists() else path
+
+
+def _confidentiality_request(
+    arguments: argparse.Namespace,
+) -> ConfidentialityRequest | None:
+    recipient_id = arguments.recipient_id
+    public_key_path = arguments.recipient_public_key
+    if recipient_id is None and public_key_path is None:
+        return None
+    if recipient_id is None or public_key_path is None:
+        raise ValueError(
+            "confidentiality requires both --recipient-id and --recipient-public-key"
+        )
+    return ConfidentialityRequest(
+        recipient_id=recipient_id,
+        recipient_public_key=read_exact_public_key(
+            public_key_path, label="X25519 recipient public key"
+        ),
+    )
+
+
+def _recipient_decryption_key(
+    arguments: argparse.Namespace,
+) -> RecipientDecryptionKey | None:
+    recipient_id = arguments.recipient_id
+    private_key_path = arguments.recipient_private_key
+    if recipient_id is None and private_key_path is None:
+        return None
+    if recipient_id is None or private_key_path is None:
+        raise ValueError(
+            "decryption requires both --recipient-id and --recipient-private-key"
+        )
+    return RecipientDecryptionKey(
+        recipient_id=recipient_id,
+        private_key=read_exact_private_key(
+            private_key_path, label="X25519 recipient private key"
+        ),
+    )
 
 
 def _run_validation(

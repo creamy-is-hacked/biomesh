@@ -51,6 +51,34 @@
   installer supply-chain policy. Those remain P5-WP03 through P5-WP05 and must
   pass P5A before Phase 5 is accepted.
 
+## P5-WP03 – Signed and optionally confidential archives
+
+- Policy 1.0.0 selects only `BMAS-SIG-1-ED25519` and the optional
+  `BMAS-ENC-1-HPKE-X25519-HKDF-SHA256-AES256GCM` suite. Schema or algorithm
+  transitions require explicit new policy/code and host opt-in; there is no
+  negotiation, fallback, guessing, downgrade, or transparent replacement.
+- A verified signature authenticates exact archive/security bytes to one
+  signer/key binding only after explicit out-of-band host trust. It does not
+  authorize execution, grant plugin or registry trust, establish sandboxing,
+  validate science, or promote `CALIBRATION_REQUIRED`. P5A still independently
+  determines whether the Phase 5 controls are accepted.
+- Confidentiality is separately requested and ends after authorized
+  decryption. It protects only the declared archive envelope and does not
+  protect plaintext from the authorized recipient, a compromised host, root,
+  memory inspection, or later copying. Private-key custody remains outside
+  BioMesh.
+- Replay decisions are host-owned. BioMesh supplies an authenticated stable
+  replay binding, a prohibited-binding set, and a pre-import policy hook; it
+  does not invent a global replay store or retention policy. Replay-store
+  unavailability and host-policy compromise remain residual risks.
+- Legacy raw P4 archives remain readable only with explicit
+  `--allow-unauthenticated` policy and receive durable `UNAUTHENTICATED` and
+  `PLAINTEXT` status. Their historical origin cannot be proven or backfilled.
+- Processing retains the accepted P4 100,000-member and 64 GiB expanded-size
+  ceilings. These bounds do not guarantee availability under host-wide
+  resource exhaustion. Python 3.14, `cryptography`, OpenSSL, the OS CSPRNG, and
+  the supported local host remain in the trusted computing base.
+
 ## P4A – Phase 4 Audit
 
 - The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations

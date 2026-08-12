@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -39,6 +40,7 @@ from biomesh.project_campaign import (
 from biomesh.runtime_resources import runtime_root
 
 ARCHIVE_MANIFEST = "archive.json"
+ARCHIVE_SECURITY_STATUS = ".biomesh-archive-security.json"
 MAX_ARCHIVE_FILES = 100_000
 MAX_ARCHIVE_BYTES = 64 * 1024**3
 _ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
@@ -81,14 +83,49 @@ def export_project_archive(
     return _result(output, manifest)
 
 
-def verify_project_archive(path: Path) -> PortableArchiveResult:
-    """Verify structure, strict manifests, file sizes, and every SHA-256."""
+def verify_project_archive(
+    path: Path, *, allow_unauthenticated: bool = False
+) -> PortableArchiveResult:
+    """Verify a raw legacy archive only under explicit unauthenticated policy."""
+    if not allow_unauthenticated:
+        raise PortableArchiveError(
+            "unsigned archive verification requires explicit "
+            "allow_unauthenticated policy"
+        )
     manifest, _payload = _verify_archive_payload(path)
     return _result(path, manifest)
 
 
-def import_project_archive(path: Path, project_directory: Path) -> PortableImportResult:
-    """Verify and atomically import a portable project without granting trust."""
+def import_project_archive(
+    path: Path,
+    project_directory: Path,
+    *,
+    allow_unauthenticated: bool = False,
+) -> PortableImportResult:
+    """Import raw legacy bytes only under durable unauthenticated policy."""
+    if not allow_unauthenticated:
+        raise PortableArchiveError(
+            "unsigned archive import requires explicit allow_unauthenticated policy"
+        )
+    if not path.is_file() or path.is_symlink():
+        raise PortableArchiveError(f"portable archive is unavailable: {path}")
+    archive_sha256 = _sha256(path.read_bytes())
+    status = _archive_security_status_bytes(
+        authenticity_status="UNAUTHENTICATED",
+        confidentiality_status="PLAINTEXT",
+        envelope_sha256=archive_sha256,
+        payload_sha256=archive_sha256,
+        signer_id=None,
+        signing_key_id=None,
+        replay_binding=None,
+    )
+    return _import_project_archive_with_status(path, project_directory, status)
+
+
+def _import_project_archive_with_status(
+    path: Path, project_directory: Path, security_status: bytes
+) -> PortableImportResult:
+    """Verify and atomically import with an already-decided security status."""
     _require_new_output(project_directory, label="project directory")
     manifest, payload = _verify_archive_payload(path)
     temporary = Path(
@@ -115,6 +152,7 @@ def import_project_archive(path: Path, project_directory: Path) -> PortableImpor
             raise PortableArchiveError("imported project manifest identity mismatch")
         if _sha256((temporary / PROJECT_STATE).read_bytes()) != manifest.state_sha256:
             raise PortableArchiveError("imported project state identity mismatch")
+        _write_bytes(temporary / ARCHIVE_SECURITY_STATUS, security_status)
         os.replace(temporary, project_directory)
     except Exception:
         shutil.rmtree(temporary, ignore_errors=True)
@@ -271,7 +309,19 @@ def _verify_archive_payload(
     if not path.is_file() or path.is_symlink():
         raise PortableArchiveError(f"portable archive is unavailable: {path}")
     try:
-        with zipfile.ZipFile(path, mode="r") as archive:
+        return _verify_archive_payload_bytes(path.read_bytes())
+    except OSError as error:
+        raise PortableArchiveError(
+            f"invalid portable archive {path}: {error}"
+        ) from error
+
+
+def _verify_archive_payload_bytes(
+    contents: bytes,
+) -> tuple[PortableProjectManifest, dict[str, bytes]]:
+    """Verify an in-memory exact P4 archive payload without publishing it."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(contents), mode="r") as archive:
             infos = archive.infolist()
             if len(infos) > MAX_ARCHIVE_FILES + 1:
                 raise PortableArchiveError("portable archive contains too many files")
@@ -315,7 +365,7 @@ def _verify_archive_payload(
                 payload[name] = contents
     except (OSError, zipfile.BadZipFile, RuntimeError) as error:
         raise PortableArchiveError(
-            f"invalid portable archive {path}: {error}"
+            f"invalid portable archive payload: {error}"
         ) from error
     _validate_embedded_project(manifest, payload)
     return manifest, payload
@@ -622,3 +672,35 @@ def _write_bytes(path: Path, contents: bytes) -> None:
         stream.write(contents)
         stream.flush()
         os.fsync(stream.fileno())
+
+
+def _archive_security_status_bytes(
+    *,
+    authenticity_status: str,
+    confidentiality_status: str,
+    envelope_sha256: str,
+    payload_sha256: str,
+    signer_id: str | None,
+    signing_key_id: str | None,
+    replay_binding: str | None,
+) -> bytes:
+    """Canonical durable status that carries no archive-provided trust."""
+    return (
+        json.dumps(
+            {
+                "archive_security_format": "biomesh-archive-security-status",
+                "authenticity_status": authenticity_status,
+                "confidentiality_status": confidentiality_status,
+                "envelope_sha256": envelope_sha256,
+                "payload_sha256": payload_sha256,
+                "replay_binding": replay_binding,
+                "schema_version": 1,
+                "signer_id": signer_id,
+                "signing_key_id": signing_key_id,
+            },
+            ensure_ascii=True,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")

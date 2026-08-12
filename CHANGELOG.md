@@ -27,6 +27,20 @@ All notable repository changes are documented here.
   missing, changed, tampered, malformed, duplicate, repeated-build, and
   clean-install behavior without adding authenticity, signing, lifecycle, or
   scientific claims.
+- P5-WP03 – Resolved AS-05 with versioned algorithm policy 1.0.0 and added an
+  algorithm-agile secure envelope around exact deterministic P4 archive bytes.
+  The production profile uses Ed25519 signing and separately requested RFC 9180
+  X25519/HKDF-SHA-256/AES-256-GCM HPKE confidentiality, binds signer/key,
+  recipient/key, suite, encoding, payload, HPKE context, and replay metadata,
+  and verifies host-owned trust before P4 validation/import. Unknown, mismatched,
+  revoked, expired, tampered, replayed, wrong-recipient, malformed, duplicated,
+  unsupported, and property-confused inputs fail without partial publication.
+  Legacy raw P4 archives now require explicit caller opt-in and retain durable
+  `UNAUTHENTICATED`/`PLAINTEXT` status. Private key markers and secret-bearing
+  archive/installer paths are rejected; keys remain external. Focused
+  MT-AR-01 through MT-AR-14 tests preserve inner archive and completed-run
+  bytes and keep authenticity, confidentiality, trust, authorization,
+  provenance, sandboxing, and scientific validity distinct.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

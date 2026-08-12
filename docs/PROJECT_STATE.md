@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after P5-WP02 implemented deterministic
-installed-build provenance over the P4A-accepted platform. The
+Snapshot verified: 2026-08-12 after P5-WP03 implemented signed and optionally
+confidential archive envelopes over exact deterministic P4 payload bytes. The
 latest accepted phase remains P4 at exact implementation prerequisite
 `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`; the accepted audit is represented
 by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
-3.14 full gate passes 256 tests.
+3.14 full gate passes 270 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P5 – Phase 5 – Security and Distribution Hardening (in progress) |
-| Current work package | P5-WP02 – Installed-build provenance (`COMPLETE`) |
+| Current work package | P5-WP03 – Signed and optionally confidential archives (`COMPLETE`) |
 | Current branch | `phase-5-security-distribution` |
 | Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
-| Current test count | 256 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | P5-WP03 – Signed and optionally confidential archives (blocked pending a fresh task) |
+| Current test count | 270 passed (`pytest -q`, 2026-08-12) |
+| Next planned work package | P5-WP04 – Isolated plugin execution (blocked pending a fresh task) |
 
 ## Outstanding technical debt
 
@@ -140,8 +140,24 @@ by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
   equal, and installed run metadata uses the embedded exact commit. This
   provides integrity/provenance only: archive authenticity/confidentiality,
   plugin isolation, installer lifecycle, and P5 acceptance remain open through
-  P5-WP03-P5A. No trust, signing algorithm, key, calibration status, scientific
+  P5-WP04-P5A. No trust, signing algorithm, key, calibration status, scientific
   behavior, queue portability, or 3D/acceleration status changes.
+- P5-WP03 policy 1.0.0 and envelope schema 1 authenticate exact P4 payload
+  bytes with Ed25519 under explicit host-owned signer/key, validity, revocation,
+  and replay policy. Optional RFC 9180 X25519/HKDF-SHA-256/AES-256-GCM HPKE
+  confidentiality separately binds recipient/key and all visible security
+  metadata. Legacy raw
+  archives require explicit caller opt-in and persist `UNAUTHENTICATED` status.
+  The inner archive, checksum inventory, execution identity, completed
+  artifacts/receipts, SI/provenance and `CALIBRATION_REQUIRED` boundaries,
+  zero-plugin identity, queue exclusion, and atomic P4 validation remain
+  unchanged. A signature or successful decryption grants no execution,
+  plugin/registry trust, sandboxing, calibration, or scientific validity.
+  Private keys remain externally owned and are neither serialized nor logged.
+  Host/runtime compromise, post-decryption disclosure, key custody, replay-store
+  policy, and bounded resource exhaustion remain residual risks. Plugin
+  isolation, installer lifecycle, queue portability, validation, and 3D/
+  acceleration remain P5-WP04 through P8.
 
 ## Pre-v1 roadmap boundary
 

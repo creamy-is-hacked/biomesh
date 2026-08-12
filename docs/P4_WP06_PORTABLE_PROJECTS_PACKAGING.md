@@ -39,9 +39,10 @@ Use new targets for all operations:
 ```bash
 python -m biomesh project export PROJECT_DIRECTORY \
   --output NEW_PROJECT_ARCHIVE.biomesh
-python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh
+python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh \
+  --allow-unauthenticated
 python -m biomesh project import PROJECT_ARCHIVE.biomesh \
-  NEW_PROJECT_DIRECTORY
+  NEW_PROJECT_DIRECTORY --allow-unauthenticated
 ```
 
 Verification rejects duplicate, encrypted, compressed, non-regular,
@@ -75,8 +76,9 @@ python -m biomesh project create experiments/platform_reference.yaml SOURCE_PROJ
 python -m biomesh project export SOURCE_PROJECT --output project.biomesh
 
 # Run these commands outside the clone with an installed BioMesh package.
-biomesh project verify-archive /path/to/project.biomesh
-biomesh project import /path/to/project.biomesh IMPORTED_PROJECT
+biomesh project verify-archive /path/to/project.biomesh --allow-unauthenticated
+biomesh project import /path/to/project.biomesh IMPORTED_PROJECT \
+  --allow-unauthenticated
 biomesh campaign resume IMPORTED_PROJECT platform-reference
 biomesh campaign status IMPORTED_PROJECT platform-reference
 ```
@@ -128,6 +130,13 @@ path with the provenance-bound whole-set command above. The accepted P4-WP06
 archive and installer behavior is unchanged; publishable P5 artifacts now
 require the additional exact clean-source and cross-artifact verification in
 `docs/P5_WP02_INSTALLED_BUILD_PROVENANCE.md`.
+
+P5-WP03 supersedes the raw archive trust entry point: the raw P4 format is
+legacy unsigned input and therefore requires the explicit options shown above,
+with durable `UNAUTHENTICATED` status. Prefer the signed and optionally
+confidential commands and host-owned trust policy documented in
+`docs/P5_WP03_ARCHIVE_SECURITY_POLICY.md`; the inner P4 bytes and all validation
+in this document remain unchanged.
 
 The bundle builder fails if the wheel contains generated project, queue,
 report, raw-run, archive, CSV, Parquet, or NumPy-result data. Packaged

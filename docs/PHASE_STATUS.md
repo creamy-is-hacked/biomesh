@@ -705,7 +705,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | --- | --- | --- |
 | P5-WP01 | Threat model and security requirements | COMPLETE |
 | P5-WP02 | Installed-build provenance | COMPLETE |
-| P5-WP03 | Signed and optionally confidential archives | INCOMPLETE |
+| P5-WP03 | Signed and optionally confidential archives | COMPLETE |
 | P5-WP04 | Isolated plugin execution | INCOMPLETE |
 | P5-WP05 | Installer lifecycle and supply-chain verification | INCOMPLETE |
 | P5A | Phase 5 Audit | INCOMPLETE |
@@ -748,6 +748,37 @@ P5-WP02 validation evidence:
 - This is integrity/provenance evidence, not authenticity, signing,
   confidentiality, trust, calibration, or installer lifecycle assurance.
   P5-WP03 through P5-WP05 and P5A remain incomplete.
+
+P5-WP03 validation evidence:
+
+- `docs/P5_WP03_ARCHIVE_SECURITY_POLICY.md` version 1.0.0 resolves AS-05 from
+  RFC 8032, RFC 9180, RFC 7748, RFC 5869, NIST SP 800-38D, FIPS 180-4, RFC
+  4648, and RFC 8410. It registers exact Ed25519 and RFC 9180 base-mode
+  X25519/HKDF-SHA-256/AES-256-GCM HPKE suites, encodings, domain-separated
+  constructions, recipient/key and replay bindings, one-message HPKE nonce/
+  sequence policy, transition rules, and prohibited fallback, guessing,
+  negotiation, and downgrade behavior.
+- Secure verification binds every exact unsigned payload byte plus all signer,
+  key, suite, encoding, confidentiality, recipient, HPKE context, and replay
+  metadata. Explicit host-owned trust handles unknown, key-mismatch, revocation,
+  validity windows, and replay policy before P4 parsing/import;
+  archive contents grant no trust, authorization, calibration, or sandboxing.
+- Optional authenticated confidentiality is separate from signing and fails on
+  wrong recipients/keys, metadata or ciphertext change, truncation, extension,
+  reordering, malformed fields, unsupported suites, or missing requested
+  properties before plaintext/project publication. Legacy raw archives require
+  explicit caller policy and persist `UNAUTHENTICATED`/`PLAINTEXT` status.
+- MT-AR-01 through MT-AR-14 focused tests assert actionable errors and absence
+  of targets/partial projects. The exact prerequisite's pending eight-file P4
+  payload reproduced unchanged at SHA-256
+  `91473214ce3f523f72d55e9750e29940a414aac2560f4294cb0d12a1e7eafa4f`;
+  signed import retained completed artifact/receipt bytes. Python 3.14.4 with
+  `cryptography` 50.0.0 passed 270 tests, Ruff, strict mypy over 61 source
+  files, `git diff --check`, module help, and the secret-leak review on
+  2026-08-12.
+- P5-WP03 implements no plugin sandbox, installer lifecycle, queue portability,
+  new science, calibration, UI, cloud, remote execution, or P5 acceptance.
+  P5-WP04, P5-WP05, and P5A remain incomplete.
 
 ## P6 – Phase 6 – Portable Operations
 
@@ -806,7 +837,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P5-WP03 – Signed and optionally confidential archives` is the first
+`P5-WP04 – Isolated plugin execution` is the first
 incomplete pre-v1 work package. It and every later package remain blocked until
 a fresh work-package task begins in strict phase order.
 

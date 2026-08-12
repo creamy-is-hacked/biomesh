@@ -70,10 +70,10 @@ python -m biomesh campaign status \
 python -m biomesh project export outputs/p4a-platform-reference-source \
   --output outputs/p4a-platform-reference-pending.biomesh
 python -m biomesh project verify-archive \
-  outputs/p4a-platform-reference-pending.biomesh
+  outputs/p4a-platform-reference-pending.biomesh --allow-unauthenticated
 python -m biomesh project import \
   outputs/p4a-platform-reference-pending.biomesh \
-  outputs/p4a-platform-reference-imported
+  outputs/p4a-platform-reference-imported --allow-unauthenticated
 python -m biomesh campaign resume \
   outputs/p4a-platform-reference-imported platform-reference
 python -m biomesh campaign status \

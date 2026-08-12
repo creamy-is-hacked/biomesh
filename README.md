@@ -259,9 +259,10 @@ Exchange a project without depending on its original fixture location:
 ```bash
 python -m biomesh project export PROJECT_DIRECTORY \
   --output NEW_PROJECT_ARCHIVE.biomesh
-python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh
+python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh \
+  --allow-unauthenticated
 python -m biomesh project import PROJECT_ARCHIVE.biomesh \
-  NEW_PROJECT_DIRECTORY
+  NEW_PROJECT_DIRECTORY --allow-unauthenticated
 ```
 
 The archive carries strict self-description, embedded hash-verified fixture
@@ -274,6 +275,32 @@ New runs record the exact built-in registry/model/parameter selections and the
 canonical empty plugin-set identity before execution and in their completion
 receipts. Legacy completed runs remain readable and are never backfilled.
 See [the P4-WP06 portability and packaging contract](docs/P4_WP06_PORTABLE_PROJECTS_PACKAGING.md).
+
+P5-WP03 adds authenticity and separately requested confidentiality around the
+unchanged archive bytes. Keys and host trust policy are external files; never
+place private keys in a project, archive, repository, fixture, log, or bundle.
+
+```bash
+python -m biomesh project secure-archive PROJECT_ARCHIVE.biomesh \
+  --output PROJECT_ARCHIVE.secure.biomesh \
+  --signer-id SIGNER_ID --signing-private-key ED25519_RAW_PRIVATE_KEY
+
+# Add both options only when confidentiality is explicitly requested:
+# --recipient-id RECIPIENT_ID --recipient-public-key X25519_RAW_PUBLIC_KEY
+
+python -m biomesh project verify-secure-archive \
+  PROJECT_ARCHIVE.secure.biomesh --trust-policy HOST_TRUST_POLICY.json
+python -m biomesh project import-secure-archive \
+  PROJECT_ARCHIVE.secure.biomesh NEW_PROJECT_DIRECTORY \
+  --trust-policy HOST_TRUST_POLICY.json
+```
+
+Confidential verification/import additionally requires `--recipient-id` and
+`--recipient-private-key`; `--require-confidentiality` rejects signed plaintext
+input. Trust, revocation, validity, and prohibited replay bindings come only
+from the strict host policy. Signing and decryption do not grant plugin or
+registry trust, execution authorization, calibration, sandboxing, or
+scientific validity. See [the P5-WP03 algorithm and envelope policy](docs/P5_WP03_ARCHIVE_SECURITY_POLICY.md).
 
 Build the documented Linux application installer bundle after creating the
 wheel and sdist:

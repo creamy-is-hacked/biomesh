@@ -23,7 +23,12 @@ from biomesh.build_identity import (
 from biomesh.linux_packaging import LinuxPackagingError, build_linux_installer
 
 
-def _wheel(tmp_path: Path, *, generated_data: bool = False) -> Path:
+def _wheel(
+    tmp_path: Path,
+    *,
+    generated_data: bool = False,
+    private_key_path: bool = False,
+) -> Path:
     provenance, _ = _provenance_inputs()
     path = tmp_path / f"biomesh-{__version__}-py3-none-any.whl"
     with zipfile.ZipFile(path, mode="w", compression=zipfile.ZIP_DEFLATED) as wheel:
@@ -35,6 +40,8 @@ def _wheel(tmp_path: Path, *, generated_data: bool = False) -> Path:
         )
         if generated_data:
             wheel.writestr("biomesh/outputs/run_metadata.json", b"{}")
+        if private_key_path:
+            wheel.writestr("biomesh/private.key", b"prohibited test placeholder")
     return path
 
 
@@ -124,6 +131,18 @@ def test_linux_bundle_rejects_generated_research_data(tmp_path: Path) -> None:
     wheel = _wheel(tmp_path, generated_data=True)
     provenance, binding = _provenance_inputs(wheel)
     with pytest.raises(LinuxPackagingError, match="generated research data"):
+        build_linux_installer(
+            wheel,
+            tmp_path / "package",
+            build_provenance=provenance,
+            artifact_binding=binding,
+        )
+
+
+def test_linux_bundle_rejects_secret_bearing_paths(tmp_path: Path) -> None:
+    wheel = _wheel(tmp_path, private_key_path=True)
+    provenance, binding = _provenance_inputs(wheel)
+    with pytest.raises(LinuxPackagingError, match="secret-bearing path"):
         build_linux_installer(
             wheel,
             tmp_path / "package",
