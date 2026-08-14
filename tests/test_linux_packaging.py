@@ -20,7 +20,11 @@ from biomesh.build_identity import (
     canonical_json_bytes,
     sha256_bytes,
 )
-from biomesh.linux_packaging import LinuxPackagingError, build_linux_installer
+from biomesh.linux_packaging import (
+    LinuxPackagingError,
+    build_linux_installer,
+    verify_installer_supply,
+)
 
 
 def _wheel(
@@ -181,3 +185,27 @@ def test_linux_package_cli_path(
     result = json.loads(capsys.readouterr().out)
     assert Path(result["bundle"]).is_file()
     assert result["wheel_sha256"]
+
+
+def test_installer_supply_verification_rejects_altered_inputs(tmp_path: Path) -> None:
+    """MT-IN-01 rejects wheel or provenance changes before lifecycle mutation."""
+    wheel = _wheel(tmp_path)
+    provenance, binding = _provenance_inputs(wheel)
+    verified = verify_installer_supply(
+        wheel, build_provenance=provenance, artifact_binding=binding
+    )
+    assert verified.wheel_sha256 == sha256_bytes(wheel.read_bytes())
+
+    wheel.write_bytes(wheel.read_bytes() + b"altered")
+    with pytest.raises(LinuxPackagingError, match="binding is inconsistent"):
+        verify_installer_supply(
+            wheel, build_provenance=provenance, artifact_binding=binding
+        )
+    with pytest.raises(LinuxPackagingError, match="provenance"):
+        verify_installer_supply(
+            _wheel(tmp_path),
+            build_provenance=provenance.replace(
+                b'"schema_version":1', b'"schema_version":2'
+            ),
+            artifact_binding=binding,
+        )

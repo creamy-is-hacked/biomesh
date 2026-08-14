@@ -89,4 +89,5 @@ the canonical empty-set SHA-256 remains
   state are not mounted or messaged.
 
 P5A must independently assess the implementation and these residual risks.
-P5-WP05 installer lifecycle remains the next work package.
+At the P5-WP04 boundary, P5-WP05 installer lifecycle was the next work package;
+it is now completed separately under `docs/P5_WP05_INSTALLER_LIFECYCLE.md`.

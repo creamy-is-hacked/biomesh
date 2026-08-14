@@ -98,6 +98,29 @@
   identity/path. No plugin is embedded in or trusted by project archives, no UI
   was added, and P5A still determines whether Phase 5 is accepted.
 
+## P5-WP05 – Installer lifecycle and supply-chain verification
+
+- The lifecycle verifies exact P5-WP02 wheel/build/artifact-binding identities
+  and owned installed bytes. SHA-256 provenance remains integrity evidence, not
+  distributor authenticity. A consistently substituted self-asserted bundle,
+  compromised host/root account, Python/pip compromise, or compromised build
+  tool remains outside this control.
+- Installation targets Linux x86_64/aarch64 and Python 3.14. Declared dependency
+  availability and compatibility remain external; automatic update, system
+  package integration, remote distribution, and cloud behavior are absent.
+- Versions install side by side and one manifest-bound symlink activates them.
+  Rollback can select only a retained exact verified version. Normal uninstall
+  refuses modified/missing/extra state; explicit path acknowledgement retains
+  the complete changed tree in a recovery quarantine and does not silently
+  reclaim disk space or make that tree executable.
+- Projects, archives, parameter files, queues, reports, configuration,
+  completed artifacts, research data, and source datasets remain user-owned and
+  outside removal. The lifecycle does not migrate or reinterpret any of them.
+- P5-WP05 adds no scientific validation, calibration, archive/plugin trust,
+  queue portability, new UI behavior, release acceptance, or guarantee against
+  storage exhaustion and interruption below filesystem atomicity. P5A still
+  determines whether Phase 5 is accepted.
+
 ## P4A – Phase 4 Audit
 
 - The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations
@@ -155,9 +178,11 @@
   projects remain verifiable but cannot resume unfinished work or acquire
   backfilled provenance.
 - The documented Linux bundle targets x86_64 or aarch64 Linux with Python 3.14.
-  Its installer resolves declared dependencies with pip and has no automatic
-  update, system-package integration, rollback, or uninstaller. It deliberately
-  excludes generated projects, archives, reports, queues, and research data.
+  P4-WP06 originally supplied only a fresh installer. P5-WP05 supersedes that
+  lifecycle limitation with verified upgrade, rollback, recovery, and
+  ownership-safe uninstall while retaining the absence of automatic update and
+  system-package integration. Generated projects, archives, reports, queues,
+  and research data remain excluded.
 - P4-WP06 adds no GUI archive action, cloud exchange, archive signing,
   acceleration, new biological value, calibration behavior, or P4-WP07/P4A
   result.

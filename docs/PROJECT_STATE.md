@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-12 after P5-WP04 moved reviewed plugin operations
-behind the versioned least-privilege Linux sandbox. The
+Snapshot verified: 2026-08-14 after P5-WP05 added the manifest-bound Linux
+installer lifecycle and supply-chain verification. The
 latest accepted phase remains P4 at exact implementation prerequisite
 `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`; the accepted audit is represented
 by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
-3.14 full gate passes 285 tests.
+3.14 full gate passes 311 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P5 – Phase 5 – Security and Distribution Hardening (in progress) |
-| Current work package | P5-WP04 – Isolated plugin execution (`COMPLETE`) |
+| Current work package | P5-WP05 – Installer lifecycle and supply-chain verification (`COMPLETE`) |
 | Current branch | `phase-5-security-distribution` |
 | Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
-| Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
-| Current test count | 285 passed (`pytest -q`, 2026-08-12) |
-| Next planned work package | P5-WP05 – Installer lifecycle and supply-chain verification (blocked pending a fresh task) |
+| Latest version tag | `v0.5.0` (P5 implementation audit prerequisite, not phase acceptance, 2026-08-14) |
+| Current test count | 311 passed (`pytest -q`, 2026-08-14) |
+| Next planned work package | P5A – Phase 5 Audit (blocked pending a fresh independent audit task from the pushed P5 tip) |
 
 ## Outstanding technical debt
 
@@ -139,9 +139,10 @@ by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
   tool versions without Git. In-clone and installed reference bytes remain
   equal, and installed run metadata uses the embedded exact commit. This
   provides integrity/provenance only: archive authenticity/confidentiality,
-  plugin isolation, installer lifecycle, and P5 acceptance remain open through
-  P5-WP04-P5A. No trust, signing algorithm, key, calibration status, scientific
-  behavior, queue portability, or 3D/acceleration status changes.
+  plugin isolation, installer lifecycle, and P5 acceptance remained open at
+  that work-package boundary. No trust, signing algorithm, key, calibration
+  status, scientific behavior, queue portability, or 3D/acceleration status
+  changes.
 - P5-WP03 policy 1.0.0 and envelope schema 1 authenticate exact P4 payload
   bytes with Ed25519 under explicit host-owned signer/key, validity, revocation,
   and replay policy. Optional RFC 9180 X25519/HKDF-SHA-256/AES-256-GCM HPKE
@@ -155,9 +156,9 @@ by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
   plugin/registry trust, sandboxing, calibration, or scientific validity.
   Private keys remain externally owned and are neither serialized nor logged.
   Host/runtime compromise, post-decryption disclosure, key custody, replay-store
-  policy, and bounded resource exhaustion remain residual risks. Installer
-  lifecycle, queue portability, validation, and 3D/acceleration remain
-  P5-WP05 through P8; plugin isolation is addressed below.
+  policy, and bounded resource exhaustion remain residual risks. Queue
+  portability, validation, and 3D/acceleration remain P6-P8; plugin isolation
+  and installer lifecycle are addressed below.
 - P5-WP04 sandbox policy 1.0.0 moves every reviewed non-empty plugin operation
   behind a fresh Bubblewrap/libseccomp Linux boundary. Whole-set review and
   compatibility preflight precede code startup; read-only declared runtime
@@ -168,8 +169,22 @@ by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
   secret-free outcome receipts before result publication. Empty selection
   starts no process and preserves the P4A core path. This does not establish
   plugin scientific validity or close host/kernel and bounded-denial-of-service
-  residual risks. Installer lifecycle, queue portability, validation, and 3D/
-  acceleration remain P5-WP05 through P8.
+  residual risks. Queue portability, validation, and 3D/acceleration remain
+  P6-P8; the installer lifecycle is addressed below.
+- P5-WP05 policy/manifest schema 1 verifies exact P5-WP02 supply inputs before
+  prefix mutation, inventories every candidate application, dependency,
+  metadata, and launcher file, and publishes version roots side by side under
+  a manifest-hash identity. Installed CLI help and offscreen GUI smoke precede
+  the atomic `current` switch. Journalling recovers install, upgrade, rollback,
+  and uninstall boundaries; modified state blocks unless every reported path
+  is explicitly acknowledged, and changed uninstall trees are quarantined
+  rather than deleted. Projects, archives, parameters, queues, reports,
+  configuration, completed artifacts, research data, and source datasets
+  remain outside ownership and byte-preserved. This adds no automatic updater,
+  system-package integration, remote/cloud execution, queue portability, new
+  UI/science, calibration, or trust grant. Host/root compromise, dependency
+  availability, and distributor authenticity remain residual risks; P5A must
+  independently accept Phase 5.
 
 ## Pre-v1 roadmap boundary
 

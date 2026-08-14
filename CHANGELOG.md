@@ -49,6 +49,18 @@ All notable repository changes are documented here.
   policy, request/result identities, outcomes, SI/provenance, and
   `CALIBRATION_REQUIRED`; invalid or failed operations publish no result. The
   canonical empty-plugin path starts no process and remains unchanged.
+- P5-WP05 – Added supply-verified, manifest-bound Linux install, upgrade,
+  rollback, recovery, and ownership-safe uninstall. Versions publish side by
+  side under a manifest-hash identity; installed CLI help and offscreen GUI
+  smoke pass before one atomic current pointer changes. Exact modified-path
+  acknowledgement never expands ownership, and changed uninstall trees are
+  quarantined rather than deleted. MT-IN-01 through MT-IN-14 cover altered
+  supply/ownership inputs, unsafe paths, every transaction boundary, smoke
+  failure, modified/missing/extra files, rollback ambiguity, launcher mismatch,
+  and byte-identical preservation of projects, completed artifacts, and all
+  other user/research data. Pyqtgraph is also bound explicitly to BioMesh's
+  supported PySide6 runtime so unrelated installed Qt bindings cannot mix ABIs
+  during required GUI smoke verification.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

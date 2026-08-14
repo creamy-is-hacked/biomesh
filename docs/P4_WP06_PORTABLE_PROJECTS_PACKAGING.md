@@ -113,17 +113,20 @@ Extract and install for the current user:
 ```bash
 tar -xzf dist/biomesh-*-linux-*.tar.gz
 cd biomesh-*-linux-*
-./install.sh
+./install.sh --install
 biomesh --version
 QT_QPA_PLATFORM=offscreen biomesh-gui --smoke-test
 ```
 
 The installer requires Linux and Python 3.14, verifies `SHA256SUMS`, installs
 the wheel plus declared dependencies under a new `${HOME}/.local` versioned
-directory, and creates CLI/GUI launchers. `--prefix ABSOLUTE_PATH` and
-`--python PYTHON3.14` select an alternate new location/interpreter. The
-`--no-deps` option is only for controlled verification where the exact runtime
-dependencies already exist.
+directory, and creates CLI/GUI launchers. P5-WP05 now supersedes the one-shot
+P4 lifecycle with supply-verified side-by-side install, upgrade, rollback,
+recovery, and ownership-safe uninstall; see
+`docs/P5_WP05_INSTALLER_LIFECYCLE.md`. `--prefix ABSOLUTE_PATH` and
+`--python PYTHON3.14` select an alternate location/interpreter. The `--no-deps`
+option is only for controlled verification where the exact runtime dependencies
+already exist.
 
 P5-WP02 supersedes the former direct Hatchling/`package linux` publication
 path with the provenance-bound whole-set command above. The accepted P4-WP06

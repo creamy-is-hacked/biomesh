@@ -310,21 +310,35 @@ from the strict host policy. Signing and decryption do not grant plugin or
 registry trust, execution authorization, calibration, sandboxing, or
 scientific validity. See [the P5-WP03 algorithm and envelope policy](docs/P5_WP03_ARCHIVE_SECURITY_POLICY.md).
 
-Build the documented Linux application installer bundle after creating the
-wheel and sdist:
+Build the exact clean-source P5 publication set and verify its wheel, sdist,
+Linux installer, and canonical provenance manifest:
 
 ```bash
-python -m hatchling build --clean -d dist
-python -m biomesh package linux --wheel dist/*.whl \
-  --output dist/linux-installer
-tar -xzf dist/linux-installer/biomesh-*-linux-*.tar.gz
+python -m biomesh provenance build --source . --output dist
+python -m biomesh provenance verify dist/biomesh-0.5.0-provenance.json
+tar -xzf dist/biomesh-*-linux-*.tar.gz
 cd biomesh-*-linux-*
-./install.sh
+./install.sh --install
 ```
 
-The bundle contains the wheel, installer documentation, and checksums. It
-requires Linux and Python 3.14, and deliberately excludes generated projects,
-archives, queues, reports, raw runs, and research results.
+The bundle requires Linux and Python 3.14. It verifies the exact wheel and
+build/artifact provenance before prefix mutation, manifests every installed
+file, publishes versions side by side, and passes installed CLI help plus
+offscreen GUI smoke before atomically changing the current version.
+
+```bash
+./install.sh --upgrade
+./install.sh --rollback PREVIOUS_VERSION
+./install.sh --uninstall VERSION
+./install.sh --recover
+```
+
+Modified, missing, extra, ambiguous, or ownership-mismatched paths block by
+default. Exact `--acknowledge-path STATE:PATH` options and
+`--quarantine-modified` retain a changed uninstall tree rather than deleting
+unowned bytes. Projects, archives, queues, reports, parameters, configuration,
+raw runs, and research results are never installer-owned. See
+[the P5-WP05 lifecycle policy](docs/P5_WP05_INSTALLER_LIFECYCLE.md).
 
 Run the isolated benchmark reference, or explicitly enable the CPU-only
 feasibility candidate, with:

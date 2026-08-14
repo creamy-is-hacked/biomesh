@@ -35,6 +35,6 @@
 P4A is accepted. Pre-v1 work is specified in
 `docs/10_PRE_V1_ROADMAP.md` and tracked in `docs/PHASE_STATUS.md`. Execute only
 the first `INCOMPLETE` work package in strict phase order. P5-WP01 through
-P5-WP04 are complete; P5-WP05 is the first incomplete package. It requires a
-fresh work-package task and must not implement P5A or later behavior. No post-v1
-or new UI work is authorized.
+P5-WP05 are complete; P5A is the first incomplete item. It requires a fresh
+independent audit task from the exact pushed implementation-branch tip and must
+not implement P6 or later behavior. No post-v1 or new UI work is authorized.

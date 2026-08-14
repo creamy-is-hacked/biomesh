@@ -707,7 +707,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | P5-WP02 | Installed-build provenance | COMPLETE |
 | P5-WP03 | Signed and optionally confidential archives | COMPLETE |
 | P5-WP04 | Isolated plugin execution | COMPLETE |
-| P5-WP05 | Installer lifecycle and supply-chain verification | INCOMPLETE |
+| P5-WP05 | Installer lifecycle and supply-chain verification | COMPLETE |
 | P5A | Phase 5 Audit | INCOMPLETE |
 
 P5-WP01 validation evidence:
@@ -746,8 +746,8 @@ P5-WP02 validation evidence:
   byte. Focused and full Python 3.14.4 gates passed 256 tests, Ruff, strict mypy,
   module help, and `git diff --check` on 2026-08-11.
 - This is integrity/provenance evidence, not authenticity, signing,
-  confidentiality, trust, calibration, or installer lifecycle assurance.
-  P5-WP03 through P5-WP05 and P5A remain incomplete.
+  confidentiality, trust, calibration, or installer lifecycle assurance. At
+  the P5-WP02 boundary, P5-WP03 through P5-WP05 and P5A were incomplete.
 
 P5-WP03 validation evidence:
 
@@ -778,7 +778,7 @@ P5-WP03 validation evidence:
   2026-08-12.
 - P5-WP03 implements no plugin sandbox, installer lifecycle, queue portability,
   new science, calibration, UI, cloud, remote execution, or P5 acceptance.
-  P5-WP04, P5-WP05, and P5A remain incomplete.
+  At that work-package boundary, P5-WP04, P5-WP05, and P5A were incomplete.
 
 P5-WP04 validation evidence:
 
@@ -806,7 +806,47 @@ P5-WP04 validation evidence:
   portability, new science, calibration, UI, cloud, remote execution, or P5
   acceptance. Python 3.14.4 passed 285 tests, Ruff, strict mypy over 64 source
   files, module help, plugin CLI receipt inspection, and `git diff --check` on
-  2026-08-12. P5-WP05 and P5A remain incomplete.
+  2026-08-12. At that work-package boundary, P5-WP05 and P5A were incomplete.
+
+P5-WP05 validation evidence:
+
+- Policy/schema 1 in `docs/P5_WP05_INSTALLER_LIFECYCLE.md` verifies the exact
+  P5-WP02 wheel, build identity, and installer artifact binding before prefix
+  mutation, then binds every installed application, dependency, metadata, and
+  version-specific launcher regular file to a canonical path/role/size/SHA-256/
+  owning-version record. The complete manifest hash is part of the side-by-side
+  version-directory identity; unsafe, duplicate, symlinked, non-regular,
+  missing, extra, modified, ambiguous, or out-of-root state fails explicitly.
+- Fresh install and upgrade stage/reverify a complete candidate, atomically
+  publish it beside prior versions, pass installed CLI help and offscreen GUI
+  smoke, and only then atomically switch the single `current` pointer. Exact
+  verified rollback targets repeat both smoke paths. A canonical transaction
+  journal recovers every staging, publication, activation, rollback, and
+  uninstall boundary to one explicit complete state without mixed launchers.
+- Normal uninstall removes only an exact manifest-owned version tree and its
+  fixed launchers. Modified/missing/extra state blocks by default; an exact
+  path acknowledgement plus explicit quarantine retains the complete changed
+  tree rather than deleting unowned/local bytes. Projects, archives,
+  parameters, queues, reports, configuration, completed artifacts, research
+  data, and source datasets remain outside installer ownership and reproduce
+  byte-identically across all lifecycle paths.
+- MT-IN-01 through MT-IN-14 cover altered wheel/provenance/ownership inputs,
+  traversal/duplicate/symlink/target-root failures, fresh/upgrade/rollback/
+  uninstall interruptions, smoke failure, changed owned paths, absent/altered
+  rollback, ownership-safe quarantine, user-data retention, launcher mismatch,
+  installed CLI/GUI smoke, and exact completed-artifact preservation. BioMesh
+  also selects its declared PySide6 binding before pyqtgraph loads, preventing
+  unrelated Qt bindings from mixing ABIs during installed GUI verification.
+- Python 3.14.4 passed 311 tests (including the host-level Bubblewrap/
+  libseccomp cases), Ruff, strict mypy, module help, and `git diff --check` on
+  2026-08-14. A clean temporary clone also built/verified the complete 0.5.0
+  publication and passed real bundle fresh-install CLI/GUI smoke; a non-
+  published `0.5.0.post1` rehearsal passed upgrade smoke, exact rollback, both
+  uninstalls, five lifecycle logs, and unchanged adjacent user-data SHA-256.
+  P5-WP05 adds no automatic update, system-package integration,
+  cloud/remote execution, queue portability, new UI, science, calibration,
+  archive/plugin trust, or P5 acceptance. The completed implementation is
+  frozen for independent audit by `v0.5.0`; P5A remains incomplete.
 
 ## P6 – Phase 6 – Portable Operations
 
@@ -865,9 +905,9 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P5-WP05 – Installer lifecycle and supply-chain verification` is the first
-incomplete pre-v1 work package. It and every later package remain blocked until
-a fresh work-package task begins in strict phase order.
+`P5A – Phase 5 Audit` is the first incomplete pre-v1 work package. It and every
+later package remain blocked until a fresh independent audit task begins from
+the exact pushed P5 implementation branch tip in strict phase order.
 
 ## Remaining Issues
 

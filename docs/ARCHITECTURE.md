@@ -82,6 +82,13 @@ bounded JSON messages carry only immutable interface values; validated results
 and explicit execution receipts return to the host. Empty selection starts no
 process, so accepted project/campaign execution remains the P4A zero-plugin
 path.
+P5-WP05 verifies the exact P5-WP02 wheel/build binding, inventories every
+candidate file, and publishes side-by-side version roots whose names bind the
+owned-file manifest hash. Version-specific CLI/GUI smoke completes before the
+single atomic `current` pointer changes. A canonical transaction journal owns
+recovery boundaries; uninstall removes only a verified version tree or retains
+an explicitly acknowledged changed tree in quarantine. User research data is
+never installer-owned.
 
 Dependency direction is intentionally simple:
 
@@ -129,7 +136,8 @@ queue CLI          -> local create/enqueue/status/run/cancel operations
 portable project   -> lock-held verified project + embedded fixture/artifact bytes
 portable resources -> contained fixture-relative parameter documents + checksums
 archive import     -> strict inventory/checksums + existing CampaignService verifier
-Linux packager     -> release wheel + data-exclusion gate + installer checksums
+Linux packager     -> release wheel + provenance/data gate + lifecycle bundle
+installer lifecycle -> owned manifest + side-by-side roots + atomic current
 benchmark types    -> strict case/backend/observation/divergence records
 benchmark runner   -> synthetic CPU reference + explicitly enabled CPU candidate
 benchmark CLI      -> stdout or atomic JSON artifact; no model execution
