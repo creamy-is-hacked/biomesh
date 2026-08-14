@@ -78,6 +78,8 @@ class RunMetadata:
     parameter_file_sha256: str
     platform: str
     python_version: str
+    source_tree_sha256: str | None = None
+    source_state: str | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -92,6 +94,13 @@ class RunMetadata:
         _require_sha256("parameter_file_sha256", self.parameter_file_sha256)
         _require_nonblank("platform", self.platform)
         _require_nonblank("python_version", self.python_version)
+        if self.source_tree_sha256 is not None:
+            _require_sha256("source_tree_sha256", self.source_tree_sha256)
+        if self.source_state is not None and self.source_state not in {
+            "clean",
+            "modified",
+        }:
+            raise OutputValidationError("source_state is unsupported")
         if (
             not isinstance(self.dependency_versions, Mapping)
             or not self.dependency_versions
@@ -136,7 +145,7 @@ class RunMetadata:
 
     def as_dict(self) -> dict[str, object]:
         """Return metadata in the stable structure written to JSON."""
-        return {
+        result: dict[str, object] = {
             "commit_hash": self.commit_hash,
             "dependency_versions": self.dependency_versions,
             "package_version": self.package_version,
@@ -147,6 +156,11 @@ class RunMetadata:
             "python_version": self.python_version,
             "seed": self.seed,
         }
+        if self.source_tree_sha256 is not None:
+            result["source_tree_sha256"] = self.source_tree_sha256
+        if self.source_state is not None:
+            result["source_state"] = self.source_state
+        return result
 
 
 @dataclass(frozen=True, slots=True)

@@ -47,11 +47,13 @@ from biomesh.plugin_components import (
     VersionText,
 )
 from biomesh.plugin_sandbox import (
+    PluginDistribution,
     PluginExecutionReceipt,
     PluginSandboxError,
     PluginSandboxPolicy,
     SandboxPluginRuntime,
     default_plugin_sandbox_policy,
+    inspect_plugin_distribution,
     preflight_denied_error,
     request_payload,
 )
@@ -411,10 +413,12 @@ def load_plugins(
                 details=str(error),
             ) from error
     resolved = tuple(resolved_list)
-    roots: list[Path] = []
+    roots: list[PluginDistribution] = []
     for selection, entry_point in zip(manifest.plugins, resolved, strict=True):
         try:
-            roots.append(_entry_point_root(entry_point))
+            roots.append(
+                _entry_point_root(entry_point, selection.entry_point_value)
+            )
         except PluginError as error:
             raise preflight_denied_error(
                 plugin_set_sha256=set_hash,
@@ -426,7 +430,7 @@ def load_plugins(
                 details=str(error),
             ) from error
     loaded: list[LoadedPlugin] = []
-    for selection, distribution_root in zip(
+    for selection, distribution in zip(
         manifest.plugins,
         roots,
         strict=True,
@@ -437,8 +441,9 @@ def load_plugins(
             plugin_version=selection.metadata.plugin_version,
             selection_sha256=plugin_selection_sha256(selection),
             entry_point_value=selection.entry_point_value,
-            distribution_root=distribution_root,
+            distribution_root=distribution.root,
             policy=policy,
+            distribution=distribution,
         )
         initialization = runtime.execute("initialize")
         runtime_metadata, runtime_components = cast(
@@ -590,9 +595,13 @@ def _installed_entry_points() -> tuple[_EntryPointLike, ...]:
                 item.dist.version if item.dist is not None else ""
             ),
             distribution_root=(
-                Path(str(item.dist.locate_file(""))).resolve()
-                if item.dist is not None
-                else Path(__file__).resolve().parent.parent
+                Path(__file__).resolve().parent.parent
+                if item.dist is not None and item.dist.name == "biomesh"
+                else (
+                    Path(str(item.dist.locate_file(""))).resolve()
+                    if item.dist is not None
+                    else Path(__file__).resolve().parent.parent
+                )
             ),
         )
         for item in discovered
@@ -628,19 +637,16 @@ def _resolve_entry_point(
     return matching[0]
 
 
-def _entry_point_root(entry_point: _EntryPointLike) -> Path:
+def _entry_point_root(
+    entry_point: _EntryPointLike,
+    entry_point_value: str,
+) -> PluginDistribution:
     root = getattr(
         entry_point,
         "distribution_root",
         Path(__file__).resolve().parent.parent,
     )
-    resolved = Path(root).resolve()
-    if (
-        not resolved.is_dir()
-        or resolved in {Path("/"), Path.home().resolve(), Path.cwd().resolve()}
-    ):
-        raise PluginError("reviewed plugin distribution root is unavailable")
-    return resolved
+    return inspect_plugin_distribution(Path(root), entry_point_value)
 
 
 def _model_bytes(model: BaseModel) -> bytes:

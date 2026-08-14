@@ -84,6 +84,14 @@ they exactly equal every reported mismatch. Uninstall additionally requires
 installer recovery directory instead of deleting any changed or unowned byte.
 Acknowledgement never adds an owned path or permits silent removal.
 
+All prefix components used by lifecycle writes are preflighted as real
+directories, including `PREFIX/lib` and `PREFIX/bin`; nested symlinks fail
+closed before any candidate or launcher write. Recovery accepts only canonical
+journals whose operation, phase, target/version identity, and derived staging
+name agree. Recovery paths are then constructed as validated direct children
+of the transaction roots, so a journal value cannot redirect deletion outside
+the installation prefix.
+
 ## Recovery and logs
 
 One canonical transaction journal records the operation, source and target
@@ -140,6 +148,17 @@ remained, and an adjacent user-data file retained SHA-256
 `b86b4d51c5b66262daa1b2eac227710e0b7f821a6fb6ae9896123a4bc5c4c870`.
 The synthetic fixture is validation evidence only and does not change the
 repository/package version or create a release claim.
+
+P5A remediation evidence on 2026-08-14 starts from the pushed `d41c7cbbadbe0ed1af9c5547dcb1429da3f99a8f` implementation tip. Focused remediation,
+installer, plugin, provenance, and GUI-binding tests passed `48` tests; the
+explicit BP/AR/PL/IN evidence collection passed `85` tests. The final full
+suite passed `319` tests. These tests
+include nested `lib`/`bin` symlink variants, canonical traversal journals for
+install and uninstall, an unreviewed sibling distribution file, modified
+source identity, the complete direct dependency inventory, and a conflicting
+Qt-binding preference. `python -m biomesh --help`, `ruff check .`, `mypy src`,
+and `git diff --check` also passed. P5A is still incomplete and no
+phase-acceptance tag is created by this remediation.
 
 ```text
 focused installer and packaging: 30 passed

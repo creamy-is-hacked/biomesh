@@ -74,6 +74,14 @@ biomesh provenance show
 No P5 package may report `UNKNOWN` or `UNAVAILABLE` as an exact source commit.
 Run metadata uses the embedded commit when Git is unavailable.
 
+Source-run metadata also records a domain-separated source/working-tree
+identity and a `clean` or `modified` state label. A modified source run may
+retain the same Git commit, but its working-state identity is distinct and is
+not presented as a clean source identity. Run dependency metadata is sourced
+from one centralized inventory containing every direct runtime dependency
+declared in `pyproject.toml`, including cryptography, PySide6, and pyqtgraph;
+transitive dependencies are outside that explicitly labeled inventory.
+
 ## Determinism and accepted-output boundary
 
 The builder fixes `SOURCE_DATE_EPOCH` to the ZIP-compatible Unix epoch for

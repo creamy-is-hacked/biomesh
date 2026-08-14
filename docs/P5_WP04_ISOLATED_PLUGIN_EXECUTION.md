@@ -22,6 +22,14 @@ narrow distribution root.
 Any whole-set failure produces `preflight_denied` provenance and starts no
 plugin code.
 
+The distribution root is not itself a mount boundary. Preflight resolves the
+entry-point module/package, rejects symlinked or non-regular payload files, and
+records a path/size/SHA-256 inventory for that selected payload. The inventory
+is rechecked before every operation. The sandbox mounts that selected payload
+only, together with individual package roots derived from the declared direct
+runtime dependency inventory; it does not mount the containing site-package
+directory or unreviewed sibling files.
+
 Each accepted operation uses a new Bubblewrap process with:
 
 - separate mount, network, PID, IPC, UTS, cgroup, and user namespaces;
@@ -87,6 +95,10 @@ the canonical empty-set SHA-256 remains
 - Runtime libraries deliberately mounted read-only are visible to the plugin;
   projects, credentials, the caller environment, and mutable engine/completed
   state are not mounted or messaged.
+- The content-bound distribution check does not authenticate a distributor or
+  establish scientific validity. A host that controls the reviewed files,
+  runtime, kernel, or dependency inventory remains within the trusted
+  computing base.
 
 P5A must independently assess the implementation and these residual risks.
 At the P5-WP04 boundary, P5-WP05 installer lifecycle was the next work package;

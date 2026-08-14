@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import signal
-import site
 import subprocess
 import sys
 import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from importlib.metadata import PackageNotFoundError, distribution
+from pathlib import Path, PurePosixPath
 from typing import Any, cast
 
 from pydantic import BaseModel, ValidationError
@@ -48,6 +49,146 @@ _BWRAP_PATH = Path("/usr/bin/bwrap")
 _PYTHON_PATH = Path("/usr/bin/python")
 _PRLIMIT_PATH = Path("/usr/bin/prlimit")
 _MINIMUM_BWRAP_VERSION = (0, 8, 0)
+_DECLARED_RUNTIME_DISTRIBUTIONS = (
+    "biomesh",
+    "cryptography",
+    "matplotlib",
+    "numba",
+    "numpy",
+    "pyarrow",
+    "pydantic",
+    "pydantic-core",
+    "pyqtgraph",
+    "PySide6",
+    "scipy",
+    "annotated-types",
+    "typing-extensions",
+    "typing-inspection",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class PluginDistribution:
+    """One entry-point payload narrowed to an immutable mounted inventory."""
+
+    root: Path
+    mount_source: Path
+    mount_target: str
+    inventory: tuple[tuple[str, int, str], ...]
+
+
+def inspect_plugin_distribution(
+    root: Path, entry_point_value: str
+) -> PluginDistribution:
+    """Resolve only the entry-point module/package and inventory its regular files."""
+    resolved_root = root.resolve()
+    if (
+        not resolved_root.is_dir()
+        or root.is_symlink()
+        or resolved_root in {Path("/"), Path.home().resolve(), Path.cwd().resolve()}
+    ):
+        raise PluginError("reviewed plugin distribution root is unavailable")
+    _reject_symlink_chain(resolved_root)
+    try:
+        module_name, _attribute = entry_point_value.split(":", maxsplit=1)
+    except ValueError as error:
+        raise PluginError("reviewed plugin entry point value is malformed") from error
+    parts = module_name.split(".")
+    if not module_name or any(not part.isidentifier() for part in parts):
+        raise PluginError("reviewed plugin entry point module is malformed")
+    module_file = resolved_root.joinpath(*parts).with_suffix(".py")
+    module_package = resolved_root.joinpath(*parts)
+    package_root = resolved_root / parts[0]
+    file_exists = module_file.is_file() and not module_file.is_symlink()
+    package_exists = (
+        module_package.is_dir()
+        and not module_package.is_symlink()
+        and (module_package / "__init__.py").is_file()
+    )
+    if file_exists and package_exists:
+        raise PluginError("reviewed plugin entry point module is ambiguous")
+    if not file_exists and not package_exists:
+        raise PluginError("reviewed plugin entry point module is unavailable")
+    if package_root.is_dir() and not package_root.is_symlink():
+        mount_source = package_root
+        mount_target = f"/opt/plugin/{parts[0]}"
+    else:
+        mount_source = module_file
+        mount_target = f"/opt/plugin/{module_file.name}"
+    _reject_symlink_chain(mount_source)
+    resolved_source = mount_source.resolve()
+    if not resolved_source.is_relative_to(resolved_root):
+        raise PluginError("reviewed plugin payload escapes its distribution root")
+    inventory = _plugin_inventory(resolved_root, resolved_source)
+    if not inventory:
+        raise PluginError("reviewed plugin distribution payload is empty")
+    return PluginDistribution(
+        root=resolved_root,
+        mount_source=resolved_source,
+        mount_target=mount_target,
+        inventory=inventory,
+    )
+
+
+def _plugin_inventory(root: Path, source: Path) -> tuple[tuple[str, int, str], ...]:
+    paths: list[Path] = []
+    if source.is_file():
+        paths.append(source)
+    elif source.is_dir():
+        for directory, names, filenames in os.walk(source, followlinks=False):
+            directory_path = Path(directory)
+            for name in names:
+                child = directory_path / name
+                if child.is_symlink():
+                    raise PluginError("reviewed plugin payload contains a symlink")
+            for name in filenames:
+                path = directory_path / name
+                if path.is_symlink() or not path.is_file():
+                    raise PluginError(
+                        "reviewed plugin payload contains a non-regular file"
+                    )
+                paths.append(path)
+    else:
+        raise PluginError("reviewed plugin payload is unavailable")
+    result = tuple(
+        (
+            path.relative_to(root).as_posix(),
+            path.stat().st_size,
+            _file_sha256(path),
+        )
+        for path in sorted(paths)
+    )
+    return result
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _reject_symlink_chain(path: Path) -> None:
+    current = Path(path.anchor)
+    for part in path.parts[1:]:
+        current /= part
+        if current.is_symlink():
+            raise PluginError(f"reviewed plugin path uses symlink: {current}")
+        if not current.exists():
+            break
+
+
+def _distribution_inventory_matches(
+    distribution_payload: PluginDistribution,
+) -> bool:
+    try:
+        return _plugin_inventory(
+            distribution_payload.root,
+            distribution_payload.mount_source,
+        ) == distribution_payload.inventory
+    except (OSError, PluginError):
+        return False
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +210,7 @@ class SandboxPluginRuntime:
     entry_point_value: str
     distribution_root: Path
     policy: PluginSandboxPolicy
+    distribution: PluginDistribution | None = None
 
     def execute(
         self,
@@ -212,6 +354,24 @@ class SandboxPluginRuntime:
                 "preflight_denied",
                 "plugin request exceeds the declared message limit",
             )
+        package_root = Path(__file__).resolve().parent.parent
+        if self.distribution_root == package_root:
+            if self.distribution is None:
+                self._fail(
+                    request.operation,
+                    message_sha256(request_bytes),
+                    "preflight_denied",
+                    "reviewed plugin distribution inventory is unavailable",
+                )
+        elif self.distribution is None or not _distribution_inventory_matches(
+            self.distribution
+        ):
+            self._fail(
+                request.operation,
+                message_sha256(request_bytes),
+                "preflight_denied",
+                "reviewed plugin distribution inventory is unavailable or changed",
+            )
         if (
             not _BWRAP_PATH.is_file()
             or not os.access(_BWRAP_PATH, os.X_OK)
@@ -310,6 +470,7 @@ class SandboxPluginRuntime:
         *,
         info_fd: int | None = None,
     ) -> list[str]:
+        package_root = Path(__file__).resolve().parent.parent
         command = [
             str(_BWRAP_PATH),
             "--unshare-all",
@@ -346,16 +507,38 @@ class SandboxPluginRuntime:
                 "/opt/python-site",
             )
         )
-        package_root = Path(__file__).resolve().parent.parent
         command.extend(("--ro-bind", str(package_root), "/opt/biomesh"))
         python_paths = ["/opt/plugin", "/opt/biomesh"]
-        if self.distribution_root != package_root:
+        if self.distribution is not None and self.distribution_root != package_root:
+            if self.distribution.mount_source.is_dir():
+                command.extend(("--dir", self.distribution.mount_target))
             command.extend(
-                ("--ro-bind", str(self.distribution_root), "/opt/plugin")
+                (
+                    "--ro-bind",
+                    str(self.distribution.mount_source),
+                    self.distribution.mount_target,
+                )
             )
-        for index, root in enumerate(_external_site_roots()):
+        elif self.distribution is not None:
+            mount_target = self.distribution.mount_target
+            if self.distribution.mount_source.is_dir():
+                command.extend(("--dir", mount_target))
+            command.extend(
+                (
+                    "--ro-bind",
+                    str(self.distribution.mount_source),
+                    mount_target,
+                )
+            )
+        for index, (root, name) in enumerate(_external_site_roots()):
             target = f"/opt/python-site/{index}"
-            command.extend(("--dir", target, "--ro-bind", str(root), target))
+            mount_target = f"{target}/{name}"
+            command.append("--dir")
+            command.append(target)
+            if root.is_dir():
+                command.append("--dir")
+                command.append(mount_target)
+            command.extend(("--ro-bind", str(root), mount_target))
             python_paths.append(target)
         if temporary_output is None:
             command.extend(("--tmpfs", "/export"))
@@ -593,18 +776,55 @@ def _validate_exported_files(directory: Path, result: ExportResult) -> None:
             raise PluginError("exported file identity differs from declared result")
 
 
-def _external_site_roots() -> tuple[Path, ...]:
-    roots = {Path(site.getusersitepackages()).resolve()}
-    roots.update(Path(item).resolve() for item in site.getsitepackages())
+def _external_site_roots() -> tuple[tuple[Path, str], ...]:
+    """Return only package roots from BioMesh's declared dependencies."""
+    mounts: dict[tuple[str, str], Path] = {}
+    for distribution_name in _DECLARED_RUNTIME_DISTRIBUTIONS:
+        try:
+            installed = distribution(distribution_name)
+        except PackageNotFoundError:
+            continue
+        names: set[str] = set()
+        top_level = installed.read_text("top_level.txt")
+        if top_level is not None:
+            names.update(
+                item.strip()
+                for item in top_level.splitlines()
+                if item.strip()
+            )
+        if installed.files is not None:
+            for item in installed.files:
+                parts = PurePosixPath(str(item)).parts
+                if not parts or any(part in {"", ".", ".."} for part in parts):
+                    continue
+                first = parts[0]
+                if first == "__pycache__" or first.endswith(".data"):
+                    continue
+                if first.endswith(".dist-info"):
+                    if distribution_name == "biomesh":
+                        names.add(first)
+                    continue
+                names.add(first.removesuffix(".py"))
+        for name in sorted(names):
+            if not name.isidentifier() and not (
+                distribution_name == "biomesh" and name.endswith(".dist-info")
+            ):
+                continue
+            source = Path(str(installed.locate_file(name))).resolve()
+            if (
+                not source.exists()
+                or source.is_symlink()
+                or source.is_relative_to("/usr")
+            ):
+                continue
+            try:
+                _reject_symlink_chain(source)
+            except PluginError:
+                continue
+            mounts[(str(source), name)] = source
     return tuple(
-        sorted(
-            (
-                root
-                for root in roots
-                if root.is_dir() and not root.is_relative_to("/usr")
-            ),
-            key=str,
-        )
+        (root, name)
+        for (_source, name), root in sorted(mounts.items())
     )
 
 

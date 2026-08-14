@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from biomesh.build_identity import canonical_json_bytes
 from biomesh.installer_lifecycle import (
     InstallerLifecycle,
     InstallerLifecycleError,
@@ -139,6 +140,63 @@ def test_mt_in_02_unsafe_duplicate_symlinked_and_target_escape_inputs_fail(
     with pytest.raises(InstallerLifecycleError, match="uses symlink"):
         lifecycle.install(clean, _manifest(clean, "1.0.1"))
     assert not (real / "lib").exists()
+
+
+@pytest.mark.parametrize("component", ["lib", "bin"])
+def test_p5a_001_nested_prefix_symlinks_fail_before_external_mutation(
+    tmp_path: Path,
+    component: str,
+) -> None:
+    prefix = tmp_path / "prefix"
+    external = tmp_path / f"external-{component}"
+    prefix.mkdir()
+    external.mkdir()
+    (prefix / component).symlink_to(external, target_is_directory=True)
+    candidate = _candidate(tmp_path, "1.0.0")
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    with pytest.raises(InstallerLifecycleError, match="uses symlink"):
+        lifecycle.install(candidate, _manifest(candidate, "1.0.0"))
+    assert not any(external.iterdir())
+
+
+@pytest.mark.parametrize("operation", ["install", "uninstall"])
+def test_p5a_002_traversal_recovery_journal_fails_without_external_deletion(
+    tmp_path: Path,
+    operation: str,
+) -> None:
+    prefix = tmp_path / "prefix"
+    root = prefix / "lib" / "biomesh"
+    versions = root / "versions"
+    versions.mkdir(parents=True)
+    victim = prefix / "victim"
+    victim.mkdir()
+    sentinel = victim / "sentinel"
+    sentinel.write_text("must survive", encoding="utf-8")
+    version_name = "1.0.0-" + "c" * 64
+    stage_name = "../../../victim"
+    if operation == "install":
+        phase = "staged"
+    else:
+        phase = "retired"
+    journal = {
+        "affected_paths": [],
+        "from_version": None,
+        "manifest_sha256": "c" * 64,
+        "operation": operation,
+        "phase": phase,
+        "provenance_sha256": _PROVENANCE_SHA256,
+        "quarantine": False,
+        "schema_version": 1,
+        "stage_name": stage_name,
+        "target_version": "1.0.0",
+        "version_name": version_name,
+        "wheel_sha256": _WHEEL_SHA256,
+    }
+    (root / ".lifecycle-transaction.json").write_bytes(canonical_json_bytes(journal))
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    with pytest.raises(InstallerLifecycleError, match="staging identity"):
+        lifecycle.recover()
+    assert sentinel.read_text(encoding="utf-8") == "must survive"
 
 
 @pytest.mark.parametrize("boundary", ["staged", "published", "verified", "activated"])

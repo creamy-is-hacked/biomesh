@@ -22,7 +22,6 @@ import platform
 import sys
 import tempfile
 from dataclasses import dataclass, replace
-from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Literal
 
@@ -70,7 +69,7 @@ from biomesh.physiology import (
     initialize_physiological_states,
     metabolic_activity_fractions,
 )
-from biomesh.provenance import exact_runtime_source_commit
+from biomesh.provenance import runtime_dependency_versions, runtime_source_identity
 from biomesh.quorum import (
     CellQuorumState,
     QuorumObservation,
@@ -677,6 +676,7 @@ def _initialize_fixture_replicate(
         values.get("surface_parallel_shear_stress", 0.0), 0.1, 1.0
     )
     strains = CompetitionStrains(frozenset({"producer"}), frozenset({"nonproducer"}))
+    commit_hash, source_tree_sha256, source_state = runtime_source_identity(None)
     metadata = RunMetadata(
         seed=request.seed,
         parameters={
@@ -685,16 +685,14 @@ def _initialize_fixture_replicate(
             "update_order": UPDATE_ORDER,
         },
         package_version=__version__,
-        commit_hash=_commit_hash(),
-        dependency_versions={
-            "numpy": version("numpy"),
-            "pyarrow": version("pyarrow"),
-            "scipy": version("scipy"),
-        },
+        commit_hash=commit_hash,
+        dependency_versions=runtime_dependency_versions(),
         parameter_file=request.parameter_files[0].label,
         parameter_file_sha256=request.parameter_files[0].sha256,
         platform=platform.platform(),
         python_version=sys.version.split()[0],
+        source_tree_sha256=source_tree_sha256,
+        source_state=source_state,
     )
     writer = SimulationOutputWriter(directory, metadata)
     quorum_states = initialize_quorum_states(
@@ -1048,10 +1046,6 @@ def _observations(
         ExperimentObservation(metric, units[metric], time_s, value)
         for metric, value in values.items()
     )
-
-
-def _commit_hash() -> str:
-    return exact_runtime_source_commit(None)
 
 
 def _validate_campaign_artifacts(output_directory: Path) -> None:

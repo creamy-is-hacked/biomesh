@@ -46,6 +46,12 @@
   part of the committed source-tree identity. The external publication
   manifest carries each final raw artifact hash because an artifact cannot
   embed its own final raw hash without changing those bytes.
+- Source-run metadata additionally records the exact commit, a domain-separated
+  source/working-tree identity, and whether the source is clean or modified.
+  The commit alone therefore is not treated as a complete identity for a
+  modified source run. Dependency metadata is the complete declared direct
+  runtime inventory from `pyproject.toml`; transitive host dependencies remain
+  outside that labeled inventory.
 - P5-WP02 adds no signature, key, confidentiality, archive envelope, plugin
   sandbox, upgrade, rollback, uninstall, automatic update, or broader
   installer supply-chain policy. Those remain P5-WP03 through P5-WP05 and must
@@ -97,6 +103,12 @@
 - Empty plugin selection starts no process and retains the accepted zero-plugin
   identity/path. No plugin is embedded in or trusted by project archives, no UI
   was added, and P5A still determines whether Phase 5 is accepted.
+- The reviewed distribution root is now content-bound: only the selected
+  entry-point module/package's regular-file inventory is rechecked before each
+  operation, and only individual package roots from the declared runtime
+  dependency inventory are mounted. This narrows arbitrary distribution
+  siblings and site-package visibility but does not make reviewed code benign
+  or remove the trusted runtime/kernel boundary.
 
 ## P5-WP05 – Installer lifecycle and supply-chain verification
 
@@ -116,6 +128,11 @@
 - Projects, archives, parameter files, queues, reports, configuration,
   completed artifacts, research data, and source datasets remain user-owned and
   outside removal. The lifecycle does not migrate or reinterpret any of them.
+- Prefix preflight now rejects symlinks in `PREFIX`, `PREFIX/lib`,
+  `PREFIX/bin`, and all lifecycle roots before writes. Recovery validates the
+  journal's operation, phase, version/manifest identity, and derived stage
+  names before constructing or deleting any path; recovery deletion remains
+  limited to validated children of the transaction root.
 - P5-WP05 adds no scientific validation, calibration, archive/plugin trust,
   queue portability, new UI behavior, release acceptance, or guarantee against
   storage exhaustion and interruption below filesystem atomicity. P5A still

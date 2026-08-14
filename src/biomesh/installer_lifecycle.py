@@ -271,7 +271,8 @@ class InstallerLifecycle:
         )
         self._begin(journal)
         try:
-            stage = self.versions / stage_name
+            self._preflight_target(allow_journal=True)
+            stage = _safe_child_path(self.versions, stage_name, "staging directory")
             stage.mkdir(mode=0o700)
             for record in manifest.files:
                 source = candidate / record.path
@@ -283,7 +284,14 @@ class InstallerLifecycle:
             self._update_phase(journal, "staged")
             self._fault("staged")
 
-            published = self.versions / version_name
+            self._preflight_target(allow_journal=True)
+            published = _safe_child_path(
+                self.versions, version_name, "published version directory"
+            )
+            if published.exists() or published.is_symlink():
+                raise InstallerLifecycleError(
+                    "published version directory already exists"
+                )
             os.replace(stage, published)
             self._update_phase(journal, "published")
             self._fault("published")
@@ -434,14 +442,20 @@ class InstallerLifecycle:
             self._remove_launchers()
             self._update_phase(journal, "launchers-removed")
             self._fault("uninstall-launchers-removed")
-        retired = self.versions / retired_name
+        self._preflight_target(allow_journal=True)
+        retired = _safe_child_path(self.versions, retired_name, "retired directory")
+        if retired.exists() or retired.is_symlink():
+            raise InstallerLifecycleError("retired directory already exists")
         os.replace(target, retired)
         self._update_phase(journal, "retired")
         self._fault("uninstall-retired")
         recovery_result = "not_required"
         if quarantine_modified:
+            self._preflight_target(allow_journal=True)
             self.recovery.mkdir(parents=True, exist_ok=True)
-            quarantine = self.recovery / target.name
+            quarantine = _safe_child_path(
+                self.recovery, target.name, "recovery quarantine directory"
+            )
             if quarantine.exists() or quarantine.is_symlink():
                 raise InstallerLifecycleError(
                     "uninstall recovery target already exists"
@@ -483,8 +497,22 @@ class InstallerLifecycle:
         _sha256("journal wheel SHA-256", wheel_sha256)
         _sha256("journal provenance SHA-256", provenance_sha256)
         affected = _string_list(data["affected_paths"], "journal affected paths")
+        self._validate_journal_paths(
+            operation=operation,
+            phase=phase,
+            from_version=_optional_string(
+                data["from_version"], "journal source version"
+            ),
+            target_version=target_version,
+            version_name=version_name,
+            stage_name=stage_name,
+            manifest_sha256=manifest_sha256,
+            quarantine=_boolean(data["quarantine"], "journal quarantine"),
+        )
         if operation in {"install", "upgrade"}:
-            target = self.versions / version_name
+            target = _safe_child_path(
+                self.versions, version_name, "recovery version directory"
+            )
             if target.is_dir() and not target.is_symlink():
                 result = self._verify_path(target)
                 _require_verified("recovery candidate", result)
@@ -493,7 +521,9 @@ class InstallerLifecycle:
                 self._switch_current(version_name)
                 outcome = "verified_candidate_activated"
             else:
-                stage = self.versions / stage_name
+                stage = _safe_child_path(
+                    self.versions, stage_name, "recovery staging directory"
+                )
                 if stage.exists() and not stage.is_symlink():
                     shutil.rmtree(stage)
                 outcome = "staging_removed_prior_current_retained"
@@ -525,13 +555,27 @@ class InstallerLifecycle:
                 outcome,
             )
         elif operation == "uninstall":
-            retired = self.versions / stage_name
-            target = self.versions / version_name
+            retired = _safe_child_path(
+                self.versions, stage_name, "recovery retired directory"
+            )
+            target = _safe_child_path(
+                self.versions, version_name, "recovery version directory"
+            )
             if phase == "retired":
                 if retired.is_dir() and not retired.is_symlink():
                     if _boolean(data["quarantine"], "journal quarantine"):
+                        self._preflight_target(allow_journal=True)
                         self.recovery.mkdir(parents=True, exist_ok=True)
-                        os.replace(retired, self.recovery / version_name)
+                        quarantine = _safe_child_path(
+                            self.recovery,
+                            version_name,
+                            "recovery quarantine directory",
+                        )
+                        if quarantine.exists() or quarantine.is_symlink():
+                            raise InstallerLifecycleError(
+                                "recovery quarantine target already exists"
+                            )
+                        os.replace(retired, quarantine)
                         outcome = "retired_tree_quarantined"
                     else:
                         shutil.rmtree(retired)
@@ -572,7 +616,9 @@ class InstallerLifecycle:
             if require:
                 raise InstallerLifecycleError("no current BioMesh installation exists")
             return None
-        target = self.versions / current_name
+        target = _safe_child_path(
+            self.versions, current_name, "current version directory"
+        )
         if not target.is_dir() or target.is_symlink():
             raise InstallerLifecycleError(
                 "current launcher target is missing or unsafe"
@@ -670,21 +716,27 @@ class InstallerLifecycle:
             )
 
     def _preflight_target(self, *, allow_journal: bool = False) -> None:
-        _reject_symlink_chain(self.prefix)
-        if self.root.exists() and (not self.root.is_dir() or self.root.is_symlink()):
-            raise InstallerLifecycleError(
-                "installer target root is not a safe directory"
-            )
-        if self.versions.exists() and (
-            not self.versions.is_dir() or self.versions.is_symlink()
+        for path, label in (
+            (self.prefix, "installer prefix"),
+            (self.prefix / "lib", "installer lib directory"),
+            (self.prefix / "bin", "installer bin directory"),
+            (self.root, "installer target root"),
+            (self.versions, "installer versions root"),
+            (self.logs, "installer lifecycle log directory"),
+            (self.recovery, "installer recovery directory"),
         ):
-            raise InstallerLifecycleError("installer versions root is unsafe")
+            _reject_symlink_chain(path)
+            if path.exists() and (not path.is_dir() or path.is_symlink()):
+                raise InstallerLifecycleError(f"{label} is not a safe directory")
         if not allow_journal and (self.journal.exists() or self.journal.is_symlink()):
             raise InstallerLifecycleError(
                 "an interrupted lifecycle transaction requires explicit recovery"
             )
 
     def _preflight_launchers(self, *, expect_existing: bool) -> None:
+        _reject_symlink_chain(self.prefix / "bin")
+        if (self.prefix / "bin").exists() and not (self.prefix / "bin").is_dir():
+            raise InstallerLifecycleError("installer bin directory is not safe")
         for name in _LAUNCHERS:
             path = self.prefix / "bin" / name
             expected = f"../lib/biomesh/current/bin/{name}"
@@ -698,7 +750,9 @@ class InstallerLifecycle:
 
     def _ensure_launchers(self) -> None:
         bin_directory = self.prefix / "bin"
+        self._preflight_target(allow_journal=True)
         bin_directory.mkdir(parents=True, exist_ok=True)
+        self._preflight_target(allow_journal=True)
         for name in _LAUNCHERS:
             path = bin_directory / name
             expected = f"../lib/biomesh/current/bin/{name}"
@@ -719,18 +773,23 @@ class InstallerLifecycle:
             os.replace(temporary, path)
 
     def _remove_launchers(self) -> None:
+        self._preflight_target(allow_journal=True)
         self._preflight_launchers(expect_existing=True)
         for name in _LAUNCHERS:
             (self.prefix / "bin" / name).unlink()
 
     def _switch_current(self, version_name: str) -> None:
-        _safe_basename(version_name, "version directory")
-        target = self.versions / version_name
+        self._preflight_target(allow_journal=True)
+        target = _safe_child_path(
+            self.versions, version_name, "version directory"
+        )
         if not target.is_dir() or target.is_symlink():
             raise InstallerLifecycleError("activation target is missing or unsafe")
-        temporary = self.root / ".current-new"
+        temporary = _safe_child_path(
+            self.root, ".current-new", "current pointer staging path"
+        )
         if temporary.exists() or temporary.is_symlink():
-            temporary.unlink()
+            raise InstallerLifecycleError("current pointer staging path exists")
         temporary.symlink_to(f"versions/{version_name}")
         os.replace(temporary, self.current)
 
@@ -751,11 +810,14 @@ class InstallerLifecycle:
         return path.parts[1]
 
     def _begin(self, journal: dict[str, object]) -> None:
+        self._preflight_target(allow_journal=True)
         self.versions.mkdir(parents=True, exist_ok=True)
         self.logs.mkdir(parents=True, exist_ok=True)
+        self._preflight_target(allow_journal=True)
         _atomic_write(self.journal, canonical_json_bytes(journal))
 
     def _update_phase(self, journal: dict[str, object], phase: str) -> None:
+        self._preflight_target(allow_journal=True)
         journal["phase"] = phase
         _atomic_write(self.journal, canonical_json_bytes(journal))
 
@@ -790,8 +852,9 @@ class InstallerLifecycle:
         }
 
     def _load_journal(self) -> dict[str, object]:
+        contents = self.journal.read_bytes()
         value = _exact_object(
-            strict_json_loads(self.journal.read_bytes()),
+            strict_json_loads(contents),
             {
                 "affected_paths",
                 "from_version",
@@ -810,12 +873,74 @@ class InstallerLifecycle:
         )
         if _integer(value["schema_version"], "journal schema") != 1:
             raise InstallerLifecycleError("lifecycle journal schema is unsupported")
+        if canonical_json_bytes(value) != contents:
+            raise InstallerLifecycleError("lifecycle journal JSON is not canonical")
         return value
 
+    def _validate_journal_paths(
+        self,
+        *,
+        operation: str,
+        phase: str,
+        from_version: str | None,
+        target_version: str,
+        version_name: str,
+        stage_name: str,
+        manifest_sha256: str,
+        quarantine: bool,
+    ) -> None:
+        if operation not in {"install", "upgrade", "rollback", "uninstall"}:
+            raise InstallerLifecycleError("journal operation is unsupported")
+        phases = {
+            "install": {"prepared", "staged", "published", "verified", "activated"},
+            "upgrade": {"prepared", "staged", "published", "verified", "activated"},
+            "rollback": {"prepared", "activated"},
+            "uninstall": {
+                "prepared",
+                "deactivated",
+                "launchers-removed",
+                "retired",
+            },
+        }
+        if phase not in phases[operation]:
+            raise InstallerLifecycleError("journal phase is unsupported")
+        _version(target_version)
+        if from_version is not None:
+            _version(from_version)
+        _safe_basename(version_name, "journal version directory")
+        expected_version_name = _version_directory_name(
+            target_version, manifest_sha256
+        )
+        if version_name != expected_version_name:
+            raise InstallerLifecycleError("journal version identity is inconsistent")
+        expected_stage = {
+            "install": f".stage-{version_name}",
+            "upgrade": f".stage-{version_name}",
+            "rollback": "",
+            "uninstall": f".retired-{version_name}",
+        }[operation]
+        if stage_name != expected_stage:
+            raise InstallerLifecycleError("journal staging identity is inconsistent")
+        if stage_name:
+            _safe_basename(stage_name, "journal staging directory")
+        if operation == "rollback" and from_version is None:
+            raise InstallerLifecycleError("rollback journal source version is missing")
+        if operation != "uninstall" and quarantine:
+            raise InstallerLifecycleError(
+                "journal quarantine is unsupported for this operation"
+            )
+
     def _abort_candidate(self, version_name: str, stage_name: str) -> None:
+        try:
+            self._preflight_target(allow_journal=True)
+        except InstallerLifecycleError:
+            return
         current_name = self._current_name()
         for name in (stage_name, version_name):
-            path = self.versions / name
+            try:
+                path = _safe_child_path(self.versions, name, "abandoned candidate")
+            except InstallerLifecycleError:
+                continue
             if path.is_dir() and not path.is_symlink() and current_name != name:
                 shutil.rmtree(path)
         if current_name is None:
@@ -841,6 +966,7 @@ class InstallerLifecycle:
         affected_paths: tuple[str, ...],
         recovery_result: str,
     ) -> None:
+        self._preflight_target(allow_journal=True)
         self.logs.mkdir(parents=True, exist_ok=True)
         existing = sorted(self.logs.glob("*.json"))
         path = self.logs / f"{len(existing) + 1:06d}.json"
@@ -930,6 +1056,7 @@ def _regular_tree(
 def _installed_smoke(version_root: Path) -> None:
     environment = os.environ.copy()
     environment["QT_QPA_PLATFORM"] = "offscreen"
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
     with tempfile.TemporaryDirectory(prefix="biomesh-installer-smoke-") as config:
         environment["XDG_CONFIG_HOME"] = config
         commands = (
@@ -1012,6 +1139,22 @@ def _safe_relative_path(value: str, label: str) -> None:
         or value == OWNED_MANIFEST
     ):
         raise InstallerLifecycleError(f"{label} path is unsafe: {value}")
+
+
+def _safe_child_path(parent: Path, name: str, label: str) -> Path:
+    """Return one existing-parent child proven not to redirect outside it."""
+    _safe_basename(name, label)
+    _reject_symlink_chain(parent)
+    if not parent.is_dir() or parent.is_symlink():
+        raise InstallerLifecycleError(f"{label} parent is unsafe")
+    child = parent / name
+    if child.is_symlink():
+        raise InstallerLifecycleError(f"{label} is a symlink")
+    resolved_parent = parent.resolve()
+    resolved_child = child.resolve(strict=False)
+    if not resolved_child.is_relative_to(resolved_parent):
+        raise InstallerLifecycleError(f"{label} escapes its parent")
+    return child
 
 
 def _safe_basename(value: str, label: str) -> None:

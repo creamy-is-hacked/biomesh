@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-14 after P5-WP05 added the manifest-bound Linux
-installer lifecycle and supply-chain verification. The
+Snapshot verified: 2026-08-14 after P5A remediation of the independently
+reported Phase 5 security findings. The
 latest accepted phase remains P4 at exact implementation prerequisite
 `b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`; the accepted audit is represented
 by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
-3.14 full gate passes 311 tests.
+3.14 full gate passes 319 tests.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P5 – Phase 5 – Security and Distribution Hardening (in progress) |
-| Current work package | P5-WP05 – Installer lifecycle and supply-chain verification (`COMPLETE`) |
+| Current work package | P5A – Phase 5 Audit remediation (`INCOMPLETE`) |
 | Current branch | `phase-5-security-distribution` |
 | Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
 | Latest version tag | `v0.5.0` (P5 implementation audit prerequisite, not phase acceptance, 2026-08-14) |
-| Current test count | 311 passed (`pytest -q`, 2026-08-14) |
-| Next planned work package | P5A – Phase 5 Audit (blocked pending a fresh independent audit task from the pushed P5 tip) |
+| Current test count | 319 passed (`pytest -q`, 2026-08-14) |
+| Next planned work package | Fresh independent P5A audit of the pushed remediation tip (P6 remains blocked) |
 
 ## Outstanding technical debt
 

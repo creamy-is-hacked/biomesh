@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 from dataclasses import dataclass
+from dataclasses import replace as dataclass_replace
 from pathlib import Path
 
 import pytest
@@ -241,6 +243,36 @@ def test_arbitrary_host_file_access_is_denied_and_artifacts_are_unchanged(
 
     assert caught.value.receipt.outcome == "policy_violation"
     assert hashlib.sha256(completed.read_bytes()).hexdigest() == before
+    assert "must-not-cross-sandbox" not in caught.value.receipt.model_dump_json()
+
+
+def test_unreviewed_distribution_siblings_are_not_mounted(
+    tmp_path: Path,
+) -> None:
+    manifest, trust, entry_point = _selection("file_read")
+    isolated_root = tmp_path / "distribution"
+    shutil.copytree(_FIXTURE_ROOT, isolated_root)
+    (isolated_root / "host-secret.txt").write_text("must-not-cross-sandbox")
+    isolated_entry_point = dataclass_replace(
+        entry_point,
+        distribution_root=isolated_root,
+    )
+    plugin = load_plugins(
+        manifest,
+        trust,
+        available_entry_points=[isolated_entry_point],
+    )[0].instance
+    request = FieldStepRequest(
+        interface_version=1,
+        field_id="/opt/plugin/host-secret.txt",
+        unit="mol m^-3",
+        shape=(1, 1),
+        values=(1.0,),
+        time_step_s=1.0,
+    )
+    with pytest.raises(PluginSandboxError) as caught:
+        plugin.advance_field(request)  # type: ignore[attr-defined]
+    assert caught.value.receipt.outcome == "policy_violation"
     assert "must-not-cross-sandbox" not in caught.value.receipt.model_dump_json()
 
 

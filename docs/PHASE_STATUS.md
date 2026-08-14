@@ -848,6 +848,31 @@ P5-WP05 validation evidence:
   archive/plugin trust, or P5 acceptance. The completed implementation is
   frozen for independent audit by `v0.5.0`; P5A remains incomplete.
 
+P5A remediation evidence:
+
+- The remediation started from exact pushed implementation commit
+  `d41c7cbbadbe0ed1af9c5547dcb1429da3f99a8f` on
+  `origin/phase-5-security-distribution`. Independent reproductions confirmed
+  all three Major findings before changes: nested prefix symlinks redirected
+  writes, a traversal stage name redirected recovery deletion, and a broad
+  plugin root exposed a sibling file.
+- Installer preflight now rejects symlinked prefix/lib/bin and lifecycle-root
+  components; safe direct-child derivation and strict journal identity/phase
+  validation prevent both write and recovery redirection. Plugin preflight
+  inventories and rechecks only the selected entry-point module/package and
+  mounts individual declared dependency package roots rather than broad
+  site-package content. Source-run metadata records commit, working-tree
+  identity, and state; run metadata records the complete declared direct
+  runtime dependency inventory. The existing PySide6 binding pin is covered by
+  a conflicting-preference regression test.
+- Focused remediation/installer/plugin/provenance/GUI tests passed 48 tests;
+  the explicit BP/AR/PL/IN evidence collection passed 85 tests. The final gate
+  passed `python -m biomesh --help`, `ruff check .`, `mypy src`, `pytest -q`
+  with 319 passed, and `git diff --check`.
+- P5A remains `INCOMPLETE`; this remediation does not accept Phase 5, create an
+  accepted-audit tag, merge to `main`, or unblock P6. A separate fresh P5A audit
+  must use the pushed remediation commit.
+
 ## P6 – Phase 6 – Portable Operations
 
 Source: `docs/10_PRE_V1_ROADMAP.md`.

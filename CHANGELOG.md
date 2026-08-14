@@ -61,6 +61,24 @@ All notable repository changes are documented here.
   other user/research data. Pyqtgraph is also bound explicitly to BioMesh's
   supported PySide6 runtime so unrelated installed Qt bindings cannot mix ABIs
   during required GUI smoke verification.
+- P5A remediation – Closed the reported nested `PREFIX/lib`/`PREFIX/bin`
+  symlink write redirection and lifecycle-journal stage traversal classes with
+  complete prefix-component preflight, derived safe child paths, and strict
+  operation/phase/version/stage journal validation. Plugin execution now
+  inventories and rechecks only the selected entry-point module/package and
+  mounts only that payload plus individual declared dependency package roots;
+  sibling distribution files and broad site-package roots are not mounted.
+  Source-run metadata now records the exact commit, source-tree identity, and
+  clean/modified working-state label, while run dependency metadata centralizes
+  the complete declared direct runtime dependency inventory. The existing
+  PySide6 backend pin has a competing-binding regression test. P5A remains
+  incomplete and requires a new independent audit.
+- P5A remediation validation – From exact pushed tip
+  `d41c7cbbadbe0ed1af9c5547dcb1429da3f99a8f`, Python 3.14.4 passed the
+  explicit BP/AR/PL/IN evidence collection (85 tests), the complete suite
+  (319 tests), `ruff check .`, `mypy src`, `python -m biomesh --help`, and
+  `git diff --check`. P5A remains `INCOMPLETE`; Phase 6 remains blocked pending
+  a fresh independent audit.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase
