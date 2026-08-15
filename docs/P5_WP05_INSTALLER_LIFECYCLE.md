@@ -103,9 +103,19 @@ then resolves only that recorded transaction:
 - a fully published candidate is reverified, smoke-tested, and activated;
 - interrupted rollback retains whichever complete verified target the atomic
   pointer names;
-- uninstall before retirement restores the exact verified version/launchers;
-- uninstall after atomic retirement finishes only the recorded removal or
-  quarantine.
+- uninstall before retirement, including the crash window after the atomic
+  target-to-retired rename but before its phase update, accepts exactly one
+  target/retired tree whose canonical owned-file manifest, version, manifest
+  hash, wheel identity, provenance identity, and every owned byte match the
+  journal; a current-version restore reruns both installed smoke paths before
+  any launcher or `current` mutation;
+- uninstall after atomic retirement removes only a fully journal-bound clean
+  tree or completes the exact previously acknowledged quarantine state.
+
+A missing, malformed, mismatched, modified, extra, symlinked, ambiguous, or
+unverified recovery tree fails closed. Recovery leaves `current` and prefix
+launchers unchanged and retains the canonical journal for explicit operator
+recovery; it never reports that rejected state as verified.
 
 Sequence-numbered canonical logs record operation, versions, manifest
 identity, result, recovery result, and explicitly affected owned paths. They do

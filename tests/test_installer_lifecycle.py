@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
@@ -386,7 +387,16 @@ def test_mt_in_10_unowned_file_blocks_removal_and_explicit_quarantine_keeps_it(
 
 @pytest.mark.parametrize(
     "boundary",
-    ["uninstall-deactivated", "uninstall-launchers-removed", "uninstall-retired"],
+    [
+        "uninstall-prepared",
+        "uninstall-current-unlinked",
+        "uninstall-deactivated",
+        "uninstall-launcher-biomesh-removed",
+        "uninstall-launchers-removed",
+        "uninstall-target-retired",
+        "uninstall-retired",
+        "uninstall-removed",
+    ],
 )
 def test_mt_in_11_interrupted_uninstall_recovers_explicit_safe_state(
     tmp_path: Path, boundary: str
@@ -404,15 +414,234 @@ def test_mt_in_11_interrupted_uninstall_recovers_explicit_safe_state(
     )
     with pytest.raises(LifecycleInterruption, match=boundary):
         interrupted.uninstall("1.0.0")
-    recovered = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    smoke_calls: list[str] = []
+    recovered = InstallerLifecycle(
+        prefix, smoke_runner=lambda path: smoke_calls.append(path.name)
+    )
     outcome = recovered.recover()
     assert user.read_bytes() == b"immutable research bytes"
-    if boundary == "uninstall-retired":
+    if boundary in {"uninstall-retired", "uninstall-removed"}:
         assert recovered.current_version() is None
-        assert outcome == "retired_tree_removed"
+        assert outcome in {"retired_tree_removed", "retired_tree_already_removed"}
+        assert smoke_calls == []
     else:
         assert recovered.current_version() == "1.0.0"
         assert outcome == "verified_installation_restored"
+        assert len(smoke_calls) == 1
+        assert recovered.verify_current(require=True).verified
+
+
+def test_p5a_unmanifested_retired_tree_recovery_fails_without_activation(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    root = prefix / "lib" / "biomesh"
+    versions = root / "versions"
+    versions.mkdir(parents=True)
+    manifest_sha256 = "c" * 64
+    version_name = f"1.0.0-{manifest_sha256}"
+    retired_name = f".retired-{version_name}"
+    retired = versions / retired_name
+    (retired / "bin").mkdir(parents=True)
+    for name in ("biomesh", "biomesh-gui"):
+        (retired / "bin" / name).write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    journal = {
+        "affected_paths": [],
+        "from_version": "1.0.0",
+        "manifest_sha256": manifest_sha256,
+        "operation": "uninstall",
+        "phase": "launchers-removed",
+        "provenance_sha256": _PROVENANCE_SHA256,
+        "quarantine": False,
+        "schema_version": 1,
+        "stage_name": retired_name,
+        "target_version": "1.0.0",
+        "version_name": version_name,
+        "wheel_sha256": _WHEEL_SHA256,
+    }
+    journal_path = root / ".lifecycle-transaction.json"
+    journal_bytes = canonical_json_bytes(journal)
+    journal_path.write_bytes(journal_bytes)
+    smoke_calls: list[Path] = []
+
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=smoke_calls.append)
+    with pytest.raises(InstallerLifecycleError, match="journal identity mismatch"):
+        lifecycle.recover()
+
+    assert journal_path.read_bytes() == journal_bytes
+    assert retired.is_dir()
+    assert not lifecycle.current.exists()
+    assert not (prefix / "bin").exists()
+    assert smoke_calls == []
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ["malformed-manifest", "modified", "extra", "symlinked", "non-regular-tree"],
+)
+def test_p5a_changed_retired_tree_recovery_fails_before_activation(
+    tmp_path: Path, corruption: str
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("uninstall-target-retired"),
+    )
+    with pytest.raises(LifecycleInterruption, match="uninstall-target-retired"):
+        interrupted.uninstall("1.0.0")
+    journal_path = prefix / "lib" / "biomesh" / ".lifecycle-transaction.json"
+    journal_bytes = journal_path.read_bytes()
+    journal = json.loads(journal_bytes)
+    retired = prefix / "lib" / "biomesh" / "versions" / journal["stage_name"]
+    owned = retired / "app" / "biomesh" / "__init__.py"
+    if corruption == "malformed-manifest":
+        (retired / ".biomesh-owned.json").write_bytes(b"{}\n")
+    elif corruption == "modified":
+        owned.write_text("modified\n", encoding="utf-8")
+    elif corruption == "extra":
+        (retired / "unowned.txt").write_text("extra\n", encoding="utf-8")
+    elif corruption == "symlinked":
+        external = tmp_path / "external.py"
+        external.write_text("external\n", encoding="utf-8")
+        owned.unlink()
+        owned.symlink_to(external)
+    else:
+        shutil.rmtree(retired)
+        retired.write_text("not a version tree\n", encoding="utf-8")
+    smoke_calls: list[Path] = []
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=smoke_calls.append)
+    with pytest.raises(InstallerLifecycleError, match="uninstall recovery"):
+        recovered.recover()
+
+    assert journal_path.read_bytes() == journal_bytes
+    assert retired.exists()
+    assert not recovered.current.exists()
+    assert not any((prefix / "bin").iterdir())
+    assert smoke_calls == []
+
+
+@pytest.mark.parametrize(
+    "identity", ["version", "manifest", "wheel", "provenance"]
+)
+def test_p5a_retired_tree_must_match_every_journal_identity(
+    tmp_path: Path, identity: str
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("uninstall-target-retired"),
+    )
+    with pytest.raises(LifecycleInterruption, match="uninstall-target-retired"):
+        interrupted.uninstall("1.0.0")
+    root = prefix / "lib" / "biomesh"
+    journal_path = root / ".lifecycle-transaction.json"
+    journal = json.loads(journal_path.read_bytes())
+    retired = root / "versions" / journal["stage_name"]
+    if identity == "version":
+        journal["target_version"] = "2.0.0"
+        journal["from_version"] = "2.0.0"
+    elif identity == "manifest":
+        journal["manifest_sha256"] = "c" * 64
+    elif identity == "wheel":
+        journal["wheel_sha256"] = "c" * 64
+    else:
+        journal["provenance_sha256"] = "c" * 64
+    if identity in {"version", "manifest"}:
+        journal["version_name"] = (
+            f"{journal['target_version']}-{journal['manifest_sha256']}"
+        )
+        journal["stage_name"] = f".retired-{journal['version_name']}"
+        renamed = root / "versions" / journal["stage_name"]
+        retired.rename(renamed)
+        retired = renamed
+    journal_bytes = canonical_json_bytes(journal)
+    journal_path.write_bytes(journal_bytes)
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    with pytest.raises(InstallerLifecycleError, match="journal identity mismatch"):
+        recovered.recover()
+
+    assert journal_path.read_bytes() == journal_bytes
+    assert retired.is_dir()
+    assert not recovered.current.exists()
+    assert not any((prefix / "bin").iterdir())
+
+
+def test_p5a_recovery_smoke_failure_retains_retired_tree_and_journal(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("uninstall-target-retired"),
+    )
+    with pytest.raises(LifecycleInterruption, match="uninstall-target-retired"):
+        interrupted.uninstall("1.0.0")
+    root = prefix / "lib" / "biomesh"
+    journal_path = root / ".lifecycle-transaction.json"
+    journal_bytes = journal_path.read_bytes()
+    journal = json.loads(journal_bytes)
+    retired = root / "versions" / journal["stage_name"]
+    target = root / "versions" / journal["version_name"]
+
+    def fail_smoke(path: Path) -> None:
+        assert path == retired
+        assert not target.exists()
+        assert not (root / "current").exists()
+        assert not any((prefix / "bin").iterdir())
+        raise InstallerLifecycleError("simulated recovery smoke failure")
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=fail_smoke)
+    with pytest.raises(InstallerLifecycleError, match="recovery smoke failure"):
+        recovered.recover()
+
+    assert journal_path.read_bytes() == journal_bytes
+    assert retired.is_dir()
+    assert not target.exists()
+    assert not recovered.current.exists()
+    assert not any((prefix / "bin").iterdir())
+
+
+def test_p5a_interrupted_modified_tree_quarantine_is_verified_and_retained(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    target = lifecycle._find_version("1.0.0")
+    assert target is not None
+    local = target / "local-not-owned.txt"
+    local.write_bytes(b"must survive recovery")
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("uninstall-quarantined"),
+    )
+    with pytest.raises(LifecycleInterruption, match="uninstall-quarantined"):
+        interrupted.uninstall(
+            "1.0.0",
+            acknowledge_paths=("extra:local-not-owned.txt",),
+            quarantine_modified=True,
+        )
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    assert recovered.recover() == "retired_tree_already_quarantined"
+    quarantined = next((prefix / "lib" / "biomesh" / "recovery").iterdir())
+    assert (quarantined / "local-not-owned.txt").read_bytes() == (
+        b"must survive recovery"
+    )
+    assert not recovered.journal.exists()
+    assert recovered.current_version() is None
 
 
 def test_mt_in_12_mismatched_launcher_target_blocks_lifecycle_mutation(

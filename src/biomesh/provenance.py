@@ -9,16 +9,18 @@ from __future__ import annotations
 import hashlib
 import platform as platform_module
 import re
+import stat
 import subprocess
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from typing import Protocol
 
 from biomesh import __version__
 from biomesh.build_identity import BuildProvenanceError, load_embedded_build_identity
 from biomesh.outputs import RunMetadata
 
 _SOURCE_TREE_DOMAIN = b"biomesh-source-tree-v1\0"
-_WORKING_TREE_DOMAIN = b"biomesh-working-tree-v1\0"
+_WORKING_TREE_DOMAIN = b"biomesh-working-tree-v2\0"
 
 RUNTIME_DISTRIBUTIONS = (
     "cryptography",
@@ -35,6 +37,10 @@ RUNTIME_DISTRIBUTIONS = (
 
 class ProvenanceError(ValueError):
     """Raised when required run provenance cannot be collected safely."""
+
+
+class _HashWriter(Protocol):
+    def update(self, value: bytes, /) -> None: ...
 
 
 def collect_run_metadata(
@@ -157,23 +163,27 @@ def _source_identity(source_root: Path) -> tuple[str, str, str]:
         )
         digest = hashlib.sha256()
         digest.update(_WORKING_TREE_DOMAIN)
-        digest.update(commit.encode("ascii"))
-        digest.update(b"\0")
-        digest.update(listing)
-        digest.update(status.stdout)
-        digest.update(diff)
+        _update_identity_field(digest, b"commit", commit.encode("ascii"))
+        _update_identity_field(digest, b"tracked-tree", listing)
+        _update_identity_field(digest, b"status", status.stdout)
+        _update_identity_field(digest, b"diff", diff)
         for relative_bytes in sorted(
             item for item in untracked.split(b"\0") if item
         ):
             relative = relative_bytes.decode("utf-8")
             path = source_root / relative
-            if path.is_symlink() or not path.is_file():
+            metadata = path.lstat()
+            if not stat.S_ISREG(metadata.st_mode):
                 raise ProvenanceError(
                     "source working state contains an unsafe untracked path"
                 )
-            digest.update(relative_bytes)
-            digest.update(b"\0")
-            digest.update(path.read_bytes())
+            _update_identity_field(digest, b"untracked-path", relative_bytes)
+            _update_identity_field(
+                digest,
+                b"untracked-mode",
+                stat.S_IMODE(metadata.st_mode).to_bytes(4, "big"),
+            )
+            _update_identity_field(digest, b"untracked-content", path.read_bytes())
         return commit, digest.hexdigest(), "modified"
     except OSError as error:
         raise ProvenanceError("source state cannot be verified") from error
@@ -188,6 +198,16 @@ def _git_bytes(source_root: Path, *arguments: str) -> bytes:
     if result.returncode != 0:
         raise ProvenanceError("source Git identity cannot be resolved")
     return result.stdout
+
+
+def _update_identity_field(
+    digest: _HashWriter, label: bytes, value: bytes
+) -> None:
+    """Add one unambiguous typed field to a working-tree identity."""
+    digest.update(len(label).to_bytes(2, "big"))
+    digest.update(label)
+    digest.update(len(value).to_bytes(8, "big"))
+    digest.update(value)
 
 
 def _git_text(source_root: Path, *arguments: str) -> str:

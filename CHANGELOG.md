@@ -79,6 +79,21 @@ All notable repository changes are documented here.
   (319 tests), `ruff check .`, `mypy src`, `python -m biomesh --help`, and
   `git diff --check`. P5A remains `INCOMPLETE`; Phase 6 remains blocked pending
   a fresh independent audit.
+- P5A installer recovery/provenance remediation – Uninstall recovery now binds
+  the exact canonical owned-file manifest, manifest version/hash, wheel and
+  provenance identities, and complete tree state to its journal before any
+  restore. Current-version recovery reruns installed CLI/offscreen-GUI smoke
+  before launcher or `current` activation, including the target-to-retired
+  rename crash window; rejection leaves activation state unchanged and retains
+  the journal. Modified working-tree identity uses a versioned, typed,
+  length-delimited v2 encoding that includes untracked regular-file permission
+  mode, path, and bytes while preserving clean build identity behavior.
+- P5A installer recovery/provenance remediation validation – From exact start
+  `afea7c11a148cbbdd52df2f2534bd187074dcdb6`, Python 3.14.4 passed 49 focused
+  installer/provenance tests, the 103-test BP/AR/PL/IN collection, the complete
+  suite with 337 tests, `python -m biomesh --help`, Ruff, strict mypy over 65
+  source files, and `git diff --check`. P5A remains `INCOMPLETE`; this defensive
+  remediation is not an acceptance audit and does not unblock Phase 6.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

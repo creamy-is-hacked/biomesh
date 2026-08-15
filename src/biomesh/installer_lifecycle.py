@@ -435,8 +435,10 @@ class InstallerLifecycle:
             quarantine=quarantine_modified,
         )
         self._begin(journal)
+        self._fault("uninstall-prepared")
         if is_current:
             self.current.unlink()
+            self._fault("uninstall-current-unlinked")
             self._update_phase(journal, "deactivated")
             self._fault("uninstall-deactivated")
             self._remove_launchers()
@@ -447,6 +449,7 @@ class InstallerLifecycle:
         if retired.exists() or retired.is_symlink():
             raise InstallerLifecycleError("retired directory already exists")
         os.replace(target, retired)
+        self._fault("uninstall-target-retired")
         self._update_phase(journal, "retired")
         self._fault("uninstall-retired")
         recovery_result = "not_required"
@@ -461,9 +464,11 @@ class InstallerLifecycle:
                     "uninstall recovery target already exists"
                 )
             os.replace(retired, quarantine)
+            self._fault("uninstall-quarantined")
             recovery_result = "modified_tree_quarantined"
         else:
             shutil.rmtree(retired)
+            self._fault("uninstall-removed")
         self._log(
             "uninstall",
             version if is_current else self.current_version(),
@@ -562,8 +567,29 @@ class InstallerLifecycle:
                 self.versions, version_name, "recovery version directory"
             )
             if phase == "retired":
+                if target.exists():
+                    raise InstallerLifecycleError(
+                        "uninstall recovery target conflicts with retired phase"
+                    )
+                if retired.exists() and not retired.is_dir():
+                    raise InstallerLifecycleError(
+                        "uninstall recovery retired tree is not a directory"
+                    )
                 if retired.is_dir() and not retired.is_symlink():
-                    if _boolean(data["quarantine"], "journal quarantine"):
+                    quarantine_requested = _boolean(
+                        data["quarantine"], "journal quarantine"
+                    )
+                    allowed_mismatches = affected if quarantine_requested else ()
+                    self._verify_journal_tree(
+                        retired,
+                        version_name=version_name,
+                        target_version=target_version,
+                        manifest_sha256=manifest_sha256,
+                        wheel_sha256=wheel_sha256,
+                        provenance_sha256=provenance_sha256,
+                        allowed_mismatches=allowed_mismatches,
+                    )
+                    if quarantine_requested:
                         self._preflight_target(allow_journal=True)
                         self.recovery.mkdir(parents=True, exist_ok=True)
                         quarantine = _safe_child_path(
@@ -581,17 +607,81 @@ class InstallerLifecycle:
                         shutil.rmtree(retired)
                         outcome = "retired_tree_removed"
                 else:
-                    outcome = "retired_tree_already_resolved"
+                    if _boolean(data["quarantine"], "journal quarantine"):
+                        quarantine = _safe_child_path(
+                            self.recovery,
+                            version_name,
+                            "recovery quarantine directory",
+                        )
+                        if not quarantine.is_dir() or quarantine.is_symlink():
+                            raise InstallerLifecycleError(
+                                "recorded uninstall quarantine is missing"
+                            )
+                        self._verify_journal_tree(
+                            quarantine,
+                            version_name=version_name,
+                            target_version=target_version,
+                            manifest_sha256=manifest_sha256,
+                            wheel_sha256=wheel_sha256,
+                            provenance_sha256=provenance_sha256,
+                            allowed_mismatches=affected,
+                        )
+                        outcome = "retired_tree_already_quarantined"
+                    else:
+                        outcome = "retired_tree_already_removed"
             else:
-                if (
-                    retired.is_dir()
-                    and not retired.is_symlink()
-                    and not target.exists()
-                ):
+                target_present = target.is_dir() and not target.is_symlink()
+                retired_present = retired.is_dir() and not retired.is_symlink()
+                if target.exists() and not target_present:
+                    raise InstallerLifecycleError(
+                        "uninstall recovery target tree is not a directory"
+                    )
+                if retired.exists() and not retired_present:
+                    raise InstallerLifecycleError(
+                        "uninstall recovery retired tree is not a directory"
+                    )
+                if target_present == retired_present:
+                    raise InstallerLifecycleError(
+                        "uninstall recovery requires exactly one recorded version tree"
+                    )
+                recovery_tree = target if target_present else retired
+                self._verify_journal_tree(
+                    recovery_tree,
+                    version_name=version_name,
+                    target_version=target_version,
+                    manifest_sha256=manifest_sha256,
+                    wheel_sha256=wheel_sha256,
+                    provenance_sha256=provenance_sha256,
+                )
+                restore_current = _optional_string(
+                    data["from_version"], "journal source version"
+                )
+                if restore_current is not None:
+                    self._preflight_recovery_activation(version_name)
+                    self._smoke_runner(recovery_tree)
+                if retired_present:
                     os.replace(retired, target)
-                if _optional_string(data["from_version"], "journal source version"):
+                    self._verify_journal_tree(
+                        target,
+                        version_name=version_name,
+                        target_version=target_version,
+                        manifest_sha256=manifest_sha256,
+                        wheel_sha256=wheel_sha256,
+                        provenance_sha256=provenance_sha256,
+                    )
+                if restore_current is not None:
                     self._ensure_launchers()
                     self._switch_current(version_name)
+                    activated = self._verify_path(target, activation=True)
+                    self._require_journal_identity(
+                        "uninstall recovery activation",
+                        activated,
+                        target_version=target_version,
+                        manifest_sha256=manifest_sha256,
+                        wheel_sha256=wheel_sha256,
+                        provenance_sha256=provenance_sha256,
+                    )
+                    _require_verified("uninstall recovery activation", activated)
                 outcome = "verified_installation_restored"
             self._log(
                 operation,
@@ -631,7 +721,11 @@ class InstallerLifecycle:
         return None if result is None else result.version
 
     def _verify_path(
-        self, target: Path, *, activation: bool = False
+        self,
+        target: Path,
+        *,
+        activation: bool = False,
+        expected_name: str | None = None,
     ) -> VerificationResult:
         manifest_path = target / OWNED_MANIFEST
         if not manifest_path.is_file() or manifest_path.is_symlink():
@@ -646,11 +740,12 @@ class InstallerLifecycle:
                 "UNKNOWN", _digest(contents), (f"manifest:{error}",)
             )
         result = _verify_tree(target, manifest, _digest(contents), installed=True)
-        expected_name = _version_directory_name(
+        manifest_name = _version_directory_name(
             manifest.version, result.manifest_sha256
         )
         mismatches = list(result.mismatches)
-        if target.name != expected_name:
+        owned_name = target.name if expected_name is None else expected_name
+        if owned_name != manifest_name:
             mismatches.append(f"ownership-directory:{target.name}")
         if activation:
             if self._current_name() != target.name:
@@ -667,6 +762,60 @@ class InstallerLifecycle:
             manifest.wheel_sha256,
             manifest.provenance_sha256,
         )
+
+    def _verify_journal_tree(
+        self,
+        target: Path,
+        *,
+        version_name: str,
+        target_version: str,
+        manifest_sha256: str,
+        wheel_sha256: str,
+        provenance_sha256: str,
+        allowed_mismatches: tuple[str, ...] = (),
+    ) -> VerificationResult:
+        result = self._verify_path(target, expected_name=version_name)
+        self._require_journal_identity(
+            "uninstall recovery",
+            result,
+            target_version=target_version,
+            manifest_sha256=manifest_sha256,
+            wheel_sha256=wheel_sha256,
+            provenance_sha256=provenance_sha256,
+        )
+        expected_mismatches = tuple(sorted(set(allowed_mismatches)))
+        if result.mismatches != expected_mismatches:
+            detail = ", ".join(result.mismatches) or "none"
+            expected = ", ".join(expected_mismatches) or "none"
+            raise InstallerLifecycleError(
+                "uninstall recovery verification failed: "
+                f"observed mismatches {detail}; recorded mismatches {expected}"
+            )
+        return result
+
+    @staticmethod
+    def _require_journal_identity(
+        operation: str,
+        result: VerificationResult,
+        *,
+        target_version: str,
+        manifest_sha256: str,
+        wheel_sha256: str,
+        provenance_sha256: str,
+    ) -> None:
+        mismatches: list[str] = []
+        if result.version != target_version:
+            mismatches.append("version")
+        if result.manifest_sha256 != manifest_sha256:
+            mismatches.append("manifest")
+        if result.wheel_sha256 != wheel_sha256:
+            mismatches.append("wheel")
+        if result.provenance_sha256 != provenance_sha256:
+            mismatches.append("provenance")
+        if mismatches:
+            raise InstallerLifecycleError(
+                f"{operation} journal identity mismatch: {', '.join(mismatches)}"
+            )
 
     def _find_version(self, version: str) -> Path | None:
         matches: list[Path] = []
@@ -772,11 +921,45 @@ class InstallerLifecycle:
             temporary.symlink_to(expected)
             os.replace(temporary, path)
 
+    def _preflight_recovery_activation(self, version_name: str) -> None:
+        current_name = self._current_name()
+        if current_name not in {None, version_name}:
+            raise InstallerLifecycleError(
+                "uninstall recovery current pointer names a different version"
+            )
+        current_stage = _safe_child_path(
+            self.root, ".current-new", "current pointer staging path"
+        )
+        if current_stage.exists() or current_stage.is_symlink():
+            raise InstallerLifecycleError("current pointer staging path exists")
+        bin_directory = self.prefix / "bin"
+        _reject_symlink_chain(bin_directory)
+        if bin_directory.exists() and (
+            not bin_directory.is_dir() or bin_directory.is_symlink()
+        ):
+            raise InstallerLifecycleError("installer bin directory is not safe")
+        for name in _LAUNCHERS:
+            path = bin_directory / name
+            expected = f"../lib/biomesh/current/bin/{name}"
+            if path.is_symlink():
+                if os.readlink(path) != expected:
+                    raise InstallerLifecycleError(
+                        f"launcher ownership mismatch: bin/{name}"
+                    )
+            elif path.exists():
+                raise InstallerLifecycleError(f"unowned launcher exists: bin/{name}")
+            temporary = bin_directory / f".{name}.biomesh-new"
+            if temporary.exists() or temporary.is_symlink():
+                raise InstallerLifecycleError(
+                    f"launcher staging path exists: {temporary}"
+                )
+
     def _remove_launchers(self) -> None:
         self._preflight_target(allow_journal=True)
         self._preflight_launchers(expect_existing=True)
         for name in _LAUNCHERS:
             (self.prefix / "bin" / name).unlink()
+            self._fault(f"uninstall-launcher-{name}-removed")
 
     def _switch_current(self, version_name: str) -> None:
         self._preflight_target(allow_journal=True)
@@ -925,6 +1108,14 @@ class InstallerLifecycle:
             _safe_basename(stage_name, "journal staging directory")
         if operation == "rollback" and from_version is None:
             raise InstallerLifecycleError("rollback journal source version is missing")
+        if (
+            operation == "uninstall"
+            and from_version is not None
+            and from_version != target_version
+        ):
+            raise InstallerLifecycleError(
+                "uninstall journal source version is inconsistent"
+            )
         if operation != "uninstall" and quarantine:
             raise InstallerLifecycleError(
                 "journal quarantine is unsupported for this operation"

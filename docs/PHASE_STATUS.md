@@ -873,6 +873,36 @@ P5A remediation evidence:
   accepted-audit tag, merge to `main`, or unblock P6. A separate fresh P5A audit
   must use the pushed remediation commit.
 
+P5A installer recovery/provenance remediation evidence:
+
+- The follow-up remediation started from exact commit
+  `afea7c11a148cbbdd52df2f2534bd187074dcdb6`. Safe temporary reproductions
+  confirmed that a canonical `launchers-removed` journal activated an
+  unmanifested retired tree as `verified_installation_restored`, deleted the
+  journal, and ran zero smoke checks; the target-to-retired rename crash window
+  likewise activated a modified tree whose later verification reported
+  `modified:app/biomesh/__init__.py`, with zero smoke calls.
+- Uninstall recovery now accepts exactly one journal-named target or retired
+  tree and requires its canonical manifest, version, manifest SHA-256, wheel
+  SHA-256, provenance SHA-256, directory identity, and complete owned-file tree
+  to match before restore. It smoke-checks the installed CLI/offscreen GUI
+  before current-version activation and preflights all launcher/current paths.
+  Missing, malformed, mismatched, modified, extra, symlinked, ambiguous, or
+  smoke-failing state leaves launchers/current unchanged and retains the journal
+  for explicit recovery. Exact acknowledged quarantine remains ownership-safe.
+- A separate temporary Git fixture confirmed that changing equal untracked
+  bytes from mode 0644 to 0755 previously produced the same modified identity.
+  The versioned `biomesh-working-tree-v2` encoding length-delimits typed fields
+  and binds each untracked regular file's permission mode, path, and bytes;
+  repeated collection is deterministic and the clean identity path is unchanged.
+- Python 3.14.4 passed 49 focused installer/provenance tests, the explicit
+  103-test BP/AR/PL/IN evidence collection, `python -m biomesh --help`, Ruff,
+  strict mypy over 65 source files, the complete suite with 337 tests, and
+  `git diff --check` on 2026-08-15.
+- P5A remains `INCOMPLETE`; this remediation does not accept Phase 5, merge or
+  tag an audit, unblock P6, or add later-phase behavior. A fresh independent
+  P5A audit must assess the pushed remediation tip.
+
 ## P6 – Phase 6 – Portable Operations
 
 Source: `docs/10_PRE_V1_ROADMAP.md`.

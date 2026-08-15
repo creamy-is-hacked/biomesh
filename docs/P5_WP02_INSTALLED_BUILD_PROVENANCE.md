@@ -77,10 +77,16 @@ Run metadata uses the embedded commit when Git is unavailable.
 Source-run metadata also records a domain-separated source/working-tree
 identity and a `clean` or `modified` state label. A modified source run may
 retain the same Git commit, but its working-state identity is distinct and is
-not presented as a clean source identity. Run dependency metadata is sourced
-from one centralized inventory containing every direct runtime dependency
-declared in `pyproject.toml`, including cryptography, PySide6, and pyqtgraph;
-transitive dependencies are outside that explicitly labeled inventory.
+not presented as a clean source identity. Modified identities use the
+`biomesh-working-tree-v2` domain: every commit, tracked-tree, status, diff, and
+untracked-file field is type-labelled and length-delimited, and each untracked
+regular file binds its path, permission mode, and bytes. This versioned encoding
+prevents path/content ambiguity and distinguishes an executable-mode change;
+the clean `biomesh-source-tree-v1` identity is unchanged. Run dependency
+metadata is sourced from one centralized inventory containing every direct
+runtime dependency declared in `pyproject.toml`, including cryptography,
+PySide6, and pyqtgraph; transitive dependencies are outside that explicitly
+labelled inventory.
 
 ## Determinism and accepted-output boundary
 
