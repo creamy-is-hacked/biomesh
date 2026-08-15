@@ -418,11 +418,19 @@ def test_mt_in_11_interrupted_uninstall_recovers_explicit_safe_state(
     recovered = InstallerLifecycle(
         prefix, smoke_runner=lambda path: smoke_calls.append(path.name)
     )
+    if boundary == "uninstall-removed":
+        with pytest.raises(InstallerLifecycleError, match="retired tree is missing"):
+            recovered.recover()
+        assert user.read_bytes() == b"immutable research bytes"
+        assert recovered.current_version() is None
+        assert recovered.journal.exists()
+        assert smoke_calls == []
+        return
     outcome = recovered.recover()
     assert user.read_bytes() == b"immutable research bytes"
-    if boundary in {"uninstall-retired", "uninstall-removed"}:
+    if boundary == "uninstall-retired":
         assert recovered.current_version() is None
-        assert outcome in {"retired_tree_removed", "retired_tree_already_removed"}
+        assert outcome == "retired_tree_removed"
         assert smoke_calls == []
     else:
         assert recovered.current_version() == "1.0.0"

@@ -628,7 +628,9 @@ class InstallerLifecycle:
                         )
                         outcome = "retired_tree_already_quarantined"
                     else:
-                        outcome = "retired_tree_already_removed"
+                        raise InstallerLifecycleError(
+                            "recorded uninstall retired tree is missing"
+                        )
             else:
                 target_present = target.is_dir() and not target.is_symlink()
                 retired_present = retired.is_dir() and not retired.is_symlink()
