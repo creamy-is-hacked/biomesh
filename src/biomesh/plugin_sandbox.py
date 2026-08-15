@@ -50,7 +50,6 @@ _PYTHON_PATH = Path("/usr/bin/python")
 _PRLIMIT_PATH = Path("/usr/bin/prlimit")
 _MINIMUM_BWRAP_VERSION = (0, 8, 0)
 _DECLARED_RUNTIME_DISTRIBUTIONS = (
-    "biomesh",
     "cryptography",
     "matplotlib",
     "numba",
@@ -75,6 +74,15 @@ class PluginDistribution:
     mount_source: Path
     mount_target: str
     inventory: tuple[tuple[str, int, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _PackageMount:
+    """One exact Python package mount, never its containing installation root."""
+
+    source: Path
+    target: str
+    python_path: str
 
 
 def inspect_plugin_distribution(
@@ -177,6 +185,92 @@ def _reject_symlink_chain(path: Path) -> None:
             raise PluginError(f"reviewed plugin path uses symlink: {current}")
         if not current.exists():
             break
+
+
+def _biomesh_package_mounts() -> tuple[_PackageMount, ...]:
+    """Resolve only BioMesh-owned package roots required by the worker."""
+    package_file = Path(__file__)
+    if not package_file.is_absolute():
+        package_file = package_file.absolute()
+    _reject_symlink_chain(package_file)
+    try:
+        resolved_file = package_file.resolve(strict=True)
+    except OSError as error:
+        raise PluginError("BioMesh package root is unavailable") from error
+    package = resolved_file.parent
+    required = (package / "__init__.py", package / "plugin_worker.py")
+    if (
+        package.name != "biomesh"
+        or not package.is_dir()
+        or package.is_symlink()
+        or any(not path.is_file() or path.is_symlink() for path in required)
+    ):
+        raise PluginError("BioMesh package root cannot be resolved safely")
+    _reject_symlink_chain(package)
+    try:
+        installed = distribution("biomesh")
+    except PackageNotFoundError as error:
+        raise PluginError("BioMesh package metadata is unavailable") from error
+    if installed.files is None:
+        raise PluginError("BioMesh package metadata inventory is unavailable")
+    metadata_names = {
+        parts[0]
+        for item in installed.files
+        if (parts := PurePosixPath(str(item)).parts)
+        and len(parts) > 1
+        and parts[0].endswith(".dist-info")
+    }
+    if len(metadata_names) != 1:
+        raise PluginError("BioMesh package metadata root is ambiguous")
+    metadata_name = metadata_names.pop()
+    normalized_metadata_name = metadata_name.casefold().replace("_", "-")
+    if (
+        PurePosixPath(metadata_name).name != metadata_name
+        or not normalized_metadata_name.startswith("biomesh-")
+        or not normalized_metadata_name.endswith(".dist-info")
+    ):
+        raise PluginError("BioMesh package metadata root is unsafe")
+    metadata_candidate = Path(str(installed.locate_file(metadata_name)))
+    if not metadata_candidate.is_absolute():
+        metadata_candidate = metadata_candidate.absolute()
+    _reject_symlink_chain(metadata_candidate)
+    try:
+        metadata = metadata_candidate.resolve(strict=True)
+    except OSError as error:
+        raise PluginError("BioMesh package metadata root is unavailable") from error
+    if (
+        not metadata.is_dir()
+        or metadata.is_symlink()
+        or not (metadata / "METADATA").is_file()
+        or (metadata / "METADATA").is_symlink()
+    ):
+        raise PluginError("BioMesh package metadata root is unavailable")
+    _reject_symlink_chain(metadata)
+    try:
+        metadata_lines = (metadata / "METADATA").read_text(
+            encoding="utf-8"
+        ).splitlines()
+    except (OSError, UnicodeError) as error:
+        raise PluginError("BioMesh package metadata is unreadable") from error
+    metadata_distribution_names = {
+        line.partition(":")[2].strip().casefold()
+        for line in metadata_lines
+        if line.partition(":")[0].strip().casefold() == "name"
+    }
+    if metadata_distribution_names != {"biomesh"}:
+        raise PluginError("BioMesh package metadata identity is invalid")
+    return (
+        _PackageMount(
+            source=package,
+            target="/opt/biomesh/biomesh",
+            python_path="/opt/biomesh",
+        ),
+        _PackageMount(
+            source=metadata,
+            target=f"/opt/biomesh/{metadata_name}",
+            python_path="/opt/biomesh",
+        ),
+    )
 
 
 def _distribution_inventory_matches(
@@ -354,16 +448,20 @@ class SandboxPluginRuntime:
                 "preflight_denied",
                 "plugin request exceeds the declared message limit",
             )
-        package_root = Path(__file__).resolve().parent.parent
-        if self.distribution_root == package_root:
-            if self.distribution is None:
-                self._fail(
-                    request.operation,
-                    message_sha256(request_bytes),
-                    "preflight_denied",
-                    "reviewed plugin distribution inventory is unavailable",
-                )
-        elif self.distribution is None or not _distribution_inventory_matches(
+        try:
+            _biomesh_package_mounts()
+            _external_site_roots()
+        except (OSError, PluginError):
+            self._fail(
+                request.operation,
+                message_sha256(request_bytes),
+                "preflight_denied",
+                "BioMesh package root or declared dependency root is "
+                "unavailable or unsafe",
+            )
+        # Built-in and external selections have the same per-operation identity
+        # requirement. No distribution-root equality may bypass this recheck.
+        if self.distribution is None or not _distribution_inventory_matches(
             self.distribution
         ):
             self._fail(
@@ -470,7 +568,8 @@ class SandboxPluginRuntime:
         *,
         info_fd: int | None = None,
     ) -> list[str]:
-        package_root = Path(__file__).resolve().parent.parent
+        package_mounts = _biomesh_package_mounts()
+        package_mount = package_mounts[0]
         command = [
             str(_BWRAP_PATH),
             "--unshare-all",
@@ -507,9 +606,17 @@ class SandboxPluginRuntime:
                 "/opt/python-site",
             )
         )
-        command.extend(("--ro-bind", str(package_root), "/opt/biomesh"))
-        python_paths = ["/opt/plugin", "/opt/biomesh"]
-        if self.distribution is not None and self.distribution_root != package_root:
+        for mount in package_mounts:
+            command.extend(("--dir", mount.target))
+        # Bind the package itself, never site-packages, a virtual environment,
+        # an interpreter prefix, or another containing installation directory.
+        for mount in package_mounts:
+            command.extend(("--ro-bind", str(mount.source), mount.target))
+        python_paths = [package_mount.python_path, "/opt/plugin"]
+        if (
+            self.distribution is not None
+            and self.distribution.mount_source != package_mount.source
+        ):
             if self.distribution.mount_source.is_dir():
                 command.extend(("--dir", self.distribution.mount_target))
             command.extend(
@@ -517,17 +624,6 @@ class SandboxPluginRuntime:
                     "--ro-bind",
                     str(self.distribution.mount_source),
                     self.distribution.mount_target,
-                )
-            )
-        elif self.distribution is not None:
-            mount_target = self.distribution.mount_target
-            if self.distribution.mount_source.is_dir():
-                command.extend(("--dir", mount_target))
-            command.extend(
-                (
-                    "--ro-bind",
-                    str(self.distribution.mount_source),
-                    mount_target,
                 )
             )
         for index, (root, name) in enumerate(_external_site_roots()):
@@ -801,25 +897,32 @@ def _external_site_roots() -> tuple[tuple[Path, str], ...]:
                 if first == "__pycache__" or first.endswith(".data"):
                     continue
                 if first.endswith(".dist-info"):
-                    if distribution_name == "biomesh":
-                        names.add(first)
                     continue
                 names.add(first.removesuffix(".py"))
         for name in sorted(names):
-            if not name.isidentifier() and not (
-                distribution_name == "biomesh" and name.endswith(".dist-info")
-            ):
+            if not name.isidentifier():
                 continue
-            source = Path(str(installed.locate_file(name))).resolve()
-            if (
-                not source.exists()
-                or source.is_symlink()
-                or source.is_relative_to("/usr")
-            ):
+            source_candidate = Path(str(installed.locate_file(name)))
+            if not source_candidate.is_absolute():
+                source_candidate = source_candidate.absolute()
+            try:
+                _reject_symlink_chain(source_candidate)
+            except PluginError as error:
+                raise PluginError(
+                    f"declared dependency package root is unsafe: {name}"
+                ) from error
+            # Distribution inventories can name optional top-level import
+            # records that are not installed. An absent path grants no access;
+            # a present path must still resolve exactly without symlinks.
+            if not source_candidate.exists():
                 continue
             try:
-                _reject_symlink_chain(source)
-            except PluginError:
+                source = source_candidate.resolve(strict=True)
+            except OSError as error:
+                raise PluginError(
+                    f"declared dependency package root is unsafe: {name}"
+                ) from error
+            if source.is_relative_to("/usr"):
                 continue
             mounts[(str(source), name)] = source
     return tuple(

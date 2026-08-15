@@ -20,6 +20,7 @@ from biomesh.linux_packaging import verify_installer_supply
 
 OWNED_MANIFEST = ".biomesh-owned.json"
 LIFECYCLE_SCHEMA_VERSION = 1
+JOURNAL_SCHEMA_VERSION = 2
 _VERSION_PATTERN = re.compile(r"[0-9A-Za-z][0-9A-Za-z._-]*")
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 _ROLES = frozenset({"application", "dependency", "launcher", "metadata"})
@@ -260,6 +261,7 @@ class InstallerLifecycle:
             operation=operation,
             phase="prepared",
             from_version=previous,
+            from_identity=current_result,
             target_version=manifest.version,
             version_name=version_name,
             stage_name=stage_name,
@@ -358,6 +360,7 @@ class InstallerLifecycle:
             operation="rollback",
             phase="prepared",
             from_version=current_result.version,
+            from_identity=current_result,
             target_version=version,
             version_name=target.name,
             stage_name="",
@@ -425,6 +428,7 @@ class InstallerLifecycle:
             operation="uninstall",
             phase="prepared",
             from_version=version if is_current else None,
+            from_identity=result if is_current else None,
             target_version=version,
             version_name=target.name,
             stage_name=retired_name,
@@ -492,6 +496,19 @@ class InstallerLifecycle:
         phase = _string(data["phase"], "journal phase")
         version_name = _string(data["version_name"], "journal version directory")
         stage_name = _string(data["stage_name"], "journal staging directory")
+        from_version = _optional_string(
+            data["from_version"], "journal source version"
+        )
+        from_manifest_sha256 = _optional_string(
+            data["from_manifest_sha256"], "journal source manifest SHA-256"
+        )
+        from_wheel_sha256 = _optional_string(
+            data["from_wheel_sha256"], "journal source wheel SHA-256"
+        )
+        from_provenance_sha256 = _optional_string(
+            data["from_provenance_sha256"],
+            "journal source provenance SHA-256",
+        )
         target_version = _string(data["target_version"], "journal target version")
         manifest_sha256 = _string(data["manifest_sha256"], "journal manifest SHA-256")
         wheel_sha256 = _string(data["wheel_sha256"], "journal wheel SHA-256")
@@ -505,36 +522,96 @@ class InstallerLifecycle:
         self._validate_journal_paths(
             operation=operation,
             phase=phase,
-            from_version=_optional_string(
-                data["from_version"], "journal source version"
-            ),
+            from_version=from_version,
+            from_manifest_sha256=from_manifest_sha256,
+            from_wheel_sha256=from_wheel_sha256,
+            from_provenance_sha256=from_provenance_sha256,
             target_version=target_version,
             version_name=version_name,
             stage_name=stage_name,
             manifest_sha256=manifest_sha256,
+            wheel_sha256=wheel_sha256,
+            provenance_sha256=provenance_sha256,
             quarantine=_boolean(data["quarantine"], "journal quarantine"),
         )
         if operation in {"install", "upgrade"}:
+            current = self.verify_current()
+            self._require_recovery_current_state(
+                operation,
+                current,
+                from_version=from_version,
+                from_manifest_sha256=from_manifest_sha256,
+                from_wheel_sha256=from_wheel_sha256,
+                from_provenance_sha256=from_provenance_sha256,
+                target_version=target_version,
+                manifest_sha256=manifest_sha256,
+                wheel_sha256=wheel_sha256,
+                provenance_sha256=provenance_sha256,
+                source_mismatches=affected if operation == "upgrade" else (),
+            )
+            if operation == "upgrade":
+                assert from_version is not None
+                assert from_manifest_sha256 is not None
+                assert from_wheel_sha256 is not None
+                assert from_provenance_sha256 is not None
+                self._require_recorded_version_tree(
+                    "upgrade recovery source",
+                    version_name=_version_directory_name(
+                        from_version, from_manifest_sha256
+                    ),
+                    version=from_version,
+                    manifest_sha256=from_manifest_sha256,
+                    wheel_sha256=from_wheel_sha256,
+                    provenance_sha256=from_provenance_sha256,
+                    allowed_mismatches=affected,
+                )
             target = _safe_child_path(
                 self.versions, version_name, "recovery version directory"
             )
             if target.is_dir() and not target.is_symlink():
                 result = self._verify_path(target)
+                self._require_journal_identity(
+                    "recovery candidate",
+                    result,
+                    target_version=target_version,
+                    manifest_sha256=manifest_sha256,
+                    wheel_sha256=wheel_sha256,
+                    provenance_sha256=provenance_sha256,
+                )
                 _require_verified("recovery candidate", result)
                 self._smoke_runner(target)
                 self._ensure_launchers()
                 self._switch_current(version_name)
                 outcome = "verified_candidate_activated"
             else:
+                if phase not in {"prepared", "staged"}:
+                    raise InstallerLifecycleError(
+                        "recorded recovery candidate is missing"
+                    )
                 stage = _safe_child_path(
                     self.versions, stage_name, "recovery staging directory"
                 )
+                if phase == "staged":
+                    if not stage.is_dir() or stage.is_symlink():
+                        raise InstallerLifecycleError(
+                            "recorded recovery staging tree is missing"
+                        )
+                    staged = self._verify_path(stage, expected_name=version_name)
+                    self._require_journal_identity(
+                        "recovery staging candidate",
+                        staged,
+                        target_version=target_version,
+                        manifest_sha256=manifest_sha256,
+                        wheel_sha256=wheel_sha256,
+                        provenance_sha256=provenance_sha256,
+                    )
+                    _require_verified("recovery staging candidate", staged)
                 if stage.exists() and not stage.is_symlink():
                     shutil.rmtree(stage)
                 outcome = "staging_removed_prior_current_retained"
             self._log(
                 operation,
-                _optional_string(data["from_version"], "journal source version"),
+                from_version,
                 target_version,
                 manifest_sha256,
                 wheel_sha256,
@@ -546,11 +623,45 @@ class InstallerLifecycle:
         elif operation == "rollback":
             current = self.verify_current(require=True)
             assert current is not None
-            _require_verified("rollback recovery", current)
+            assert from_version is not None
+            assert from_manifest_sha256 is not None
+            assert from_wheel_sha256 is not None
+            assert from_provenance_sha256 is not None
+            self._require_recorded_version_tree(
+                "rollback recovery source",
+                version_name=_version_directory_name(
+                    from_version, from_manifest_sha256
+                ),
+                version=from_version,
+                manifest_sha256=from_manifest_sha256,
+                wheel_sha256=from_wheel_sha256,
+                provenance_sha256=from_provenance_sha256,
+            )
+            self._require_recorded_version_tree(
+                "rollback recovery target",
+                version_name=version_name,
+                version=target_version,
+                manifest_sha256=manifest_sha256,
+                wheel_sha256=wheel_sha256,
+                provenance_sha256=provenance_sha256,
+            )
+            self._require_recovery_current_state(
+                operation,
+                current,
+                from_version=from_version,
+                from_manifest_sha256=from_manifest_sha256,
+                from_wheel_sha256=from_wheel_sha256,
+                from_provenance_sha256=from_provenance_sha256,
+                target_version=target_version,
+                manifest_sha256=manifest_sha256,
+                wheel_sha256=wheel_sha256,
+                provenance_sha256=provenance_sha256,
+                source_mismatches=(),
+            )
             outcome = f"verified_current_retained:{current.version}"
             self._log(
                 operation,
-                _optional_string(data["from_version"], "journal source version"),
+                from_version,
                 current.version,
                 current.manifest_sha256,
                 current.wheel_sha256,
@@ -819,6 +930,103 @@ class InstallerLifecycle:
                 f"{operation} journal identity mismatch: {', '.join(mismatches)}"
             )
 
+    def _require_recovery_current_state(
+        self,
+        operation: str,
+        result: VerificationResult | None,
+        *,
+        from_version: str | None,
+        from_manifest_sha256: str | None,
+        from_wheel_sha256: str | None,
+        from_provenance_sha256: str | None,
+        target_version: str,
+        manifest_sha256: str,
+        wheel_sha256: str,
+        provenance_sha256: str,
+        source_mismatches: tuple[str, ...],
+    ) -> None:
+        """Accept only an exact source/target state recorded by the journal."""
+        if result is None:
+            if operation == "install" and from_version is None:
+                return
+            raise InstallerLifecycleError(
+                f"{operation} recovery current state is missing"
+            )
+        expected_mismatches: tuple[str, ...]
+        if result.version == target_version:
+            expected_manifest = manifest_sha256
+            expected_wheel = wheel_sha256
+            expected_provenance = provenance_sha256
+            expected_mismatches = ()
+        elif result.version == from_version:
+            if (
+                from_version is None
+                or from_manifest_sha256 is None
+                or from_wheel_sha256 is None
+                or from_provenance_sha256 is None
+            ):
+                raise InstallerLifecycleError(
+                    f"{operation} recovery source identity is incomplete"
+                )
+            expected_manifest = from_manifest_sha256
+            expected_wheel = from_wheel_sha256
+            expected_provenance = from_provenance_sha256
+            expected_mismatches = tuple(sorted(set(source_mismatches)))
+        else:
+            raise InstallerLifecycleError(
+                f"{operation} recovery current version is not a recorded state: "
+                f"{result.version}"
+            )
+        self._require_journal_identity(
+            f"{operation} recovery current state",
+            result,
+            target_version=result.version,
+            manifest_sha256=expected_manifest,
+            wheel_sha256=expected_wheel,
+            provenance_sha256=expected_provenance,
+        )
+        if result.mismatches != expected_mismatches:
+            detail = ", ".join(result.mismatches) or "none"
+            expected = ", ".join(expected_mismatches) or "none"
+            raise InstallerLifecycleError(
+                f"{operation} recovery current state mismatch: observed {detail}; "
+                f"recorded {expected}"
+            )
+
+    def _require_recorded_version_tree(
+        self,
+        operation: str,
+        *,
+        version_name: str,
+        version: str,
+        manifest_sha256: str,
+        wheel_sha256: str,
+        provenance_sha256: str,
+        allowed_mismatches: tuple[str, ...] = (),
+    ) -> None:
+        """Bind one retained side of a transaction to its complete journal identity."""
+        target = _safe_child_path(
+            self.versions, version_name, f"{operation} version directory"
+        )
+        if not target.is_dir() or target.is_symlink():
+            raise InstallerLifecycleError(f"{operation} tree is missing or unsafe")
+        result = self._verify_path(target)
+        self._require_journal_identity(
+            operation,
+            result,
+            target_version=version,
+            manifest_sha256=manifest_sha256,
+            wheel_sha256=wheel_sha256,
+            provenance_sha256=provenance_sha256,
+        )
+        expected_mismatches = tuple(sorted(set(allowed_mismatches)))
+        if result.mismatches != expected_mismatches:
+            detail = ", ".join(result.mismatches) or "none"
+            expected = ", ".join(expected_mismatches) or "none"
+            raise InstallerLifecycleError(
+                f"{operation} mismatch: observed {detail}; recorded {expected}"
+            )
+
     def _find_version(self, version: str) -> Path | None:
         matches: list[Path] = []
         if self.versions.is_dir() and not self.versions.is_symlink():
@@ -1012,6 +1220,7 @@ class InstallerLifecycle:
         operation: str,
         phase: str,
         from_version: str | None,
+        from_identity: VerificationResult | None,
         target_version: str,
         version_name: str,
         stage_name: str,
@@ -1021,15 +1230,32 @@ class InstallerLifecycle:
         affected_paths: tuple[str, ...],
         quarantine: bool,
     ) -> dict[str, object]:
+        if (from_version is None) != (from_identity is None):
+            raise InstallerLifecycleError(
+                "journal source version and artifact identity must be recorded together"
+            )
+        if from_identity is not None and from_identity.version != from_version:
+            raise InstallerLifecycleError(
+                "journal source artifact version is inconsistent"
+            )
         return {
             "affected_paths": list(affected_paths),
+            "from_manifest_sha256": (
+                None if from_identity is None else from_identity.manifest_sha256
+            ),
+            "from_provenance_sha256": (
+                None if from_identity is None else from_identity.provenance_sha256
+            ),
             "from_version": from_version,
+            "from_wheel_sha256": (
+                None if from_identity is None else from_identity.wheel_sha256
+            ),
             "manifest_sha256": manifest_sha256,
             "operation": operation,
             "phase": phase,
             "provenance_sha256": provenance_sha256,
             "quarantine": quarantine,
-            "schema_version": LIFECYCLE_SCHEMA_VERSION,
+            "schema_version": JOURNAL_SCHEMA_VERSION,
             "stage_name": stage_name,
             "target_version": target_version,
             "version_name": version_name,
@@ -1042,7 +1268,10 @@ class InstallerLifecycle:
             strict_json_loads(contents),
             {
                 "affected_paths",
+                "from_manifest_sha256",
+                "from_provenance_sha256",
                 "from_version",
+                "from_wheel_sha256",
                 "manifest_sha256",
                 "operation",
                 "phase",
@@ -1056,7 +1285,10 @@ class InstallerLifecycle:
             },
             "lifecycle journal",
         )
-        if _integer(value["schema_version"], "journal schema") != 1:
+        if (
+            _integer(value["schema_version"], "journal schema")
+            != JOURNAL_SCHEMA_VERSION
+        ):
             raise InstallerLifecycleError("lifecycle journal schema is unsupported")
         if canonical_json_bytes(value) != contents:
             raise InstallerLifecycleError("lifecycle journal JSON is not canonical")
@@ -1068,10 +1300,15 @@ class InstallerLifecycle:
         operation: str,
         phase: str,
         from_version: str | None,
+        from_manifest_sha256: str | None,
+        from_wheel_sha256: str | None,
+        from_provenance_sha256: str | None,
         target_version: str,
         version_name: str,
         stage_name: str,
         manifest_sha256: str,
+        wheel_sha256: str,
+        provenance_sha256: str,
         quarantine: bool,
     ) -> None:
         if operation not in {"install", "upgrade", "rollback", "uninstall"}:
@@ -1092,6 +1329,27 @@ class InstallerLifecycle:
         _version(target_version)
         if from_version is not None:
             _version(from_version)
+        source_hashes = (
+            from_manifest_sha256,
+            from_wheel_sha256,
+            from_provenance_sha256,
+        )
+        if from_version is None:
+            if any(value is not None for value in source_hashes):
+                raise InstallerLifecycleError(
+                    "journal source identity exists without a source version"
+                )
+        elif any(value is None for value in source_hashes):
+            raise InstallerLifecycleError(
+                "journal source artifact identity is incomplete"
+            )
+        else:
+            assert from_manifest_sha256 is not None
+            assert from_wheel_sha256 is not None
+            assert from_provenance_sha256 is not None
+            _sha256("journal source manifest SHA-256", from_manifest_sha256)
+            _sha256("journal source wheel SHA-256", from_wheel_sha256)
+            _sha256("journal source provenance SHA-256", from_provenance_sha256)
         _safe_basename(version_name, "journal version directory")
         expected_version_name = _version_directory_name(
             target_version, manifest_sha256
@@ -1108,8 +1366,19 @@ class InstallerLifecycle:
             raise InstallerLifecycleError("journal staging identity is inconsistent")
         if stage_name:
             _safe_basename(stage_name, "journal staging directory")
-        if operation == "rollback" and from_version is None:
-            raise InstallerLifecycleError("rollback journal source version is missing")
+        if operation == "install" and from_version is not None:
+            raise InstallerLifecycleError(
+                "install journal source version is unexpected"
+            )
+        if operation in {"upgrade", "rollback"}:
+            if from_version is None:
+                raise InstallerLifecycleError(
+                    f"{operation} journal source version is missing"
+                )
+            if from_version == target_version:
+                raise InstallerLifecycleError(
+                    f"{operation} journal source and target versions are identical"
+                )
         if (
             operation == "uninstall"
             and from_version is not None
@@ -1118,6 +1387,18 @@ class InstallerLifecycle:
             raise InstallerLifecycleError(
                 "uninstall journal source version is inconsistent"
             )
+        if operation == "uninstall" and from_version is not None:
+            assert from_manifest_sha256 is not None
+            assert from_wheel_sha256 is not None
+            assert from_provenance_sha256 is not None
+            if (
+                from_manifest_sha256 != manifest_sha256
+                or from_wheel_sha256 != wheel_sha256
+                or from_provenance_sha256 != provenance_sha256
+            ):
+                raise InstallerLifecycleError(
+                    "uninstall journal source artifact identity is inconsistent"
+                )
         if operation != "uninstall" and quarantine:
             raise InstallerLifecycleError(
                 "journal quarantine is unsupported for this operation"

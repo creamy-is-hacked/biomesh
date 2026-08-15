@@ -4,9 +4,11 @@
 
 **Owned-file manifest schema:** 1
 
+**Transaction journal schema:** 2
+
 **Platform:** Linux x86_64/aarch64 with Python 3.14
 
-**Status:** Implemented; P5A acceptance remains required
+**Status:** Implemented and accepted by P5A on 2026-08-15
 
 ## Security boundary
 
@@ -94,15 +96,18 @@ the installation prefix.
 
 ## Recovery and logs
 
-One canonical transaction journal records the operation, source and target
-versions, version/manifest identity, phase, and explicitly affected owned
-paths. A new operation refuses to proceed while a journal exists. `--recover`
-then resolves only that recorded transaction:
+One canonical transaction journal records the operation, phase, exact target
+version/manifest/wheel/provenance identity, exact source
+version/manifest/wheel/provenance identity when a source exists, and explicitly
+affected owned paths. A new operation refuses to proceed while a journal
+exists. `--recover` first proves that current and candidate state is one exact
+state recorded by that journal, then resolves only that transaction:
 
 - incomplete staging is removed while the prior current version remains;
-- a fully published candidate is reverified, smoke-tested, and activated;
-- interrupted rollback retains whichever complete verified target the atomic
-  pointer names;
+- a fully published candidate must match every target journal identity before
+  it is internally accepted, smoke-tested, or activated;
+- interrupted rollback retains only an exact recorded source or target state;
+  an independently valid third version is rejected;
 - uninstall before retirement, including the crash window after the atomic
   target-to-retired rename but before its phase update, accepts exactly one
   target/retired tree whose canonical owned-file manifest, version, manifest
@@ -113,9 +118,13 @@ then resolves only that recorded transaction:
   tree or completes the exact previously acknowledged quarantine state.
 
 A missing, malformed, mismatched, modified, extra, symlinked, ambiguous, or
-unverified recovery tree fails closed. Recovery leaves `current` and prefix
-launchers unchanged and retains the canonical journal for explicit operator
-recovery; it never reports that rejected state as verified.
+unverified recovery tree fails closed before smoke, launcher/current mutation,
+activation, retirement/finalization, or journal deletion. Recovery leaves
+`current` and prefix launchers unchanged and retains the canonical journal for
+explicit operator recovery; it never reports that rejected state as verified.
+Legacy schema-1 interrupted journals do not contain the complete source/target
+binding, so recovery rejects and retains them rather than guessing or silently
+upgrading transaction identity.
 
 Sequence-numbered canonical logs record operation, versions, manifest
 identity, result, recovery result, and explicitly affected owned paths. They do
@@ -179,8 +188,19 @@ git diff --check: passed
 python -m biomesh --help: passed
 ```
 
+The final 2026-08-15 P5A remediation started from rejected audit revision
+`0d266186c73a209053c0d3f42a975ac5c46f35e3`. Focused recovery regressions bind
+wheel SHA-256, provenance SHA-256, manifest identity, version, smoke ordering,
+activation/current/launcher immutability, journal retention, exact rollback
+states, and successful exact-identity recovery. The required eight-file P5
+collection passed 118 tests, and the complete suite passed 352 tests with no
+failures or skips. Independent temporary probes rejected each target identity
+mismatch with zero smoke calls and unchanged activation state, retained the
+journal, rejected an unrelated verified rollback version, and completed exact
+identity recovery successfully. P5A accepted this boundary.
+
 P5-WP05 changes no project/archive schema, queue semantic, completed artifact,
 scientific output, biological parameter, calibration status, plugin/archive
 trust decision, cloud behavior, remote execution, automatic update, system
-package integration, or desktop feature. P5A remains the independent authority
-for accepting Phase 5 and its residual risks.
+package integration, or desktop feature. P5A accepted Phase 5 with the
+documented residual risks; P6 remains separate and untouched.

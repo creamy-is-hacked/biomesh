@@ -25,17 +25,26 @@ plugin code.
 The distribution root is not itself a mount boundary. Preflight resolves the
 entry-point module/package, rejects symlinked or non-regular payload files, and
 records a path/size/SHA-256 inventory for that selected payload. The inventory
-is rechecked before every operation. The sandbox mounts that selected payload
-only, together with individual package roots derived from the declared direct
-runtime dependency inventory; it does not mount the containing site-package
-directory or unreviewed sibling files.
+is rechecked before every operation for both built-in and external plugin
+distributions. The sandbox mounts that selected payload only, together with
+individual package roots derived from the declared direct runtime dependency
+inventory; it does not mount the containing site-package directory or
+unreviewed sibling files.
+
+BioMesh runtime discovery is separately fail-closed. It resolves the exact
+`biomesh` package directory and one validated BioMesh `.dist-info` directory,
+then mounts those two BioMesh-owned roots individually under `/opt/biomesh`.
+It never treats their containing `site-packages`, environment, or Python prefix
+as a package root and has no broad fallback when discovery is unsafe or
+ambiguous.
 
 Each accepted operation uses a new Bubblewrap process with:
 
 - separate mount, network, PID, IPC, UTS, cgroup, and user namespaces;
 - no capabilities and parent-death handling;
-- only `/usr`, `/lib*`, BioMesh, declared Python dependency roots, and the exact
-  reviewed distribution root mounted read-only;
+- only `/usr`, `/lib*`, the exact BioMesh package and metadata roots, declared
+  Python dependency roots, and the exact reviewed distribution root mounted
+  read-only;
 - a read-only sandbox root, private `/tmp`, private `/proc` and `/dev`, and only
   a private or host-created atomic exporter staging directory writable;
 - a cleared environment containing only fixed `HOME`, `PATH`, `PYTHONPATH`, and
@@ -82,6 +91,13 @@ The full P1-P5 regression suite provides the zero-plugin accepted-path replay;
 the canonical empty-set SHA-256 remains
 `1919457d222318dd73626ea9b92a26b0697d1b96230dff5ed254842ca9b310a0`.
 
+The 2026-08-15 P5A rerun additionally passed 22 focused sandbox tests, the
+118-test BP/AR/PL/IN collection, and the 352-test complete suite. An independent
+installed-layout Bubblewrap probe confirmed that the BioMesh worker and an
+explicitly authorized plugin remained available while a synthetic sibling was
+inaccessible (`sentinel_visible=False`). Separate built-in and external
+payload mutations were rejected as `preflight_denied` before execution.
+
 ## Residual risks
 
 - The supported kernel, Bubblewrap, `prlimit`, libseccomp, Python runtime, and
@@ -100,6 +116,6 @@ the canonical empty-set SHA-256 remains
   runtime, kernel, or dependency inventory remains within the trusted
   computing base.
 
-P5A must independently assess the implementation and these residual risks.
-At the P5-WP04 boundary, P5-WP05 installer lifecycle was the next work package;
-it is now completed separately under `docs/P5_WP05_INSTALLER_LIFECYCLE.md`.
+P5A independently assessed and accepted the implementation with these residual
+risks on 2026-08-15. P5-WP05 is completed separately under
+`docs/P5_WP05_INSTALLER_LIFECYCLE.md`; P6 remains untouched.

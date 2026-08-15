@@ -181,13 +181,16 @@ def test_p5a_002_traversal_recovery_journal_fails_without_external_deletion(
         phase = "retired"
     journal = {
         "affected_paths": [],
+        "from_manifest_sha256": None,
+        "from_provenance_sha256": None,
         "from_version": None,
+        "from_wheel_sha256": None,
         "manifest_sha256": "c" * 64,
         "operation": operation,
         "phase": phase,
         "provenance_sha256": _PROVENANCE_SHA256,
         "quarantine": False,
-        "schema_version": 1,
+        "schema_version": 2,
         "stage_name": stage_name,
         "target_version": "1.0.0",
         "version_name": version_name,
@@ -245,6 +248,76 @@ def test_mt_in_04_interrupted_upgrade_keeps_one_complete_current_pair(
     assert recovered.current_version() in {"1.0.0", "1.1.0"}
     result = recovered.verify_current(require=True)
     assert result is not None and result.verified
+
+
+@pytest.mark.parametrize(
+    "identity", ["wheel_sha256", "provenance_sha256", "manifest_sha256", "version"]
+)
+def test_p5a_install_recovery_rejects_target_identity_before_side_effects(
+    tmp_path: Path,
+    identity: str,
+) -> None:
+    prefix = tmp_path / "prefix"
+    candidate = _candidate(tmp_path, "1.0.0")
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("published"),
+    )
+    with pytest.raises(LifecycleInterruption, match="published"):
+        interrupted.install(candidate, _manifest(candidate, "1.0.0"))
+    root = prefix / "lib" / "biomesh"
+    journal_path = root / ".lifecycle-transaction.json"
+    journal = json.loads(journal_path.read_bytes())
+    published = root / "versions" / journal["version_name"]
+    if identity == "version":
+        journal["target_version"] = "9.0.0"
+    else:
+        journal[identity] = "c" * 64
+    if identity in {"manifest_sha256", "version"}:
+        journal["version_name"] = (
+            f"{journal['target_version']}-{journal['manifest_sha256']}"
+        )
+        journal["stage_name"] = f".stage-{journal['version_name']}"
+        renamed = root / "versions" / journal["version_name"]
+        published.rename(renamed)
+        published = renamed
+    journal_bytes = canonical_json_bytes(journal)
+    journal_path.write_bytes(journal_bytes)
+    smoke_calls: list[Path] = []
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=smoke_calls.append)
+    with pytest.raises(InstallerLifecycleError, match="journal identity mismatch"):
+        recovered.recover()
+
+    assert smoke_calls == []
+    assert not recovered.current.exists()
+    assert not (prefix / "bin").exists()
+    assert journal_path.read_bytes() == journal_bytes
+    assert published.is_dir()
+
+
+def test_p5a_exact_install_recovery_identity_still_activates(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    candidate = _candidate(tmp_path, "1.0.0")
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("published"),
+    )
+    with pytest.raises(LifecycleInterruption, match="published"):
+        interrupted.install(candidate, _manifest(candidate, "1.0.0"))
+    smoke_calls: list[Path] = []
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=smoke_calls.append)
+    assert recovered.recover() == "verified_candidate_activated"
+
+    assert len(smoke_calls) == 1
+    assert recovered.current_version() == "1.0.0"
+    assert recovered.verify_current(require=True).verified
+    assert not recovered.journal.exists()
 
 
 def test_mt_in_05_failed_upgrade_smoke_retains_exact_prior_version(
@@ -439,6 +512,134 @@ def test_mt_in_11_interrupted_uninstall_recovers_explicit_safe_state(
         assert recovered.verify_current(require=True).verified
 
 
+def test_p5a_rollback_recovery_rejects_unrecorded_verified_current(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    _install(lifecycle, tmp_path, "2.0.0", upgrade=True)
+    _install(lifecycle, tmp_path, "3.0.0", upgrade=True)
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("rollback-prepared"),
+    )
+    with pytest.raises(LifecycleInterruption, match="rollback-prepared"):
+        interrupted.rollback("1.0.0")
+    unrelated = lifecycle._find_version("2.0.0")
+    assert unrelated is not None
+    lifecycle._switch_current(unrelated.name)
+    journal_bytes = lifecycle.journal.read_bytes()
+    current_before = lifecycle.current.readlink()
+    launchers_before = tuple(
+        (prefix / "bin" / name).readlink() for name in ("biomesh", "biomesh-gui")
+    )
+    smoke_calls: list[Path] = []
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=smoke_calls.append)
+    with pytest.raises(InstallerLifecycleError, match="not a recorded state: 2.0.0"):
+        recovered.recover()
+
+    assert smoke_calls == []
+    assert recovered.current.readlink() == current_before
+    assert tuple(
+        (prefix / "bin" / name).readlink() for name in ("biomesh", "biomesh-gui")
+    ) == launchers_before
+    assert recovered.journal.read_bytes() == journal_bytes
+
+
+def test_p5a_rollback_recovery_binds_recorded_source_artifact_identity(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    _install(lifecycle, tmp_path, "2.0.0", upgrade=True)
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("rollback-prepared"),
+    )
+    with pytest.raises(LifecycleInterruption, match="rollback-prepared"):
+        interrupted.rollback("1.0.0")
+    journal = json.loads(lifecycle.journal.read_bytes())
+    journal["from_wheel_sha256"] = "c" * 64
+    journal_bytes = canonical_json_bytes(journal)
+    lifecycle.journal.write_bytes(journal_bytes)
+    current_before = lifecycle.current.readlink()
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    with pytest.raises(
+        InstallerLifecycleError, match="journal identity mismatch: wheel"
+    ):
+        recovered.recover()
+
+    assert recovered.current.readlink() == current_before
+    assert recovered.journal.read_bytes() == journal_bytes
+
+
+def test_p5a_rollback_recovery_binds_noncurrent_target_identity(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    _install(lifecycle, tmp_path, "2.0.0", upgrade=True)
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("rollback-prepared"),
+    )
+    with pytest.raises(LifecycleInterruption, match="rollback-prepared"):
+        interrupted.rollback("1.0.0")
+    journal = json.loads(lifecycle.journal.read_bytes())
+    journal["wheel_sha256"] = "c" * 64
+    journal_bytes = canonical_json_bytes(journal)
+    lifecycle.journal.write_bytes(journal_bytes)
+    current_before = lifecycle.current.readlink()
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    with pytest.raises(
+        InstallerLifecycleError, match="rollback recovery target journal identity"
+    ):
+        recovered.recover()
+
+    assert recovered.current.readlink() == current_before
+    assert recovered.journal.read_bytes() == journal_bytes
+
+
+def test_p5a_rollback_recovery_binds_noncurrent_source_identity(
+    tmp_path: Path,
+) -> None:
+    prefix = tmp_path / "prefix"
+    lifecycle = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    _install(lifecycle, tmp_path, "1.0.0")
+    _install(lifecycle, tmp_path, "2.0.0", upgrade=True)
+    interrupted = InstallerLifecycle(
+        prefix,
+        smoke_runner=lambda _path: None,
+        fault_hook=_interrupt_at("rollback-activated"),
+    )
+    with pytest.raises(LifecycleInterruption, match="rollback-activated"):
+        interrupted.rollback("1.0.0")
+    journal = json.loads(lifecycle.journal.read_bytes())
+    journal["from_provenance_sha256"] = "c" * 64
+    journal_bytes = canonical_json_bytes(journal)
+    lifecycle.journal.write_bytes(journal_bytes)
+    current_before = lifecycle.current.readlink()
+
+    recovered = InstallerLifecycle(prefix, smoke_runner=lambda _path: None)
+    with pytest.raises(
+        InstallerLifecycleError,
+        match="rollback recovery source journal identity mismatch: provenance",
+    ):
+        recovered.recover()
+
+    assert recovered.current.readlink() == current_before
+    assert recovered.journal.read_bytes() == journal_bytes
+
+
 def test_p5a_unmanifested_retired_tree_recovery_fails_without_activation(
     tmp_path: Path,
 ) -> None:
@@ -455,13 +656,16 @@ def test_p5a_unmanifested_retired_tree_recovery_fails_without_activation(
         (retired / "bin" / name).write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     journal = {
         "affected_paths": [],
+        "from_manifest_sha256": manifest_sha256,
+        "from_provenance_sha256": _PROVENANCE_SHA256,
         "from_version": "1.0.0",
+        "from_wheel_sha256": _WHEEL_SHA256,
         "manifest_sha256": manifest_sha256,
         "operation": "uninstall",
         "phase": "launchers-removed",
         "provenance_sha256": _PROVENANCE_SHA256,
         "quarantine": False,
-        "schema_version": 1,
+        "schema_version": 2,
         "stage_name": retired_name,
         "target_version": "1.0.0",
         "version_name": version_name,
@@ -557,10 +761,13 @@ def test_p5a_retired_tree_must_match_every_journal_identity(
         journal["from_version"] = "2.0.0"
     elif identity == "manifest":
         journal["manifest_sha256"] = "c" * 64
+        journal["from_manifest_sha256"] = "c" * 64
     elif identity == "wheel":
         journal["wheel_sha256"] = "c" * 64
+        journal["from_wheel_sha256"] = "c" * 64
     else:
         journal["provenance_sha256"] = "c" * 64
+        journal["from_provenance_sha256"] = "c" * 64
     if identity in {"version", "manifest"}:
         journal["version_name"] = (
             f"{journal['target_version']}-{journal['manifest_sha256']}"

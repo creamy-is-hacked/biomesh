@@ -8,9 +8,11 @@ import shutil
 from dataclasses import dataclass
 from dataclasses import replace as dataclass_replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+import biomesh.plugin_sandbox as plugin_sandbox_module
 from biomesh.config import BiologicalParameter
 from biomesh.plugin_api import (
     ExportRequest,
@@ -274,6 +276,227 @@ def test_unreviewed_distribution_siblings_are_not_mounted(
         plugin.advance_field(request)  # type: ignore[attr-defined]
     assert caught.value.receipt.outcome == "policy_violation"
     assert "must-not-cross-sandbox" not in caught.value.receipt.model_dump_json()
+
+
+def _installed_biomesh_layout(tmp_path: Path) -> Path:
+    site_packages = tmp_path / "fake-site-packages"
+    shutil.copytree(
+        Path(__file__).parents[1] / "src" / "biomesh",
+        site_packages / "biomesh",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    return site_packages
+
+
+def test_installed_layout_exposes_only_biomesh_and_authorized_plugin(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    site_packages = _installed_biomesh_layout(tmp_path)
+    sibling = site_packages / "undeclared_sibling"
+    sibling.mkdir()
+    sentinel = sibling / "sentinel.txt"
+    sentinel.write_bytes(b"synthetic undeclared sibling")
+    plugin_root = tmp_path / "reviewed-plugin"
+    shutil.copytree(_FIXTURE_ROOT, plugin_root)
+    monkeypatch.setattr(
+        plugin_sandbox_module,
+        "__file__",
+        str(site_packages / "biomesh" / "plugin_sandbox.py"),
+    )
+    manifest, trust, entry_point = _selection("file_read")
+    loaded = load_plugins(
+        manifest,
+        trust,
+        available_entry_points=[
+            dataclass_replace(entry_point, distribution_root=plugin_root)
+        ],
+    )[0].instance
+
+    # Successful initialization/self-check proves both the exact BioMesh worker
+    # package and the explicitly reviewed external payload/dependencies remain usable.
+    assert loaded.self_check().passed is True  # type: ignore[attr-defined]
+    request = FieldStepRequest(
+        interface_version=1,
+        field_id="/opt/biomesh/undeclared_sibling/sentinel.txt",
+        unit="mol m^-3",
+        shape=(1, 1),
+        values=(1.0,),
+        time_step_s=1.0,
+    )
+    with pytest.raises(PluginSandboxError) as caught:
+        loaded.advance_field(request)  # type: ignore[attr-defined]
+
+    assert caught.value.receipt.outcome == "policy_violation"
+    assert sentinel.read_bytes() == b"synthetic undeclared sibling"
+
+
+def test_builtin_payload_mutation_is_rejected_before_next_operation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    site_packages = _installed_biomesh_layout(tmp_path)
+    monkeypatch.setattr(
+        plugin_sandbox_module,
+        "__file__",
+        str(site_packages / "biomesh" / "plugin_sandbox.py"),
+    )
+    manifest = example_plugin_manifest()
+    selection = manifest.plugins[0]
+    entry_point = _FixtureEntryPoint(
+        name=selection.entry_point_name,
+        value=selection.entry_point_value,
+        distribution_name=selection.distribution_name,
+        distribution_version=selection.distribution_version,
+        distribution_root=site_packages,
+    )
+    loaded = load_plugins(
+        manifest,
+        PluginTrustPolicy(
+            approved_selection_sha256=frozenset(
+                {plugin_selection_sha256(selection)}
+            )
+        ),
+        available_entry_points=[entry_point],
+    )[0].instance
+    with (site_packages / "biomesh" / "example_species_kinetics.py").open(
+        "a", encoding="utf-8"
+    ) as stream:
+        stream.write("\n# synthetic post-inventory mutation\n")
+
+    with pytest.raises(PluginSandboxError) as caught:
+        loaded.self_check()  # type: ignore[attr-defined]
+
+    assert caught.value.receipt.outcome == "preflight_denied"
+    assert "inventory" in caught.value.receipt.details
+
+
+def test_external_payload_mutation_is_rejected_before_next_operation(
+    tmp_path: Path,
+) -> None:
+    plugin_root = tmp_path / "reviewed-plugin"
+    shutil.copytree(_FIXTURE_ROOT, plugin_root)
+    manifest, trust, entry_point = _selection("ok")
+    loaded = load_plugins(
+        manifest,
+        trust,
+        available_entry_points=[
+            dataclass_replace(entry_point, distribution_root=plugin_root)
+        ],
+    )[0].instance
+    payload = plugin_root / "sandbox_probe_plugin.py"
+    with payload.open("a", encoding="utf-8") as stream:
+        stream.write("\n# synthetic post-inventory mutation\n")
+
+    with pytest.raises(PluginSandboxError) as caught:
+        loaded.self_check()  # type: ignore[attr-defined]
+
+    assert caught.value.receipt.outcome == "preflight_denied"
+    assert "inventory" in caught.value.receipt.details
+
+
+def test_uncertain_biomesh_package_root_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    unsafe_package = tmp_path / "not-biomesh"
+    unsafe_package.mkdir()
+    (unsafe_package / "plugin_sandbox.py").write_bytes(b"synthetic")
+    monkeypatch.setattr(
+        plugin_sandbox_module,
+        "__file__",
+        str(unsafe_package / "plugin_sandbox.py"),
+    )
+    manifest, trust, entry_point = _selection("ok")
+
+    with pytest.raises(PluginSandboxError) as caught:
+        load_plugins(
+            manifest,
+            trust,
+            available_entry_points=[entry_point],
+        )
+
+    assert caught.value.receipt.outcome == "preflight_denied"
+    assert "package root" in caught.value.receipt.details
+
+
+def test_symlinked_biomesh_metadata_root_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    broad_root = tmp_path / "synthetic-broad-root"
+    broad_root.mkdir()
+    (broad_root / "METADATA").write_text("Name: biomesh\n", encoding="utf-8")
+    metadata_link = tmp_path / "biomesh-0.5.0.dist-info"
+    metadata_link.symlink_to(broad_root, target_is_directory=True)
+    original_distribution = plugin_sandbox_module.distribution
+
+    def synthetic_distribution(name: str) -> object:
+        if name != "biomesh":
+            return original_distribution(name)
+        return SimpleNamespace(
+            files=("biomesh-0.5.0.dist-info/METADATA",),
+            locate_file=lambda _name: metadata_link,
+        )
+
+    monkeypatch.setattr(
+        plugin_sandbox_module,
+        "distribution",
+        synthetic_distribution,
+    )
+    manifest, trust, entry_point = _selection("ok")
+
+    with pytest.raises(PluginSandboxError) as caught:
+        load_plugins(
+            manifest,
+            trust,
+            available_entry_points=[entry_point],
+        )
+
+    assert caught.value.receipt.outcome == "preflight_denied"
+    assert "package root" in caught.value.receipt.details
+
+
+def test_symlinked_declared_dependency_root_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    broad_root = tmp_path / "synthetic-broad-dependency-root"
+    broad_root.mkdir()
+    sentinel = broad_root / "sentinel.txt"
+    sentinel.write_bytes(b"synthetic undeclared dependency sibling")
+    dependency_link = tmp_path / "synthetic_dependency"
+    dependency_link.symlink_to(broad_root, target_is_directory=True)
+    original_distribution = plugin_sandbox_module.distribution
+
+    def synthetic_distribution(name: str) -> object:
+        if name != "cryptography":
+            return original_distribution(name)
+        return SimpleNamespace(
+            files=(),
+            read_text=lambda filename: (
+                "synthetic_dependency\n" if filename == "top_level.txt" else None
+            ),
+            locate_file=lambda _name: dependency_link,
+        )
+
+    monkeypatch.setattr(
+        plugin_sandbox_module,
+        "distribution",
+        synthetic_distribution,
+    )
+    manifest, trust, entry_point = _selection("ok")
+
+    with pytest.raises(PluginSandboxError) as caught:
+        load_plugins(
+            manifest,
+            trust,
+            available_entry_points=[entry_point],
+        )
+
+    assert caught.value.receipt.outcome == "preflight_denied"
+    assert "dependency root" in caught.value.receipt.details
+    assert sentinel.read_bytes() == b"synthetic undeclared dependency sibling"
 
 
 @pytest.mark.parametrize("action", ["network", "process"])

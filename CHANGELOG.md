@@ -94,6 +94,21 @@ All notable repository changes are documented here.
   suite with 337 tests, `python -m biomesh --help`, Ruff, strict mypy over 65
   source files, and `git diff --check`. P5A remains `INCOMPLETE`; this defensive
   remediation is not an acceptance audit and does not unblock Phase 6.
+- P5A containment and recovery identity remediation - Starting from rejected
+  audit revision `0d266186c73a209053c0d3f42a975ac5c46f35e3`, installed plugin
+  execution now mounts the exact BioMesh package and metadata roots instead of
+  their containing site-packages, and built-in and external payload inventories
+  must match before every operation. Transaction journal schema 2 binds exact
+  source and target version, manifest, wheel, and provenance identities before
+  smoke or recovery mutation; rollback rejects any unrecorded third state, and
+  every mismatch preserves activation state and the journal.
+- P5A accepted - A distinct 2026-08-15 audit rerun independently reproduced
+  both rejected findings against synthetic fixtures and confirmed their
+  fail-closed remediation. The eight-file BP/AR/PL/IN collection passed 118
+  tests; the complete suite passed 352 tests with no failures or skips; module
+  help, Ruff, strict mypy over 65 source files, and `git diff --check` passed.
+  No acceptance-blocking finding remains. P5A is `COMPLETE`; no merge, tag,
+  `main` mutation, or P6 work is included in this task.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

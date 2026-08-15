@@ -708,7 +708,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | P5-WP03 | Signed and optionally confidential archives | COMPLETE |
 | P5-WP04 | Isolated plugin execution | COMPLETE |
 | P5-WP05 | Installer lifecycle and supply-chain verification | COMPLETE |
-| P5A | Phase 5 Audit | INCOMPLETE |
+| P5A | Phase 5 Audit | COMPLETE |
 
 P5-WP01 validation evidence:
 
@@ -903,6 +903,54 @@ P5A installer recovery/provenance remediation evidence:
   tag an audit, unblock P6, or add later-phase behavior. A fresh independent
   P5A audit must assess the pushed remediation tip.
 
+P5A final containment/recovery remediation and fresh audit evidence
+(2026-08-15):
+
+- The rejected audit revision was exact pushed commit
+  `0d266186c73a209053c0d3f42a975ac5c46f35e3` on
+  `origin/codex/p5a-installer-recovery-provenance`. Independent synthetic
+  pre-fix probes reproduced both blockers: an installed-style broad BioMesh
+  mount exposed an undeclared sibling (`sentinel_visible=True`), built-in
+  mutation yielded `inventory_matches=False` with `preflight_accepted=True`,
+  changed target wheel/provenance identities still smoke-tested and activated,
+  and rollback retained a valid version unrelated to its journal source/target.
+- Plugin discovery now resolves and individually mounts only the exact
+  `biomesh` package and one validated BioMesh `.dist-info` directory. The
+  selected plugin payload and declared dependency package roots remain explicit
+  mounts; site-packages, environments, prefixes, and undeclared siblings are
+  never fallback mounts. Both built-in and external distribution inventories
+  must match before every operation, and uncertain core-root discovery rejects
+  execution.
+- Transaction journal schema 2 records exact source and target version,
+  manifest, wheel, and provenance identities. A centralized comparison proves
+  the current/candidate state is an exact recorded transaction state before
+  smoke, launcher or `current` mutation, activation, retirement/finalization,
+  or journal deletion. Identity mismatch and unrelated rollback state leave all
+  activation paths unchanged and retain the journal; legacy schema-1 recovery
+  fails closed rather than inferring missing identity.
+- Focused regressions cover installed sibling denial with worker/plugin
+  availability, authorized dependency mounts, built-in and external mutation,
+  unsafe BioMesh, metadata, and declared-dependency discovery,
+  wheel/provenance/manifest/version mismatches,
+  pre-smoke ordering, unchanged activation/launchers, journal retention,
+  unrelated rollback state, exact source identity, and successful exact-target
+  recovery.
+- The required eight-file BP/AR/PL/IN collection passed 118 tests with zero
+  failures or skips. Python 3.14.4 passed `python -m biomesh --help`, Ruff,
+  strict mypy over 65 source files, the complete suite with 352 tests and zero
+  failures/skips, and `git diff --check`.
+- A distinct post-fix audit pass re-read BP/AR/PL/IN ownership and threat/control
+  mapping, inspected build/archive/plugin/installer ordering, and ran temporary
+  probes outside the regression entry points. It observed
+  `sentinel_visible=False`, built-in and external mutation
+  `preflight_denied`, every target identity mismatch rejected with zero smoke
+  calls and journal retention, successful exact-identity recovery, and
+  unrelated rollback state rejected without mutation.
+- Audit decision: `P5A ACCEPTED`. No Critical, High, or Medium finding remains,
+  both original blockers are closed, and no new acceptance-blocking defect was
+  found. P5A is `COMPLETE`. Per this audit task's explicit boundary, no merge,
+  tag, `main` mutation, or P6 implementation occurred.
+
 ## P6 – Phase 6 – Portable Operations
 
 Source: `docs/10_PRE_V1_ROADMAP.md`.
@@ -960,9 +1008,9 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P5A – Phase 5 Audit` is the first incomplete pre-v1 work package. It and every
-later package remain blocked until a fresh independent audit task begins from
-the exact pushed P5 implementation branch tip in strict phase order.
+`P6-WP01 – Portable queue-intent schema` is the first incomplete pre-v1 work
+package. It may begin only in a fresh subsequent task in strict phase order;
+this P5A task does not authorize or implement P6 behavior.
 
 ## Remaining Issues
 

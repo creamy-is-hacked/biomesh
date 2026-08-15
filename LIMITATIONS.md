@@ -15,10 +15,10 @@
 
 - `docs/P5_WP01_THREAT_MODEL.md` version 1.0.0 maps the P4A installed-build
   provenance, archive authenticity/confidentiality, plugin sandboxing, and
-  installer lifecycle limitations to explicit future controls, owners,
-  verification, and residual risk. It defines requirements only: every
-  mitigation remains `OPEN / REQUIREMENTS DEFINED` until its owning P5 work
-  package is implemented, verified, and independently accepted by P5A.
+  installer lifecycle limitations to explicit controls, owners, verification,
+  and residual risk. At the P5-WP01 baseline it defined requirements only; the
+  owning P5 work packages and the 2026-08-15 P5A acceptance have since closed
+  those mapped limitations within their documented residual-risk boundaries.
 - P5-WP01 adds no installed provenance, signature, encryption, key material,
   sandbox, lifecycle behavior, incident evidence, or security guarantee.
   Checksums remain integrity evidence rather than signatures; provenance,
@@ -101,14 +101,16 @@
   bound one operation but cannot guarantee availability under host-wide
   exhaustion. A bounded plugin failure remains possible and explicit.
 - Empty plugin selection starts no process and retains the accepted zero-plugin
-  identity/path. No plugin is embedded in or trusted by project archives, no UI
-  was added, and P5A still determines whether Phase 5 is accepted.
-- The reviewed distribution root is now content-bound: only the selected
-  entry-point module/package's regular-file inventory is rechecked before each
-  operation, and only individual package roots from the declared runtime
-  dependency inventory are mounted. This narrows arbitrary distribution
-  siblings and site-package visibility but does not make reviewed code benign
-  or remove the trusted runtime/kernel boundary.
+  identity/path. No plugin is embedded in or trusted by project archives, and
+  no UI was added. P5A accepted this boundary on 2026-08-15.
+- The reviewed distribution root is content-bound: the selected entry-point
+  module/package's regular-file inventory is rechecked before each operation
+  for built-in and external plugins. Only the exact BioMesh package and its
+  metadata, the selected plugin payload, and individual package roots from the
+  declared runtime dependency inventory are mounted. The containing
+  site-packages/environment/prefix and arbitrary distribution siblings are not
+  mounted. This does not make reviewed code benign or remove the trusted
+  runtime/kernel boundary.
 
 ## P5-WP05 – Installer lifecycle and supply-chain verification
 
@@ -133,10 +135,15 @@
   journal's operation, phase, version/manifest identity, and derived stage
   names before constructing or deleting any path; recovery deletion remains
   limited to validated children of the transaction root.
+- Transaction journal schema 2 binds exact source and target version,
+  manifest, wheel, and provenance identities before smoke or any recovery side
+  effect. Rollback recognizes only exact recorded source/target states. A
+  mismatched or legacy schema-1 interrupted journal fails closed and remains
+  available for explicit operator diagnosis.
 - P5-WP05 adds no scientific validation, calibration, archive/plugin trust,
   queue portability, new UI behavior, release acceptance, or guarantee against
-  storage exhaustion and interruption below filesystem atomicity. P5A still
-  determines whether Phase 5 is accepted.
+  storage exhaustion and interruption below filesystem atomicity. P5A accepted
+  Phase 5 on 2026-08-15 without changing those boundaries.
 
 ## P4A – Phase 4 Audit
 

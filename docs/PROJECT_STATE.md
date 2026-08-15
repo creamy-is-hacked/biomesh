@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-14 after P5A remediation of the independently
-reported Phase 5 security findings. The
-latest accepted phase remains P4 at exact implementation prerequisite
-`b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`; the accepted audit is represented
-by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
-3.14 full gate passes 319 tests.
+Snapshot verified: 2026-08-15 after the fresh P5A security/acceptance audit
+rerun closed both defects reported against
+`0d266186c73a209053c0d3f42a975ac5c46f35e3`. P5A accepted the remediated
+`codex/p5a-installer-recovery-provenance` tree. The latest verified Python 3.14
+full gate passes 352 tests. This task did not merge, tag, modify `main`, or
+begin P6.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P5 – Phase 5 – Security and Distribution Hardening (in progress) |
-| Current work package | P5A – Phase 5 Audit remediation (`INCOMPLETE`) |
-| Current branch | `phase-5-security-distribution` |
-| Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
+| Current phase | P5 – Phase 5 – Security and Distribution Hardening (accepted) |
+| Current work package | P5A – Phase 5 Audit (`COMPLETE`) |
+| Current branch | `codex/p5a-installer-recovery-provenance` |
+| Latest accepted phase | P5 – Phase 5 – Security and Distribution Hardening, accepted by P5A on 2026-08-15 |
 | Latest version tag | `v0.5.0` (P5 implementation audit prerequisite, not phase acceptance, 2026-08-14) |
-| Current test count | 319 passed (`pytest -q`, 2026-08-14) |
-| Next planned work package | Fresh independent P5A audit of the pushed remediation tip (P6 remains blocked) |
+| Current test count | 352 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-15) |
+| Next planned work package | P6-WP01 in a fresh subsequent task; P6 remains untouched here |
 
 ## Outstanding technical debt
 
@@ -164,7 +164,11 @@ by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
   compatibility preflight precede code startup; read-only declared runtime
   mounts, a cleared environment, network/PID isolation, dropped capabilities,
   syscall denial, and explicit wall/CPU/address-space/message/process limits
-  contain plugin code. Versioned request/result messages bind exact identities,
+  contain plugin code. The runtime mounts only the exact BioMesh package and
+  metadata roots plus selected payload and declared dependency roots; it never
+  mounts their containing site-packages. Built-in and external payload
+  inventories are rechecked before each operation. Versioned request/result
+  messages bind exact identities,
   validate units/provenance/shape/path/calibration boundaries, and produce
   secret-free outcome receipts before result publication. Empty selection
   starts no process and preserves the P4A core path. This does not establish
@@ -183,8 +187,12 @@ by tag `v0.4.1-audit`. P5 itself is not accepted. The latest verified Python
   remain outside ownership and byte-preserved. This adds no automatic updater,
   system-package integration, remote/cloud execution, queue portability, new
   UI/science, calibration, or trust grant. Host/root compromise, dependency
-  availability, and distributor authenticity remain residual risks; P5A must
-  independently accept Phase 5.
+  availability, and distributor authenticity remain residual risks. Journal
+  schema 2 binds exact source and target version, manifest, wheel, and
+  provenance identities before every recovery side effect; rollback accepts
+  only exact recorded states. P5A independently reproduced the rejected
+  containment and recovery cases, passed the 118-test P5 collection and
+  352-test complete suite, and accepted Phase 5 on 2026-08-15.
 
 ## Pre-v1 roadmap boundary
 

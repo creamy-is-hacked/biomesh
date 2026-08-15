@@ -47,6 +47,7 @@ Each phase has a blocking audit. Later phases may not weaken earlier validation.
 - `P5_WP03_ARCHIVE_SECURITY_POLICY.md`
 - `P5_WP04_ISOLATED_PLUGIN_EXECUTION.md`
 - `P5_WP05_INSTALLER_LIFECYCLE.md`
+- `11_PHASE_FIVE_AUDIT.md`
 
 ## Token Discipline
 Load only `AGENTS.md`, `PHASE_STATUS.md`, one work-package section, and affected interfaces/tests. Request patches, store evidence in the repository, summarize logs, and escalate model strength only when a defined gate remains unresolved.
