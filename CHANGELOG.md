@@ -6,6 +6,17 @@ All notable repository changes are documented here.
 
 ### Added
 
+- P6-WP02 – Added strict schema-version 1 `UNBOUND` portable-intent import and
+  explicit complete-set local rebinding through `queue import-intent` and
+  `queue bind-intent`. Rebinding requires one safe absolute nonsymlinked path
+  for every source project plus a wholly new local CPU/memory policy, rechecks
+  exact project/campaign/fixture/execution/archive identities and input
+  stability, and publishes deterministic `BOUND_NONRUNNABLE` state atomically
+  without queue IDs, live/terminal state, source receipts, or runnable P4 queue
+  items. Source archive status remains provenance; archive/plugin/registry
+  trust, authorization, and calibration are never promoted. Focused negative,
+  determinism, trust-boundary, failure-atomicity, immutability, and CLI tests
+  preserve the P6-WP03 execution/retry/recovery boundary.
 - P6-WP01 – Added strict schema-version 1 portable queue-intent manifests and
   the `queue export-intent` application path. Canonical path-free bytes carry
   priority/FIFO ordered campaign intent, complete fixture/registry/model/

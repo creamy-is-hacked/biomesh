@@ -35,7 +35,7 @@
 P5A is accepted. Pre-v1 work is specified in
 `docs/10_PRE_V1_ROADMAP.md` and tracked in `docs/PHASE_STATUS.md`. Execute only
 the first `INCOMPLETE` work package in strict phase order. P5-WP01 through
-P5-WP05 are complete, P5A has accepted Phase 5, and P6-WP01 is complete;
-P6-WP02 is the first incomplete item. It may begin only in a fresh task and
-does not authorize P6-WP03 or later behavior. No post-v1 or new UI work is
-authorized.
+P5-WP05 are complete, P5A has accepted Phase 5, and P6-WP01 through P6-WP02
+are complete; P6-WP03 is the first incomplete item. It may begin only in a
+fresh task and does not authorize P6-WP04 or later behavior. No post-v1 or new
+UI work is authorized.

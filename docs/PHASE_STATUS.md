@@ -965,7 +965,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | ID | Work package | Status |
 | --- | --- | --- |
 | P6-WP01 | Portable queue-intent schema | COMPLETE |
-| P6-WP02 | Explicit import and local rebinding | INCOMPLETE |
+| P6-WP02 | Explicit import and local rebinding | COMPLETE |
 | P6-WP03 | Resume, retry, and recovery across hosts | INCOMPLETE |
 | P6-WP04 | Operational documentation and migration | INCOMPLETE |
 | P6A | Phase 6 Audit | INCOMPLETE |
@@ -986,6 +986,30 @@ P6-WP01 validation evidence:
   skips, Ruff, strict mypy over 67 source files, module help, and
   `git diff --check` on 2026-08-16. P6-WP02 through P6A remain incomplete; no
   import/rebinding, cross-host execution/recovery, UI, cloud, credential,
+  trust/calibration promotion, science, or acceleration behavior is included.
+
+P6-WP02 validation evidence:
+
+- Schema-version 1 canonical import records validate the complete compatible
+  P6-WP01 manifest and retain every ordered priority, campaign/dependency
+  identity, project/archive hash, and provenance item under explicit `UNBOUND`
+  status. They contain no local path/policy, queue ID/counter, process/lock,
+  live/terminal state, or resource receipt and cannot enter the P4 worker.
+- Complete-set rebinding requires one explicit safe absolute nonsymlinked path
+  per source project plus a new validated local CPU/memory policy. It holds all
+  project locks, verifies exact definition/state/campaign/fixture/execution/
+  parameter/archive identities, detects input drift, and atomically publishes
+  only `BOUND_NONRUNNABLE` state. P6-WP03 activation remains required.
+- Source archive status stays provenance only. Destination archive/plugin/
+  registry trust and authorization remain `NOT_GRANTED`; calibration remains
+  `CALIBRATION_REQUIRED`. Partial, duplicate, unsafe, missing, drifted,
+  incompatible, changed, conflicting, or publication-failing input leaves no
+  target and changes no source manifest, import, project, queue, or artifact.
+- Python 3.14.4 passed 8 focused P6-WP02 tests, the 49-test P6/P4 queue/project/
+  archive collection, the complete suite with 368 tests and no failures or
+  skips, Ruff, strict mypy over 69 source files, module help, and
+  `git diff --check` on 2026-08-16. P6-WP03 through P6A remain incomplete; no
+  execution, retry, recovery, migration/UI, remote/cloud scheduler, credential,
   trust/calibration promotion, science, or acceleration behavior is included.
 
 ## P7 – Phase 7 – Calibration and Validation
@@ -1033,10 +1057,10 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P6-WP02 – Explicit import and local rebinding` is the first incomplete pre-v1
-work package. It may begin only in a fresh subsequent task in strict phase
-order; P6-WP01 does not authorize or implement import/rebinding or later P6
-behavior.
+`P6-WP03 – Resume, retry, and recovery across hosts` is the first incomplete
+pre-v1 work package. It may begin only in a fresh subsequent task in strict
+phase order; P6-WP02 does not authorize or implement execution/retry/recovery
+or later P6 behavior.
 
 ## Remaining Issues
 

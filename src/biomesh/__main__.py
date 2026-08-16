@@ -52,6 +52,11 @@ from biomesh.portable_project import (
     import_project_archive,
     verify_project_archive,
 )
+from biomesh.portable_queue_import import (
+    bind_portable_queue_intent,
+    import_portable_queue_intent,
+    parse_project_path_binding,
+)
 from biomesh.project_campaign import CampaignService, create_project
 from biomesh.project_reports import generate_campaign_report
 from biomesh.reference import (
@@ -76,7 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
             "P3 verification, P4 project tools, P5 provenance/archive security, "
-            "and P6 portable queue intent."
+            "and P6 portable queue import/rebinding."
         ),
     )
     parser.add_argument(
@@ -296,7 +301,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     queue_parser = commands.add_parser(
-        "queue", help="manage the persistent OS-limited P4 local campaign queue"
+        "queue", help="manage P4 local queues and P6 portable queue intent"
     )
     queue_commands = queue_parser.add_subparsers(dest="queue_command")
     queue_create = queue_commands.add_parser(
@@ -334,6 +339,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     queue_export_intent.add_argument("queue_directory", type=Path)
     queue_export_intent.add_argument("--output", required=True, type=Path)
+    queue_import_intent = queue_commands.add_parser(
+        "import-intent",
+        help="validate portable intent into explicit non-runnable UNBOUND state",
+    )
+    queue_import_intent.add_argument("manifest", type=Path)
+    queue_import_intent.add_argument("--output", required=True, type=Path)
+    queue_bind_intent = queue_commands.add_parser(
+        "bind-intent",
+        help="bind every source project and new local resource policy without running",
+    )
+    queue_bind_intent.add_argument("import_record", type=Path)
+    queue_bind_intent.add_argument("--output", required=True, type=Path)
+    queue_bind_intent.add_argument(
+        "--project-binding",
+        action="append",
+        required=True,
+        help="explicit PROJECT_ID=/absolute/local/project/path (repeat per project)",
+    )
+    queue_bind_intent.add_argument("--cpu-cores", required=True, type=int)
+    queue_bind_intent.add_argument(
+        "--memory-limit-bytes", required=True, type=int
+    )
 
     package_parser = commands.add_parser(
         "package", help="build a data-free BioMesh application package"
@@ -594,9 +621,28 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return 0
             if arguments.queue_command is None:
                 raise ValueError(
-                    "queue requires create, enqueue, status, run, cancel, or "
-                    "export-intent"
+                    "queue requires create, enqueue, status, run, cancel, "
+                    "export-intent, import-intent, or bind-intent"
                 )
+            if arguments.queue_command == "import-intent":
+                import_result = import_portable_queue_intent(
+                    arguments.manifest, arguments.output
+                )
+                print(json.dumps(import_result.as_dict(), sort_keys=True))
+                return 0
+            if arguments.queue_command == "bind-intent":
+                binding_result = bind_portable_queue_intent(
+                    arguments.import_record,
+                    arguments.output,
+                    project_bindings=[
+                        parse_project_path_binding(value)
+                        for value in arguments.project_binding
+                    ],
+                    cpu_cores=arguments.cpu_cores,
+                    memory_limit_bytes=arguments.memory_limit_bytes,
+                )
+                print(json.dumps(binding_result.as_dict(), sort_keys=True))
+                return 0
             queue = LocalQueueService(arguments.queue_directory)
             if arguments.queue_command == "enqueue":
                 queue_item = queue.enqueue(

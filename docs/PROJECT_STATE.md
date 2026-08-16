@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-16 for P6-WP01 on
-`phase-6-portable-operations`. The work package adds only the canonical,
-read-only portable queue-intent schema and export boundary. Python 3.14.4
-passes 8 focused P6 tests, the 31-test P4 queue/project/archive/P6 collection,
-and the 360-test full gate. Phase 5 remains the latest accepted phase at
-`v0.5.1-audit`; P6 is not accepted or tagged.
+Snapshot verified: 2026-08-16 for P6-WP02 on
+`phase-6-portable-operations`. The work package adds only strict non-runnable
+portable-intent import and explicit complete-set local rebinding. Python 3.14.4
+passes 8 focused P6-WP02 tests, the 49-test P6/P4 queue/project/archive
+collection, and the 368-test full gate. Phase 5 remains the latest accepted
+phase at `v0.5.1-audit`; P6 is not accepted or tagged.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P6 – Phase 6 – Portable Operations (implementation in progress; P6A not begun) |
-| Current work package | P6-WP01 – Portable queue-intent schema (`COMPLETE`) |
-| Current branch | `phase-6-portable-operations` after P6-WP01 |
+| Current work package | P6-WP02 – Explicit import and local rebinding (`COMPLETE`) |
+| Current branch | `phase-6-portable-operations` after P6-WP02 |
 | Latest accepted phase | P5 – Phase 5 – Security and Distribution Hardening, accepted by P5A on 2026-08-15 |
 | Latest version tag | `v0.5.1-audit` (P5A accepted-audit tag, 2026-08-16) |
-| Current test count | 360 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
-| Next planned work package | P6-WP02 – Explicit import and local rebinding in a fresh task; no P6-WP03 or later work is authorized |
+| Current test count | 368 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
+| Next planned work package | P6-WP03 – Resume, retry, and recovery across hosts in a fresh task; no P6-WP04 or later work is authorized |
 
 ## Outstanding technical debt
 
@@ -205,6 +205,19 @@ and the 360-test full gate. Phase 5 remains the latest accepted phase at
   local path/resource rebinding, cross-host execution/recovery, migration/UI,
   credential transfer, trust/calibration promotion, science, or acceleration;
   those boundaries remain P6-WP02 or later where authorized.
+- P6-WP02 imports only canonical compatible P6-WP01 bytes into deterministic
+  `UNBOUND` records, then requires one explicit safe local project path per
+  source identity plus a complete new local CPU/memory policy before producing
+  `BOUND_NONRUNNABLE` records. Binding revalidates exact project definition,
+  campaign, fixture, complete accepted execution/parameter identities,
+  project/archive hashes, project state, artifacts, and changed-during-read
+  input while holding all project locks. It creates no P4 queue, queue ID,
+  enqueue counter, process/lock/lifecycle state, source resource receipt, or
+  executable item. Archive/plugin/registry trust and authorization remain
+  `NOT_GRANTED`, archive status remains source provenance, and calibration
+  remains `CALIBRATION_REQUIRED`. Cross-host activation, execution, retry,
+  recovery, concurrency, and report comparison remain P6-WP03; operator
+  migration documentation remains P6-WP04.
 
 ## Pre-v1 roadmap boundary
 
