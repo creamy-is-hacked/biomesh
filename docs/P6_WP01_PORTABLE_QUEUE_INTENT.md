@@ -60,10 +60,14 @@ and does not write queue state, project state, or completed artifacts.
 
 ```text
 python -m biomesh queue export-intent QUEUE_DIRECTORY \
-  --output NEW_INTENT.json
+  --output NEW_INTENT.json [--dry-run]
+python -m biomesh queue migration-status NEW_INTENT.json
 ```
 
-The command returns the output path, SHA-256, and item count. There is no
+`--dry-run` performs the same complete read-only validation and stable
+revalidation, returns the planned output path, SHA-256, and item count, and
+skips publication. `migration-status` canonical-verifies the published record
+without mutation. There is no
 P6-WP01 import, bind, run, retry, recovery, migration, UI, cloud, remote
 scheduler, credential, trust, calibration, science, or acceleration behavior.
 

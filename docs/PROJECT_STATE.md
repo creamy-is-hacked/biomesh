@@ -4,22 +4,23 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-16 for P6-WP03 on
-`phase-6-portable-operations`. The work package adds only explicit activation
-of complete P6-WP02 bindings into fresh local P4 queues plus deterministic
-resume, retry, recovery, and report traceability. Python 3.14.4 passes 4
-focused P6-WP03 tests and the 372-test full gate. Phase 5 remains the latest
-accepted phase at `v0.5.1-audit`; P6 is not accepted or tagged.
+Snapshot verified: 2026-08-16 for P6-WP04 on
+`phase-6-portable-operations`. The completed implementation publishes the
+operator migration/version matrix and adds only deterministic no-publication
+dry-run plus read-only portable-record status. Python 3.14.4 passes 23 focused
+P6 tests, the 60-test P6/P4 migration regression collection, and the 375-test
+full gate. Phase 5 remains the latest accepted phase at `v0.5.1-audit`;
+`v0.6.0` freezes P6 implementation for P6A but does not accept Phase 6.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P6 – Phase 6 – Portable Operations (implementation in progress; P6A not begun) |
-| Current work package | P6-WP03 – Resume, retry, and recovery across hosts (`COMPLETE`) |
-| Current branch | `phase-6-portable-operations` after P6-WP02 |
+| Current phase | P6 – Phase 6 – Portable Operations (implementation complete; P6A not begun) |
+| Current work package | P6-WP04 – Operational documentation and migration (`COMPLETE`) |
+| Current branch | `phase-6-portable-operations` after P6-WP04 |
 | Latest accepted phase | P5 – Phase 5 – Security and Distribution Hardening, accepted by P5A on 2026-08-15 |
-| Latest version tag | `v0.5.1-audit` (P5A accepted-audit tag, 2026-08-16) |
-| Current test count | 372 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
-| Next planned work package | P6-WP04 – Operational documentation and migration in a fresh task; P6A and later work remain unauthorized |
+| Latest version tag | `v0.6.0` (P6 implementation prerequisite; not phase acceptance) |
+| Current test count | 375 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
+| Next planned work package | P6A – Phase 6 Audit in a fresh independent task; P7 and later work remain unauthorized |
 
 ## Outstanding technical debt
 
@@ -225,6 +226,15 @@ accepted phase at `v0.5.1-audit`; P6 is not accepted or tagged.
   metadata. It does not transport source process/lock/lifecycle/resource state,
   reuse completed artifacts, grant trust or authorization, or add remote
   scheduling, migration/UI, credentials, science, calibration, or acceleration.
+- P6-WP04 documents the exact supported migration matrix and requires an
+  archive-imported source staging queue for clean installations because P4
+  archive import intentionally creates a portable project-definition hash.
+  Direct intent export is bindable only when destination definition/state/
+  dependency bytes and archive provenance are already identical. Dry-run and
+  `migration-status` are deterministic/read-only and grant no trust,
+  authorization, or calibration. P6 remains Linux-local, exact-versioned, and
+  operator-mediated with no remote/cloud scheduler, automatic path/credential
+  transfer, UI, or downgrade support. P6A remains required.
 
 ## Pre-v1 roadmap boundary
 

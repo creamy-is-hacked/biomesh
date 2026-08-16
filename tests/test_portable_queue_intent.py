@@ -127,6 +127,28 @@ def test_cli_exports_ordered_path_free_complete_intent_without_mutation(
     before_queue = _tree_bytes(queue)
     before_project = _tree_bytes(project)
     output = tmp_path / "intent.json"
+    dry_output = tmp_path / "dry-intent.json"
+
+    assert (
+        main(
+            [
+                "queue",
+                "export-intent",
+                str(queue),
+                "--output",
+                str(dry_output),
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    dry_receipt = json.loads(capsys.readouterr().out)
+    assert dry_receipt["dry_run"] is True
+    assert dry_receipt["manifest"] == str(dry_output)
+    assert dry_receipt["item_count"] == 2
+    assert not dry_output.exists()
+    assert _tree_bytes(queue) == before_queue
+    assert _tree_bytes(project) == before_project
 
     assert (
         main(["queue", "export-intent", str(queue), "--output", str(output)])
@@ -140,6 +162,22 @@ def test_cli_exports_ordered_path_free_complete_intent_without_mutation(
         "manifest_sha256": hashlib.sha256(contents).hexdigest(),
     }
     manifest = PortableQueueIntentManifest.model_validate_json(contents)
+    assert main(["queue", "migration-status", str(output)]) == 0
+    migration_status = json.loads(capsys.readouterr().out)
+    assert migration_status["record_type"] == "PORTABLE_INTENT"
+    assert migration_status["record_sha256"] == hashlib.sha256(contents).hexdigest()
+    assert migration_status["item_count"] == 2
+    assert migration_status["project_count"] == 1
+    incompatible = tmp_path / "incompatible-intent.json"
+    incompatible_payload = json.loads(contents)
+    incompatible_payload["biomesh_version"] = "0.5.0"
+    incompatible.write_text(
+        json.dumps(incompatible_payload, separators=(",", ":"), sort_keys=True)
+        + "\n",
+        encoding="utf-8",
+    )
+    assert main(["queue", "migration-status", str(incompatible)]) == 2
+    assert "BioMesh version is incompatible" in capsys.readouterr().err
     assert [item.campaign.campaign_id for item in manifest.items] == ["high", "low"]
     assert [item.intent_sequence for item in manifest.items] == [0, 1]
     assert [item.priority for item in manifest.items] == [9, 1]

@@ -65,17 +65,23 @@ projects, P4 queue state, or completed artifact bytes.
 
 ```text
 python -m biomesh queue import-intent PORTABLE_INTENT.json \
-  --output UNBOUND_IMPORT.json
+  --output UNBOUND_IMPORT.json [--dry-run]
 
 python -m biomesh queue bind-intent UNBOUND_IMPORT.json \
   --output BOUND_NONRUNNABLE.json \
   --project-binding PROJECT_A=/absolute/local/project-a \
   --project-binding PROJECT_B=/absolute/local/project-b \
   --cpu-cores 2 \
-  --memory-limit-bytes 8589934592
+  --memory-limit-bytes 8589934592 [--dry-run]
+
+python -m biomesh queue migration-status UNBOUND_IMPORT.json
+python -m biomesh queue migration-status BOUND_NONRUNNABLE.json
 ```
 
-P6-WP02 adds no bind guessing, automatic trust, queue activation, execution,
+`--dry-run` performs complete input/path/resource validation and stable
+revalidation but skips publication. `migration-status` canonical-verifies and
+identifies either record without mutation. P6-WP02 adds no bind guessing,
+automatic trust, queue activation, execution,
 retry, recovery, remote/cloud scheduler, credential transfer, UI, migration
 matrix, scientific change, calibration promotion, or acceleration behavior.
 

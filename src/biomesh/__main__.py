@@ -57,12 +57,14 @@ from biomesh.portable_queue_activation import (
     activate_portable_queue_binding,
     load_portable_queue_binding,
 )
-from biomesh.portable_queue_activation_types import PORTABLE_QUEUE_ACTIVATION_FILE
+from biomesh.portable_queue_activation_types import portable_queue_activation_bytes
 from biomesh.portable_queue_import import (
     bind_portable_queue_intent,
     import_portable_queue_intent,
     parse_project_path_binding,
 )
+from biomesh.portable_queue_intent import export_portable_queue_intent
+from biomesh.portable_queue_migration import portable_migration_status
 from biomesh.project_campaign import CampaignService, create_project
 from biomesh.project_reports import generate_campaign_report
 from biomesh.reference import (
@@ -87,7 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
             "P3 verification, P4 project tools, P5 provenance/archive security, "
-            "and P6 portable queue import/rebinding."
+            "and P6 portable queue migration."
         ),
     )
     parser.add_argument(
@@ -350,12 +352,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     queue_export_intent.add_argument("queue_directory", type=Path)
     queue_export_intent.add_argument("--output", required=True, type=Path)
+    queue_export_intent.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="run complete read-only validation without publishing the intent",
+    )
     queue_import_intent = queue_commands.add_parser(
         "import-intent",
         help="validate portable intent into explicit non-runnable UNBOUND state",
     )
     queue_import_intent.add_argument("manifest", type=Path)
     queue_import_intent.add_argument("--output", required=True, type=Path)
+    queue_import_intent.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="run complete read-only validation without publishing the import",
+    )
     queue_bind_intent = queue_commands.add_parser(
         "bind-intent",
         help="bind every source project and new local resource policy without running",
@@ -372,12 +384,27 @@ def build_parser() -> argparse.ArgumentParser:
     queue_bind_intent.add_argument(
         "--memory-limit-bytes", required=True, type=int
     )
+    queue_bind_intent.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="validate all bindings and policy without publishing the record",
+    )
     queue_activate_intent = queue_commands.add_parser(
         "activate-intent",
         help="atomically activate one complete P6 binding as a fresh local queue",
     )
     queue_activate_intent.add_argument("binding_record", type=Path)
     queue_activate_intent.add_argument("queue_directory", type=Path)
+    queue_activate_intent.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="validate activation without creating the destination queue",
+    )
+    queue_migration_status = queue_commands.add_parser(
+        "migration-status",
+        help="read-only verify a portable record or activated queue and show status",
+    )
+    queue_migration_status.add_argument("record_or_queue", type=Path)
     queue_retry = queue_commands.add_parser(
         "retry",
         help="explicitly requeue retained failed work in a local queue",
@@ -651,13 +678,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise ValueError(
                     "queue requires create, enqueue, status, run, cancel, "
                     "export-intent, import-intent, bind-intent, "
-                    "activate-intent, or retry"
+                    "activate-intent, migration-status, or retry"
                 )
             if arguments.queue_command == "import-intent":
                 import_result = import_portable_queue_intent(
-                    arguments.manifest, arguments.output
+                    arguments.manifest,
+                    arguments.output,
+                    dry_run=arguments.dry_run,
                 )
-                print(json.dumps(import_result.as_dict(), sort_keys=True))
+                import_receipt = import_result.as_dict()
+                if arguments.dry_run:
+                    import_receipt["dry_run"] = True
+                print(json.dumps(import_receipt, sort_keys=True))
                 return 0
             if arguments.queue_command == "bind-intent":
                 binding_result = bind_portable_queue_intent(
@@ -669,27 +701,41 @@ def main(argv: Sequence[str] | None = None) -> int:
                     ],
                     cpu_cores=arguments.cpu_cores,
                     memory_limit_bytes=arguments.memory_limit_bytes,
+                    dry_run=arguments.dry_run,
                 )
-                print(json.dumps(binding_result.as_dict(), sort_keys=True))
+                binding_receipt = binding_result.as_dict()
+                if arguments.dry_run:
+                    binding_receipt["dry_run"] = True
+                print(json.dumps(binding_receipt, sort_keys=True))
                 return 0
             if arguments.queue_command == "activate-intent":
                 activation = activate_portable_queue_binding(
-                    arguments.binding_record, arguments.queue_directory
+                    arguments.binding_record,
+                    arguments.queue_directory,
+                    dry_run=arguments.dry_run,
                 )
                 print(
                     json.dumps(
                         {
                             "activation_sha256": hashlib.sha256(
-                                (
-                                    arguments.queue_directory
-                                    / PORTABLE_QUEUE_ACTIVATION_FILE
-                                ).read_bytes()
+                                portable_queue_activation_bytes(activation)
                             ).hexdigest(),
                             "item_count": len(activation.items),
                             "queue_directory": str(
                                 arguments.queue_directory.absolute()
                             ),
+                            **({"dry_run": True} if arguments.dry_run else {}),
                         },
+                        sort_keys=True,
+                    )
+                )
+                return 0
+            if arguments.queue_command == "migration-status":
+                print(
+                    json.dumps(
+                        portable_migration_status(
+                            arguments.record_or_queue
+                        ).as_dict(),
                         sort_keys=True,
                     )
                 )
@@ -719,8 +765,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
                 return 0
             if arguments.queue_command == "export-intent":
-                intent_result = queue.export_intent(arguments.output)
-                print(json.dumps(intent_result.as_dict(), sort_keys=True))
+                intent_result = export_portable_queue_intent(
+                    arguments.queue_directory,
+                    arguments.output,
+                    dry_run=arguments.dry_run,
+                )
+                intent_receipt = intent_result.as_dict()
+                if arguments.dry_run:
+                    intent_receipt["dry_run"] = True
+                print(json.dumps(intent_receipt, sort_keys=True))
                 return 0
             raise AssertionError("unhandled queue command")
         if arguments.command == "package":

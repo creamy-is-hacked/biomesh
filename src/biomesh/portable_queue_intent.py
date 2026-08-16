@@ -63,9 +63,9 @@ _ARCHIVE_STATUS_FIELDS = {
 
 
 def export_portable_queue_intent(
-    queue_directory: Path, output: Path
+    queue_directory: Path, output: Path, *, dry_run: bool = False
 ) -> PortableQueueIntentResult:
-    """Verify and atomically publish path-free queued campaign intent."""
+    """Verify queued intent and optionally publish its canonical bytes."""
     queue_root = _safe_directory(queue_directory, label="local queue directory")
     output_path = _new_output_path(output)
     store = LocalQueueStore(queue_root)
@@ -107,7 +107,8 @@ def export_portable_queue_intent(
                 raise PortableQueueIntentError(
                     "local queue state drifted during intent export"
                 )
-            _publish_manifest(output_path, contents)
+            if not dry_run:
+                _publish_manifest(output_path, contents)
     except (LocalQueueError, ProjectCampaignError) as error:
         raise PortableQueueIntentError(str(error)) from error
     return PortableQueueIntentResult(

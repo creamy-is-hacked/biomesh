@@ -12,7 +12,7 @@ import biomesh
 
 def test_package_exposes_version() -> None:
     """The package exposes its current version identifier."""
-    assert biomesh.__version__ == installed_version("biomesh") == "0.5.0"
+    assert biomesh.__version__ == installed_version("biomesh") == "0.6.0"
 
 
 def test_module_version_reports_installed_version() -> None:

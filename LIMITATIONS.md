@@ -11,6 +11,32 @@
 - No new UI, cloud, clinical, automatic-parameter, post-v1, calibrated-science,
   GPU, 3D, or performance claim is authorized by the roadmap itself.
 
+## P6 – Portable operations
+
+- P6 transfers queued campaign intent, not live queue state. Source PID/process
+  identity, locks, local paths, cancellation/running/failure state, terminal
+  history, enqueue counters, and requested/applied resource receipts do not
+  transfer. Activation always creates fresh destination scheduler identity.
+- P4 archive import intentionally rewrites external fixture paths into a
+  contained portable project definition. A clean-install migration therefore
+  requires an explicit archive-imported source staging project/queue before
+  intent export. Direct export binds only to destinations whose definition,
+  state, dependency bytes, and archive provenance are already identical.
+- Intent, import, binding, and activation schema 1 require the exact BioMesh
+  0.6.0 record version. There is no negotiation, forward-schema handling,
+  automatic upgrade/downgrade, reverse conversion, or direct P4 queue copy.
+- `--dry-run` validates and revalidates without publication. Read-only
+  `queue migration-status` verifies portable records and activated queue
+  identity/resource policy but does not reconcile workers; `queue status`
+  retains the accepted P4 recovery side effects.
+- Destination paths and CPU/memory policy are operator supplied. Archive
+  authenticity is provenance only; credentials, keys, trust, authorization,
+  plugin/registry approval, and calibration status do not transfer. P6 remains
+  local Linux operation with no cloud/remote scheduler, automatic path
+  guessing, UI workflow, or performance recommendation.
+- P6 implementation is frozen by `v0.6.0` only as an audit prerequisite.
+  Phase 6 remains unaccepted until a fresh independent P6A passes.
+
 ## P5-WP01 – Threat model and security requirements
 
 - `docs/P5_WP01_THREAT_MODEL.md` version 1.0.0 maps the P4A installed-build

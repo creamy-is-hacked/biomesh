@@ -141,6 +141,28 @@ def test_cli_import_and_complete_binding_preserve_intent_without_runnable_state(
     project_before = _tree_bytes(project)
     manifest_before = manifest.read_bytes()
     imported_path = tmp_path / "imported-intent.json"
+    dry_imported_path = tmp_path / "dry-imported-intent.json"
+
+    assert (
+        main(
+            [
+                "queue",
+                "import-intent",
+                str(manifest),
+                "--output",
+                str(dry_imported_path),
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    dry_import_receipt = json.loads(capsys.readouterr().out)
+    assert dry_import_receipt["dry_run"] is True
+    assert dry_import_receipt["import_record"] == str(dry_imported_path.resolve())
+    assert not dry_imported_path.exists()
+    assert manifest.read_bytes() == manifest_before
+    assert _tree_bytes(queue) == queue_before
+    assert _tree_bytes(project) == project_before
 
     assert (
         main(
@@ -172,8 +194,49 @@ def test_cli_import_and_complete_binding_preserve_intent_without_runnable_state(
     assert imported.source_manifest_sha256 == hashlib.sha256(
         manifest_before
     ).hexdigest()
+    assert main(["queue", "migration-status", str(imported_path)]) == 0
+    import_status = json.loads(capsys.readouterr().out)
+    assert import_status == {
+        "biomesh_version": imported.source_manifest.biomesh_version,
+        "item_count": 2,
+        "project_count": 1,
+        "record_sha256": hashlib.sha256(imported_bytes).hexdigest(),
+        "record_type": "UNBOUND_IMPORT",
+        "schema_version": 1,
+    }
 
     bound_path = tmp_path / "bound-intent.json"
+    dry_bound_path = tmp_path / "dry-bound-intent.json"
+    binding_arguments = [
+        "--project-binding",
+        f"portable-import-project={project.resolve()}",
+        "--cpu-cores",
+        "1",
+        "--memory-limit-bytes",
+        str(MEMORY_LIMIT_BYTES + 4096),
+    ]
+    assert (
+        main(
+            [
+                "queue",
+                "bind-intent",
+                str(imported_path),
+                "--output",
+                str(dry_bound_path),
+                *binding_arguments,
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    dry_binding_receipt = json.loads(capsys.readouterr().out)
+    assert dry_binding_receipt["dry_run"] is True
+    assert dry_binding_receipt["binding_record"] == str(dry_bound_path.resolve())
+    assert not dry_bound_path.exists()
+    assert imported_path.read_bytes() == imported_bytes
+    assert _tree_bytes(queue) == queue_before
+    assert _tree_bytes(project) == project_before
+
     assert (
         main(
             [
@@ -182,12 +245,7 @@ def test_cli_import_and_complete_binding_preserve_intent_without_runnable_state(
                 str(imported_path),
                 "--output",
                 str(bound_path),
-                "--project-binding",
-                f"portable-import-project={project.resolve()}",
-                "--cpu-cores",
-                "1",
-                "--memory-limit-bytes",
-                str(MEMORY_LIMIT_BYTES + 4096),
+                *binding_arguments,
             ]
         )
         == 0
@@ -212,6 +270,12 @@ def test_cli_import_and_complete_binding_preserve_intent_without_runnable_state(
     assert bound.projects[0].destination_registry_trust == "NOT_GRANTED"
     assert bound.projects[0].destination_authorization == "NOT_GRANTED"
     assert bound.projects[0].destination_calibration_status == "CALIBRATION_REQUIRED"
+    assert main(["queue", "migration-status", str(bound_path)]) == 0
+    binding_status = json.loads(capsys.readouterr().out)
+    assert binding_status["record_type"] == "BOUND_NONRUNNABLE"
+    assert binding_status["record_sha256"] == hashlib.sha256(bound_bytes).hexdigest()
+    assert binding_status["item_count"] == 2
+    assert binding_status["project_count"] == 1
     forbidden = {
         "applied_resources",
         "cancel_requested",

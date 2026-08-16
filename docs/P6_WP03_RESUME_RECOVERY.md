@@ -25,6 +25,12 @@ targets, unsafe paths, incompatible/canonicality failures, changed inputs, or
 publication races fail without a target. An activated queue cannot accept an
 unbound local enqueue or mix another project.
 
+`queue activate-intent BOUND.json DESTINATION_QUEUE --dry-run` performs the
+same complete validation and stable revalidation without creating the queue.
+After publication, `queue migration-status DESTINATION_QUEUE` read-only
+verifies the canonical activation record against local queue identity and
+resource policy; it does not perform worker recovery.
+
 ## Execution, retry, and recovery
 
 After activation, the existing P4 worker lock, queue-state lock, project

@@ -112,6 +112,14 @@ def _binding(tmp_path: Path, project: Path) -> Path:
     return binding
 
 
+def _tree_bytes(root: Path) -> dict[str, bytes]:
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
+
+
 def test_activation_is_atomic_runnable_and_report_traceable(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -119,6 +127,26 @@ def test_activation_is_atomic_runnable_and_report_traceable(
     binding_path = _binding(tmp_path, project)
     binding_bytes = binding_path.read_bytes()
     queue = tmp_path / "destination-queue"
+    dry_queue = tmp_path / "dry-destination-queue"
+
+    assert (
+        main(
+            [
+                "queue",
+                "activate-intent",
+                str(binding_path),
+                str(dry_queue),
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    dry_receipt = json.loads(capsys.readouterr().out)
+    assert dry_receipt["dry_run"] is True
+    assert dry_receipt["queue_directory"] == str(dry_queue.absolute())
+    assert dry_receipt["item_count"] == 1
+    assert not dry_queue.exists()
+    assert binding_path.read_bytes() == binding_bytes
 
     assert main(["queue", "activate-intent", str(binding_path), str(queue)]) == 0
     activation_receipt = json.loads(capsys.readouterr().out)
@@ -129,6 +157,13 @@ def test_activation_is_atomic_runnable_and_report_traceable(
     assert activation_receipt["activation_sha256"] == hashlib.sha256(
         (queue / "portable_activation.json").read_bytes()
     ).hexdigest()
+    queue_before_status = _tree_bytes(queue)
+    assert main(["queue", "migration-status", str(queue)]) == 0
+    migration_status = json.loads(capsys.readouterr().out)
+    assert migration_status["record_type"] == "ACTIVATED_LOCAL_QUEUE"
+    assert migration_status["item_count"] == 1
+    assert migration_status["project_count"] == 1
+    assert _tree_bytes(queue) == queue_before_status
     assert [
         item.item.status.value for item in LocalQueueService(queue).status().items
     ] == [

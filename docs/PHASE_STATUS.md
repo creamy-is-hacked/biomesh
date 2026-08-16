@@ -967,7 +967,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | P6-WP01 | Portable queue-intent schema | COMPLETE |
 | P6-WP02 | Explicit import and local rebinding | COMPLETE |
 | P6-WP03 | Resume, retry, and recovery across hosts | COMPLETE |
-| P6-WP04 | Operational documentation and migration | INCOMPLETE |
+| P6-WP04 | Operational documentation and migration | COMPLETE |
 | P6A | Phase 6 Audit | INCOMPLETE |
 
 P6-WP01 validation evidence:
@@ -1040,6 +1040,37 @@ P6-WP03 validation evidence:
   credential, trust/calibration promotion, science, or acceleration behavior
   is included.
 
+P6-WP04 validation evidence:
+
+- `docs/P6_WP04_OPERATIONAL_MIGRATION.md` publishes the exact schema/version
+  matrix for P4 queue schema 1, P6 intent/import/binding/activation schema 1,
+  P4 archive/project schemas 1 and 2, and P5 secure-envelope schema 1. It
+  documents clean-install archive staging, explicit destination paths and CPU/
+  memory policy, verify/export/import/bind/activate/status, execution,
+  cancellation, retry/recovery, report trace comparison, atomicity, artifact
+  separation, failure decisions, unsupported downgrades, and residual limits.
+- All four migration publication boundaries provide complete deterministic
+  `--dry-run` validation without creating a target. Read-only
+  `queue migration-status` canonical-verifies intent, import, binding, or
+  activation records and checks activated queue identity/resource policy
+  without performing P4 stale-worker recovery. Existing canonical P6 record
+  bytes and P4 execution/recovery semantics remain unchanged.
+- A disposable clean commit of the implementation tree under test produced the
+  canonical
+  provenance-bound BioMesh 0.6.0 publication. Its freshly installed wheel
+  passed archive verify/import, every dry-run and publication boundary,
+  activation/status/local execution, and source/destination report comparison;
+  portable report identities matched after environment separation and project
+  paths remained distinct.
+- Python 3.14.4 passed 23 focused P6-WP04/P6 tests, the 60-test P6/P4 queue/
+  project/archive/report collection, and the complete suite with 375 passed,
+  0 failed, 0 skipped, and 0 errors. Host-level Bubblewrap/libseccomp tests,
+  Ruff, strict mypy over 72 source files, module help, documented CLI help/
+  examples or automated equivalents, and `git diff --check` also passed on
+  2026-08-16. Runtime and generated P6 manifests are version 0.6.0. P6A remains
+  incomplete; no remote/cloud scheduler, UI, credentials, trust/calibration
+  promotion, science, or acceleration behavior is included.
+
 ## P7 – Phase 7 – Calibration and Validation
 
 Source: `docs/10_PRE_V1_ROADMAP.md`.
@@ -1085,9 +1116,9 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P6-WP04 – Operational documentation and migration` is the first incomplete
-pre-v1 work package. It may begin only in a fresh subsequent task in strict
-phase order; P6-WP03 does not authorize P6A or later P6 behavior.
+`P6A – Phase 6 Audit` is the first incomplete pre-v1 item. It must begin in a
+fresh independent audit task from the exact pushed `v0.6.0` implementation
+tag. P6 implementation completion does not accept Phase 6 or authorize P7.
 
 ## Remaining Issues
 

@@ -52,9 +52,9 @@ from biomesh.project_campaign import CampaignService, ProjectDefinition, Project
 
 
 def activate_portable_queue_binding(
-    binding_record_path: Path, queue_directory: Path
+    binding_record_path: Path, queue_directory: Path, *, dry_run: bool = False
 ) -> PortableQueueActivationRecord:
-    """Validate a complete binding and atomically publish a fresh local queue."""
+    """Validate a complete binding and optionally publish a fresh local queue."""
     try:
         source = _safe_input_file(
             binding_record_path, label="portable queue local binding"
@@ -124,11 +124,12 @@ def activate_portable_queue_binding(
                         if item.intent.project_id == project_id
                     ],
                 )
-            _publish_queue(
-                queue_path,
-                state_contents=state_contents,
-                activation_contents=activation_contents,
-            )
+            if not dry_run:
+                _publish_queue(
+                    queue_path,
+                    state_contents=state_contents,
+                    activation_contents=activation_contents,
+                )
     except (LocalQueueError, PortableQueueActivationError, OSError) as error:
         if isinstance(error, PortableQueueActivationError):
             raise

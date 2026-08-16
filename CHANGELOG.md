@@ -6,6 +6,20 @@ All notable repository changes are documented here.
 
 ### Added
 
+- P6-WP04 – Published the complete supported migration/version matrix and
+  clean-install operator workflow for archive verification, intent export,
+  import, explicit path/resource binding, activation, status, execution,
+  cancellation, retry/recovery, and portable report trace comparison. Added
+  deterministic read-only `queue migration-status` verification for intent,
+  import, binding, and activated-queue records plus `--dry-run` on all four
+  migration publication boundaries. Focused tests bind documentation/schema/
+  version claims to command help and prove dry-run/status do not publish or
+  mutate migration state. A provenance-bound clean-install rehearsal completed
+  archive staging, migration, local execution, and environment-separated report
+  comparison. The 60-test P6/P4 focused collection and 375-test full suite
+  passed with Ruff, strict mypy, module help, and diff checks. Runtime and
+  generated-record versioning is 0.6.0; P6A remains a separate independent
+  audit prerequisite.
 - P6-WP03 – Added strict schema-version 1 activation provenance and the
   `queue activate-intent` application path. A complete `BOUND_NONRUNNABLE`
   record is revalidated under deterministic project locks, then published with

@@ -69,9 +69,9 @@ class _ProjectValidationStamp:
 
 
 def import_portable_queue_intent(
-    manifest_path: Path, output: Path
+    manifest_path: Path, output: Path, *, dry_run: bool = False
 ) -> PortableQueueImportResult:
-    """Validate a complete canonical manifest and publish only UNBOUND state."""
+    """Validate intent and optionally publish only UNBOUND state."""
     source = _safe_input_file(manifest_path, label="portable queue intent")
     output_path = _new_output_file(output, label="portable queue import output")
     source_bytes, manifest = _load_manifest(source)
@@ -106,7 +106,8 @@ def import_portable_queue_intent(
         raise PortableQueueImportError(
             "portable queue intent changed during import validation"
         )
-    _publish_new_file(output_path, contents, label="portable queue import")
+    if not dry_run:
+        _publish_new_file(output_path, contents, label="portable queue import")
     return PortableQueueImportResult(
         import_record=str(output_path),
         import_sha256=hashlib.sha256(contents).hexdigest(),
@@ -122,8 +123,9 @@ def bind_portable_queue_intent(
     project_bindings: Sequence[ProjectPathBinding],
     cpu_cores: int,
     memory_limit_bytes: int,
+    dry_run: bool = False,
 ) -> PortableQueueBindingResult:
-    """Publish one complete local binding without creating runnable queue state."""
+    """Validate and optionally publish one complete non-runnable binding."""
     source = _safe_input_file(import_record_path, label="portable queue import")
     output_path = _new_output_file(output, label="portable queue binding output")
     source_bytes, imported = _load_import_record(source)
@@ -182,7 +184,10 @@ def bind_portable_queue_intent(
                         if item.project_id == project_id
                     ],
                 )
-            _publish_new_file(output_path, contents, label="portable queue binding")
+            if not dry_run:
+                _publish_new_file(
+                    output_path, contents, label="portable queue binding"
+                )
     except (LocalQueueError, PortableQueueIntentError, ProjectCampaignError) as error:
         raise PortableQueueImportError(str(error)) from error
 

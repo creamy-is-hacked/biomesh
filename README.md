@@ -7,14 +7,10 @@ into a Linux desktop research platform.
 
 ## Current status
 
-The latest accepted phase is **P4 – Phase 4 – Research Platform**. Its
-independent 2026-08-11 audit rerun passed with recorded limitations and is
-represented by the `v0.4.1-audit` tag. The rerun closed the three findings from
-the first P4A attempt without expanding the scientific or platform scope.
-P5-WP01 through P5-WP04 are complete on the in-progress P5 implementation
-branch: threat-derived requirements now have deterministic installed-build
-provenance, authenticated and optionally confidential archives, and isolated
-reviewed-plugin execution. Phase 5 is not accepted.
+The latest accepted phase is **P5 – Phase 5 – Security and Distribution
+Hardening**, represented by `v0.5.1-audit`. P6-WP01 through P6-WP04 are
+implemented on the Phase 6 branch, and `v0.6.0` freezes that implementation for
+the still-required independent P6A portability audit. Phase 6 is not accepted.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -79,6 +75,9 @@ The repository currently provides:
 - the P4 persistent local campaign queue with deterministic priorities,
   run-level progress, exact Linux CPU/memory enforcement, targeted
   cancellation, and restart recovery that preserves immutable completed runs;
+- P6 schema-1 portable queue intent, strict non-runnable import and explicit
+  path/resource binding, fresh local activation, retry/recovery traceability,
+  read-only migration status, and no-publication dry-run preflight; and
 - deterministic portable project export/verification/import with embedded
   hash-bound fixtures and all required biological parameter documents, exact
   completed-run artifacts, per-file SHA-256, and clean-install execution of
@@ -261,6 +260,10 @@ Queue status exposes campaign run counts during execution; cancellation and
 restart recovery retain completed artifact bytes and leave interrupted work as
 an explicit retryable failure. Queue references remain local absolute paths.
 See [the P4-WP05 queue contract](docs/P4_WP05_LOCAL_RUN_QUEUE.md).
+
+For clean-install queue-intent migration, explicit destination rebinding,
+activation, dry-run, recovery, and report trace comparison, follow the
+[P6 operational migration contract](docs/P6_WP04_OPERATIONAL_MIGRATION.md).
 
 Exchange a project without depending on its original fixture location:
 
