@@ -33,6 +33,8 @@ from biomesh.local_queue_types import (
     QueueItemStatus,
     QueueRunResult,
 )
+from biomesh.portable_queue_intent import export_portable_queue_intent
+from biomesh.portable_queue_intent_types import PortableQueueIntentResult
 from biomesh.project_campaign import CampaignService, CampaignStatus
 
 __all__ = ["LocalQueueError", "LocalQueueService", "create_local_queue"]
@@ -42,6 +44,7 @@ class LocalQueueService:
     """Lock-protected persistent scheduler for local campaign processes."""
 
     def __init__(self, queue_directory: Path) -> None:
+        self._queue_reference = queue_directory.absolute()
         self.queue_directory = queue_directory.resolve()
         self._store = LocalQueueStore(self.queue_directory)
 
@@ -115,6 +118,10 @@ class LocalQueueService:
             resource_limits=state.resource_limits,
             items=snapshots,
         )
+
+    def export_intent(self, output: Path) -> PortableQueueIntentResult:
+        """Publish one verified path-free snapshot of queued campaign intent."""
+        return export_portable_queue_intent(self._queue_reference, output)
 
     def cancel(self, queue_id: str) -> QueueItem:
         """Cancel queued work or request termination of its local worker."""

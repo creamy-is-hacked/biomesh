@@ -964,11 +964,29 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 | ID | Work package | Status |
 | --- | --- | --- |
-| P6-WP01 | Portable queue-intent schema | INCOMPLETE |
+| P6-WP01 | Portable queue-intent schema | COMPLETE |
 | P6-WP02 | Explicit import and local rebinding | INCOMPLETE |
 | P6-WP03 | Resume, retry, and recovery across hosts | INCOMPLETE |
 | P6-WP04 | Operational documentation and migration | INCOMPLETE |
 | P6A | Phase 6 Audit | INCOMPLETE |
+
+P6-WP01 validation evidence:
+
+- Schema-version 1 canonical manifests carry priority/FIFO ordered immutable
+  campaign intent, exact fixture/registry/model/parameter/zero-plugin dependency
+  identities, source project-definition hashes, and optional imported archive
+  envelope/payload provenance without local paths or live scheduler state.
+- Export holds the worker, queue, and nonblocking project snapshot boundaries;
+  verifies project/state/artifact/source bytes; and rejects active, stale,
+  missing, unsafe/symlinked, ambiguous, incompatible, or drifted references
+  before atomic publication. Queue/project/completed-artifact bytes remain
+  unchanged and failed publication leaves no output.
+- Python 3.14.4 passed 8 focused P6-WP01 tests, the 31-test P4 queue/project/
+  archive/P6 collection, the complete suite with 360 tests and no failures or
+  skips, Ruff, strict mypy over 67 source files, module help, and
+  `git diff --check` on 2026-08-16. P6-WP02 through P6A remain incomplete; no
+  import/rebinding, cross-host execution/recovery, UI, cloud, credential,
+  trust/calibration promotion, science, or acceleration behavior is included.
 
 ## P7 – Phase 7 – Calibration and Validation
 
@@ -1015,9 +1033,10 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P6-WP01 – Portable queue-intent schema` is the first incomplete pre-v1 work
-package. It may begin only in a fresh subsequent task in strict phase order;
-this P5A task does not authorize or implement P6 behavior.
+`P6-WP02 – Explicit import and local rebinding` is the first incomplete pre-v1
+work package. It may begin only in a fresh subsequent task in strict phase
+order; P6-WP01 does not authorize or implement import/rebinding or later P6
+behavior.
 
 ## Remaining Issues
 

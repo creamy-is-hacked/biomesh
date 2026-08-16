@@ -573,10 +573,10 @@ class CampaignService:
 
     @contextmanager
     def verified_snapshot(
-        self,
+        self, *, blocking: bool = True
     ) -> Iterator[tuple[ProjectDefinition, ProjectState]]:
         """Hold the project lock while a caller reads one verified snapshot."""
-        with self._lock():
+        with self._lock(blocking=blocking):
             yield self._load()
 
     def resume(self, campaign_id: str) -> CampaignStatus:
@@ -658,7 +658,7 @@ class CampaignService:
             return _campaign_status(state, campaign_id)
 
     @contextmanager
-    def _lock(self) -> Any:
+    def _lock(self, *, blocking: bool = True) -> Any:
         lock_path = self.project_directory / ".campaign.lock"
         if (
             not self.project_directory.is_dir()
@@ -670,7 +670,15 @@ class CampaignService:
             )
         try:
             with lock_path.open("r+") as lock_file:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                operation = fcntl.LOCK_EX
+                if not blocking:
+                    operation |= fcntl.LOCK_NB
+                try:
+                    fcntl.flock(lock_file.fileno(), operation)
+                except BlockingIOError as error:
+                    raise ProjectCampaignError(
+                        "project has an active campaign operation"
+                    ) from error
                 yield
         except OSError as error:
             raise ProjectCampaignError(f"unable to lock project: {error}") from error

@@ -4,23 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-16 for the canonical P5A governance closeout. The
-fresh security/acceptance audit closed both defects reported against
-`0d266186c73a209053c0d3f42a975ac5c46f35e3` and accepted exact pushed revision
-`e5998ea2508677b010c1ce9abfea22a562a2a62c`. The closeout records that history
-on `audit-phase-5`, merges it into `main` with `--no-ff`, and publishes
-`v0.5.1-audit`. Python 3.14.4 passes the 118-test focused P5 collection and the
-352-test full gate. P6 remains untouched.
+Snapshot verified: 2026-08-16 for P6-WP01 on
+`phase-6-portable-operations`. The work package adds only the canonical,
+read-only portable queue-intent schema and export boundary. Python 3.14.4
+passes 8 focused P6 tests, the 31-test P4 queue/project/archive/P6 collection,
+and the 360-test full gate. Phase 5 remains the latest accepted phase at
+`v0.5.1-audit`; P6 is not accepted or tagged.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P5 – Phase 5 – Security and Distribution Hardening (accepted); P6 not begun |
-| Current work package | P6-WP01 – Portable queue-intent schema (`INCOMPLETE`; next only) |
-| Current branch | `main` after the canonical P5A accepted-audit merge |
+| Current phase | P6 – Phase 6 – Portable Operations (implementation in progress; P6A not begun) |
+| Current work package | P6-WP01 – Portable queue-intent schema (`COMPLETE`) |
+| Current branch | `phase-6-portable-operations` after P6-WP01 |
 | Latest accepted phase | P5 – Phase 5 – Security and Distribution Hardening, accepted by P5A on 2026-08-15 |
 | Latest version tag | `v0.5.1-audit` (P5A accepted-audit tag, 2026-08-16) |
-| Current test count | 352 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
-| Next planned work package | P6-WP01 in a fresh subsequent task; no later P6 work is authorized |
+| Current test count | 360 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
+| Next planned work package | P6-WP02 – Explicit import and local rebinding in a fresh task; no P6-WP03 or later work is authorized |
 
 ## Outstanding technical debt
 
@@ -194,6 +193,18 @@ on `audit-phase-5`, merges it into `main` with `--no-ff`, and publishes
   only exact recorded states. P5A independently reproduced the rejected
   containment and recovery cases, passed the 118-test P5 collection and
   352-test complete suite, and accepted Phase 5 on 2026-08-15.
+- P6-WP01 exports strict schema-version 1 queue intent only. It carries
+  priority/FIFO ordered immutable campaigns, path-free fixture/registry/model/
+  parameter/zero-plugin dependency identities, source project-definition
+  hashes, and optional archive envelope/payload provenance. Nonblocking worker,
+  queue, and project snapshots reject active, stale, missing, unsafe,
+  ambiguous, incompatible, or drifted references before atomic publication.
+  PID/process-start identity, locks, lifecycle/cancellation/failure state,
+  local scheduler paths, and requested/applied CPU or memory policy are absent.
+  Completed, failed, and cancelled history is not exported. There is no import,
+  local path/resource rebinding, cross-host execution/recovery, migration/UI,
+  credential transfer, trust/calibration promotion, science, or acceleration;
+  those boundaries remain P6-WP02 or later where authorized.
 
 ## Pre-v1 roadmap boundary
 

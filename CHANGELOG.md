@@ -6,6 +6,17 @@ All notable repository changes are documented here.
 
 ### Added
 
+- P6-WP01 – Added strict schema-version 1 portable queue-intent manifests and
+  the `queue export-intent` application path. Canonical path-free bytes carry
+  priority/FIFO ordered campaign intent, complete fixture/registry/model/
+  parameter/plugin dependency identities, and verified source project/archive
+  hashes while excluding process, lock, lifecycle, cancellation, local path,
+  and resource-policy/receipt state. Nonblocking queue/worker/project snapshots
+  reject active, stale, missing, symlinked, ambiguous, incompatible, or drifted
+  references before atomic publication. Focused determinism, failure-atomicity,
+  immutability, archive-provenance, negative, and CLI tests passed without
+  adding import/rebinding, remote execution, trust promotion, UI, science,
+  calibration, or acceleration behavior.
 - Pre-v1 governance roadmap – Strict P5-P9 work-package ordering with canonical
   implementation/audit branches and tags, threat-derived security hardening,
   portable operations, evidence-gated biological calibration and validation,

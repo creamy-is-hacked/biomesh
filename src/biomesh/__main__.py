@@ -75,7 +75,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog="biomesh",
         description=(
             "BioMesh Phase 1 core-model runner, validation, P2 campaign, "
-            "P3 verification, P4 project tools, and P5 provenance/archive security."
+            "P3 verification, P4 project tools, P5 provenance/archive security, "
+            "and P6 portable queue intent."
         ),
     )
     parser.add_argument(
@@ -327,6 +328,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     queue_cancel.add_argument("queue_directory", type=Path)
     queue_cancel.add_argument("queue_id")
+    queue_export_intent = queue_commands.add_parser(
+        "export-intent",
+        help="atomically export verified path-free queued campaign intent",
+    )
+    queue_export_intent.add_argument("queue_directory", type=Path)
+    queue_export_intent.add_argument("--output", required=True, type=Path)
 
     package_parser = commands.add_parser(
         "package", help="build a data-free BioMesh application package"
@@ -587,7 +594,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return 0
             if arguments.queue_command is None:
                 raise ValueError(
-                    "queue requires create, enqueue, status, run, or cancel"
+                    "queue requires create, enqueue, status, run, cancel, or "
+                    "export-intent"
                 )
             queue = LocalQueueService(arguments.queue_directory)
             if arguments.queue_command == "enqueue":
@@ -608,6 +616,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             if arguments.queue_command == "cancel":
                 queue_item = queue.cancel(arguments.queue_id)
                 print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
+                return 0
+            if arguments.queue_command == "export-intent":
+                intent_result = queue.export_intent(arguments.output)
+                print(json.dumps(intent_result.as_dict(), sort_keys=True))
                 return 0
             raise AssertionError("unhandled queue command")
         if arguments.command == "package":
