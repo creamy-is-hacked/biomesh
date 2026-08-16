@@ -39,6 +39,7 @@ QueueAuditAction = Literal[
     "campaign_cancelled",
     "campaign_completed",
     "campaign_failed",
+    "campaign_retry_scheduled",
     "worker_recovered",
 ]
 

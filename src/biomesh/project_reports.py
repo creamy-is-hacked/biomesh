@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import math
+import platform
+import sys
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -18,6 +20,8 @@ from typing import Any
 import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
+from biomesh.portable_queue_import_types import PortableQueueBindingRecord
+from biomesh.portable_queue_intent_types import portable_queue_intent_item_sha256
 from biomesh.project_campaign import (
     ArtifactRecord,
     CampaignRecord,
@@ -104,7 +108,11 @@ class _Observation:
 
 
 def generate_campaign_report(
-    project_directory: Path, campaign_id: str, output_directory: Path
+    project_directory: Path,
+    campaign_id: str,
+    output_directory: Path,
+    *,
+    portable_binding: PortableQueueBindingRecord | None = None,
 ) -> ReportGenerationResult:
     """Publish deterministic comparisons traced to immutable raw run bytes."""
     project = project_directory.resolve()
@@ -128,6 +136,14 @@ def generate_campaign_report(
     observations = _read_observations(project, completed)
     summaries = _condition_summaries(campaign, runs, observations)
     comparisons = _pairwise_comparisons(campaign, summaries)
+    portable_traceability = _portable_traceability(
+        project,
+        definition,
+        state,
+        campaign,
+        runs,
+        portable_binding,
+    )
     data = _report_data(
         definition,
         state,
@@ -136,6 +152,7 @@ def generate_campaign_report(
         observations,
         summaries,
         comparisons,
+        portable_traceability,
     )
     publish_report(
         output,
@@ -388,6 +405,7 @@ def _report_data(
     observations: Sequence[_Observation],
     summaries: Sequence[dict[str, Any]],
     comparisons: Sequence[dict[str, Any]],
+    portable_traceability: dict[str, Any] | None,
 ) -> dict[str, Any]:
     completed = [run for run in runs if run.status is CampaignRunStatus.COMPLETED]
     missing = [run for run in runs if run.status is not CampaignRunStatus.COMPLETED]
@@ -469,10 +487,82 @@ def _report_data(
             "project_id": definition.project.project_id,
             "state_generation": state.generation,
         },
+        "environment": {
+            "host": platform.node(),
+            "platform": platform.platform(),
+            "project_directory": str(state.definition_sha256),
+            "python_version": sys.version.split()[0],
+        },
+        "portable_traceability": portable_traceability,
         "report_kind": "P4-WP02 comparison and report data",
         "run_coverage": [_coverage(run) for run in runs],
         "schema_version": REPORT_SCHEMA_VERSION,
         "warnings": warnings,
+    }
+
+
+def _portable_traceability(
+    project: Path,
+    definition: ProjectDefinition,
+    state: ProjectState,
+    campaign: CampaignRecord,
+    runs: Sequence[RunRecord],
+    binding: PortableQueueBindingRecord | None,
+) -> dict[str, Any] | None:
+    """Join portable identity while keeping destination environment separate."""
+    if binding is None:
+        return None
+    matching = [
+        item
+        for item in binding.source_manifest.items
+        if item.project_id == definition.project.project_id
+        and item.campaign.campaign_id == campaign.campaign_id
+    ]
+    if len(matching) != 1:
+        raise ProjectCampaignError(
+            "portable report binding has no unique matching campaign identity"
+        )
+    item = matching[0]
+    if item.source.project_definition_sha256 != state.definition_sha256:
+        raise ProjectCampaignError(
+            "portable report project definition identity mismatch"
+        )
+    if item.campaign != campaign:
+        raise ProjectCampaignError("portable report campaign identity mismatch")
+    return {
+        "portable_manifest_sha256": binding.source_manifest_sha256,
+        "source_import_sha256": binding.source_import_sha256,
+        "source_project_definition_sha256": item.source.project_definition_sha256,
+        "project_id": definition.project.project_id,
+        "campaign_id": campaign.campaign_id,
+        "experiment_id": item.experiment.experiment_id,
+        "fixture_sha256": item.experiment.fixture_sha256,
+        "execution_identity_sha256": item.execution_identity_sha256,
+        "execution_identity": item.execution_identity.model_dump(mode="json"),
+        "source_archive": (
+            None
+            if item.source.archive is None
+            else item.source.archive.model_dump(mode="json")
+        ),
+        "runs": [
+            {
+                "run_id": run.run_id,
+                "campaign_id": run.campaign_id,
+                "experiment_id": run.experiment_id,
+                "point_id": run.point_id,
+                "condition_id": run.condition_id,
+                "replicate_index": run.replicate_index,
+                "seed": run.seed,
+                "portable_intent_item_sha256": portable_queue_intent_item_sha256(item),
+            }
+            for run in runs
+        ],
+        "destination_environment": {
+            "host": platform.node(),
+            "platform": platform.platform(),
+            "project_directory": str(project),
+            "python_version": sys.version.split()[0],
+        },
     }
 
 

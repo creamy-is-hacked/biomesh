@@ -33,6 +33,11 @@ from biomesh.local_queue_types import (
     QueueItemStatus,
     QueueRunResult,
 )
+from biomesh.portable_queue_activation import (
+    load_portable_queue_activation,
+    portable_trace_for_queue_item,
+    validate_portable_queue_state,
+)
 from biomesh.portable_queue_intent import export_portable_queue_intent
 from biomesh.portable_queue_intent_types import PortableQueueIntentResult
 from biomesh.project_campaign import CampaignService, CampaignStatus
@@ -47,11 +52,16 @@ class LocalQueueService:
         self._queue_reference = queue_directory.absolute()
         self.queue_directory = queue_directory.resolve()
         self._store = LocalQueueStore(self.queue_directory)
+        self._portable_activation = load_portable_queue_activation(self.queue_directory)
 
     def enqueue(
         self, project_directory: Path, campaign_id: str, *, priority: int
     ) -> QueueItem:
         """Persist one campaign request without beginning execution."""
+        if self._portable_activation is not None:
+            raise LocalQueueError(
+                "activated portable queues cannot accept unbound local enqueue"
+            )
         if isinstance(priority, bool):
             raise LocalQueueError("priority must be an integer")
         project = project_directory.resolve()
@@ -106,6 +116,7 @@ class LocalQueueService:
         """Reconcile stale workers and return deterministic run-level progress."""
         with self._store.lock():
             state = self._reconcile(self._store.load())
+            validate_portable_queue_state(state, self._portable_activation)
             self._store.write_if_changed(state)
         snapshots = tuple(
             QueueItemSnapshot(item=item, campaign=self._campaign_status(item))
@@ -128,6 +139,7 @@ class LocalQueueService:
         worker: tuple[int, int] | None = None
         with self._store.lock():
             state = self._reconcile(self._store.load())
+            validate_portable_queue_state(state, self._portable_activation)
             item = queue_item(state, queue_id)
             if item.status is QueueItemStatus.QUEUED:
                 cancelled = item.model_copy(
@@ -180,6 +192,43 @@ class LocalQueueService:
                 pass
         return requested
 
+    def retry(self, queue_id: str) -> QueueItem:
+        """Requeue explicit failed/cancelled work for one deterministic retry."""
+        with self._store.worker_lock():
+            with self._store.lock():
+                state = self._reconcile(self._store.load())
+                validate_portable_queue_state(state, self._portable_activation)
+                item = queue_item(state, queue_id)
+                if item.status not in {
+                    QueueItemStatus.FAILED,
+                    QueueItemStatus.CANCELLED,
+                }:
+                    raise LocalQueueError(
+                        f"queue item {queue_id} is not retryable: {item.status.value}"
+                    )
+                campaign = CampaignService(Path(item.project_directory)).status(
+                    item.campaign_id
+                )
+                if not campaign.failed:
+                    raise LocalQueueError(
+                        f"queue item {queue_id} has no explicit failed campaign runs"
+                    )
+                queued = item.model_copy(
+                    update={
+                        "status": QueueItemStatus.QUEUED,
+                        "cancel_requested": False,
+                        "failure": None,
+                    }
+                )
+                updated = replace_item_transition(
+                    state,
+                    queued,
+                    action="campaign_retry_scheduled",
+                    detail="explicit retry scheduled for retained failed runs",
+                )
+                self._store.write(updated)
+                return queued
+
     def run(self, *, once: bool = False) -> QueueRunResult:
         """Drain queued campaigns locally in priority/FIFO order."""
         with self._store.worker_lock():
@@ -189,6 +238,7 @@ class LocalQueueService:
         """Run while holding the queue's single-worker resource lease."""
         with self._store.lock():
             state = self._reconcile(self._store.load())
+            validate_portable_queue_state(state, self._portable_activation)
             self._store.write_if_changed(state)
             limits = state.resource_limits
         applied = apply_resource_limits(limits)
@@ -214,6 +264,7 @@ class LocalQueueService:
     def _claim_next(self, applied: AppliedResourceLimits) -> QueueItem | None:
         with self._store.lock():
             state = self._reconcile(self._store.load())
+            validate_portable_queue_state(state, self._portable_activation)
             candidates = [
                 item for item in state.items if item.status is QueueItemStatus.QUEUED
             ]
@@ -250,8 +301,21 @@ class LocalQueueService:
             execution_failure: str | None = None
             action: QueueAuditAction
             try:
-                campaign = CampaignService(Path(item.project_directory)).resume(
-                    item.campaign_id
+                trace = (
+                    None
+                    if self._portable_activation is None
+                    else portable_trace_for_queue_item(
+                        self._portable_activation, item.queue_id, None
+                    )
+                )
+                campaign_service = CampaignService(
+                    Path(item.project_directory), portable_trace=trace
+                )
+                progress = campaign_service.progress(item.campaign_id)
+                campaign = (
+                    campaign_service.retry(item.campaign_id)
+                    if progress.failed
+                    else campaign_service.resume(item.campaign_id)
                 )
                 requested = self._current_item(item.queue_id).cancel_requested
             except WorkerCancellation:
@@ -304,6 +368,7 @@ class LocalQueueService:
                 detail = failure
             with self._store.lock():
                 state = self._store.load()
+                validate_portable_queue_state(state, self._portable_activation)
                 current = queue_item(state, item.queue_id)
                 terminal = current.model_copy(
                     update={
@@ -330,7 +395,9 @@ class LocalQueueService:
 
     def _current_item(self, queue_id: str) -> QueueItem:
         with self._store.lock():
-            return queue_item(self._store.load(), queue_id)
+            state = self._store.load()
+            validate_portable_queue_state(state, self._portable_activation)
+            return queue_item(state, queue_id)
 
     def _campaign_status(self, item: QueueItem) -> CampaignStatus:
         service = CampaignService(Path(item.project_directory))
@@ -339,6 +406,7 @@ class LocalQueueService:
         return service.status(item.campaign_id)
 
     def _reconcile(self, state: LocalQueueState) -> LocalQueueState:
+        validate_portable_queue_state(state, self._portable_activation)
         current = state
         for item in tuple(current.items):
             if item.status is not QueueItemStatus.RUNNING or item_worker_is_live(item):

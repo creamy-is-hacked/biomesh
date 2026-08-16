@@ -4,22 +4,22 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-16 for P6-WP02 on
-`phase-6-portable-operations`. The work package adds only strict non-runnable
-portable-intent import and explicit complete-set local rebinding. Python 3.14.4
-passes 8 focused P6-WP02 tests, the 49-test P6/P4 queue/project/archive
-collection, and the 368-test full gate. Phase 5 remains the latest accepted
-phase at `v0.5.1-audit`; P6 is not accepted or tagged.
+Snapshot verified: 2026-08-16 for P6-WP03 on
+`phase-6-portable-operations`. The work package adds only explicit activation
+of complete P6-WP02 bindings into fresh local P4 queues plus deterministic
+resume, retry, recovery, and report traceability. Python 3.14.4 passes 4
+focused P6-WP03 tests and the 372-test full gate. Phase 5 remains the latest
+accepted phase at `v0.5.1-audit`; P6 is not accepted or tagged.
 
 | Field | Current state |
 | --- | --- |
 | Current phase | P6 – Phase 6 – Portable Operations (implementation in progress; P6A not begun) |
-| Current work package | P6-WP02 – Explicit import and local rebinding (`COMPLETE`) |
+| Current work package | P6-WP03 – Resume, retry, and recovery across hosts (`COMPLETE`) |
 | Current branch | `phase-6-portable-operations` after P6-WP02 |
 | Latest accepted phase | P5 – Phase 5 – Security and Distribution Hardening, accepted by P5A on 2026-08-15 |
 | Latest version tag | `v0.5.1-audit` (P5A accepted-audit tag, 2026-08-16) |
-| Current test count | 368 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
-| Next planned work package | P6-WP03 – Resume, retry, and recovery across hosts in a fresh task; no P6-WP04 or later work is authorized |
+| Current test count | 372 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
+| Next planned work package | P6-WP04 – Operational documentation and migration in a fresh task; P6A and later work remain unauthorized |
 
 ## Outstanding technical debt
 
@@ -216,8 +216,15 @@ phase at `v0.5.1-audit`; P6 is not accepted or tagged.
   executable item. Archive/plugin/registry trust and authorization remain
   `NOT_GRANTED`, archive status remains source provenance, and calibration
   remains `CALIBRATION_REQUIRED`. Cross-host activation, execution, retry,
-  recovery, concurrency, and report comparison remain P6-WP03; operator
-  migration documentation remains P6-WP04.
+  recovery, concurrency, and report comparison were the P6-WP03 boundary;
+  operator migration documentation remains P6-WP04.
+- P6-WP03 adds explicit schema-version 1 activation of a complete local
+  binding into a fresh P4 queue with new destination scheduler identity,
+  atomic queue/lock/provenance publication, existing P4 resume/recovery/retry
+  boundaries, and portable report traceability separated from environment
+  metadata. It does not transport source process/lock/lifecycle/resource state,
+  reuse completed artifacts, grant trust or authorization, or add remote
+  scheduling, migration/UI, credentials, science, calibration, or acceleration.
 
 ## Pre-v1 roadmap boundary
 

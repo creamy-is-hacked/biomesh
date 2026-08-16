@@ -396,6 +396,7 @@ class RunExecutionRequest:
     run: RunRecord
     fixture_file: Path
     execution_identity: ExecutionIdentity
+    portable_trace: dict[str, object] | None = None
 
 
 RunExecutor = Callable[[RunExecutionRequest, Path], None]
@@ -536,10 +537,15 @@ class CampaignService:
     """Synchronous, lock-protected campaign lifecycle service."""
 
     def __init__(
-        self, project_directory: Path, *, executor: RunExecutor | None = None
+        self,
+        project_directory: Path,
+        *,
+        executor: RunExecutor | None = None,
+        portable_trace: dict[str, object] | None = None,
     ) -> None:
         self.project_directory = project_directory.resolve()
         self._executor = executor or execute_application_run
+        self._portable_trace = portable_trace
 
     def status(self, campaign_id: str) -> CampaignStatus:
         """Validate the project and return explicit counts without mutation."""
@@ -828,6 +834,11 @@ class CampaignService:
                 run=running,
                 fixture_file=fixture,
                 execution_identity=execution_identity,
+                portable_trace=(
+                    None
+                    if self._portable_trace is None
+                    else {**self._portable_trace, "run_id": running.run_id}
+                ),
             )
             try:
                 artifacts = self._run_and_publish(request)
@@ -891,6 +902,8 @@ class CampaignService:
                 "run_id": request.run.run_id,
                 "schema_version": COMPLETION_RECEIPT_SCHEMA_VERSION,
             }
+            if request.portable_trace is not None:
+                receipt["portable_trace"] = request.portable_trace
             _write_bytes(
                 staging / COMPLETION_RECEIPT,
                 (json.dumps(receipt, indent=2, sort_keys=True) + "\n").encode(),
@@ -935,12 +948,17 @@ class CampaignService:
         current_fields = legacy_fields | {
             "execution_identity",
             "execution_identity_sha256",
+            "portable_trace",
         }
         if receipt_version == LEGACY_PROJECT_SCHEMA_VERSION:
             if set(payload) != legacy_fields or execution_identity is not None:
                 raise ProjectCampaignError("invalid legacy completion receipt fields")
         elif receipt_version == COMPLETION_RECEIPT_SCHEMA_VERSION:
-            if set(payload) != current_fields or execution_identity is None:
+            if (
+                set(payload)
+                not in (current_fields, current_fields - {"portable_trace"})
+                or execution_identity is None
+            ):
                 raise ProjectCampaignError("invalid completion receipt fields")
             try:
                 receipt_identity = ExecutionIdentity.model_validate(
@@ -956,6 +974,9 @@ class CampaignService:
                 != execution_identity_sha256(execution_identity)
             ):
                 raise ProjectCampaignError("completion execution identity mismatch")
+            trace = payload.get("portable_trace")
+            if trace is not None and not isinstance(trace, dict):
+                raise ProjectCampaignError("invalid portable completion trace")
         else:
             raise ProjectCampaignError("unsupported completion receipt schema_version")
         if payload["run_id"] != run.run_id or payload["attempt"] != run.attempt_count:
@@ -1057,6 +1078,8 @@ def execute_application_run(request: RunExecutionRequest, output: Path) -> None:
         "schema_version": PROJECT_SCHEMA_VERSION,
         "seed": request.run.seed,
     }
+    if request.portable_trace is not None:
+        request_record["portable_trace"] = request.portable_trace
     _write_bytes(
         output / "run_request.json",
         (json.dumps(request_record, indent=2, sort_keys=True) + "\n").encode(),

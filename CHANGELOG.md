@@ -6,6 +6,20 @@ All notable repository changes are documented here.
 
 ### Added
 
+- P6-WP03 – Added strict schema-version 1 activation provenance and the
+  `queue activate-intent` application path. A complete `BOUND_NONRUNNABLE`
+  record is revalidated under deterministic project locks, then published with
+  a wholly new local P4 queue identity, local resource policy, queue/worker
+  locks, and activation record in one staged filesystem publication. Activated
+  queues reject unbound enqueue and duplicate target activation, preserve
+  completed artifacts, use the existing resume/recovery/retry boundaries, and
+  expose explicit `queue retry` transitions for retained failed runs. New run
+  requests and receipts plus optional reports retain run/campaign/fixture,
+  model/parameter/plugin, project/archive, and portable-intent identities while
+  keeping destination environment metadata separate. Focused activation,
+  concurrency, failure-atomicity, immutability, CLI, application, and report
+  traceability tests passed; no remote scheduler, trust promotion, UI, science,
+  calibration, or acceleration behavior was added.
 - P6-WP02 – Added strict schema-version 1 `UNBOUND` portable-intent import and
   explicit complete-set local rebinding through `queue import-intent` and
   `queue bind-intent`. Rebinding requires one safe absolute nonsymlinked path

@@ -179,3 +179,14 @@ def portable_queue_intent_bytes(manifest: PortableQueueIntentManifest) -> bytes:
 def portable_queue_intent_sha256(manifest: PortableQueueIntentManifest) -> str:
     """Return the SHA-256 of one canonical portable queue-intent manifest."""
     return hashlib.sha256(portable_queue_intent_bytes(manifest)).hexdigest()
+
+
+def portable_queue_intent_item_sha256(item: PortableQueueIntentItem) -> str:
+    """Return the canonical identity of one portable intent item."""
+    contents = json.dumps(
+        item.model_dump(mode="json"),
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256((contents + "\n").encode("utf-8")).hexdigest()

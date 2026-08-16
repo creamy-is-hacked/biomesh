@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import tempfile
@@ -52,6 +53,11 @@ from biomesh.portable_project import (
     import_project_archive,
     verify_project_archive,
 )
+from biomesh.portable_queue_activation import (
+    activate_portable_queue_binding,
+    load_portable_queue_binding,
+)
+from biomesh.portable_queue_activation_types import PORTABLE_QUEUE_ACTIVATION_FILE
 from biomesh.portable_queue_import import (
     bind_portable_queue_intent,
     import_portable_queue_intent,
@@ -250,6 +256,11 @@ def build_parser() -> argparse.ArgumentParser:
                 type=Path,
                 help="publish comparison/report data to this new directory",
             )
+            operation_parser.add_argument(
+                "--portable-binding",
+                type=Path,
+                help="optional canonical P6 binding for cross-host traceability",
+            )
 
     plugins_parser = commands.add_parser(
         "plugins", help="verify the reviewed isolated plugin boundary"
@@ -361,6 +372,18 @@ def build_parser() -> argparse.ArgumentParser:
     queue_bind_intent.add_argument(
         "--memory-limit-bytes", required=True, type=int
     )
+    queue_activate_intent = queue_commands.add_parser(
+        "activate-intent",
+        help="atomically activate one complete P6 binding as a fresh local queue",
+    )
+    queue_activate_intent.add_argument("binding_record", type=Path)
+    queue_activate_intent.add_argument("queue_directory", type=Path)
+    queue_retry = queue_commands.add_parser(
+        "retry",
+        help="explicitly requeue retained failed work in a local queue",
+    )
+    queue_retry.add_argument("queue_directory", type=Path)
+    queue_retry.add_argument("queue_id")
 
     package_parser = commands.add_parser(
         "package", help="build a data-free BioMesh application package"
@@ -594,6 +617,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                     arguments.project_directory,
                     arguments.campaign_id,
                     arguments.output,
+                    portable_binding=(
+                        None
+                        if arguments.portable_binding is None
+                        else load_portable_queue_binding(arguments.portable_binding)
+                    ),
                 )
                 print(json.dumps(report_result.as_dict(), sort_keys=True))
                 return 0
@@ -622,7 +650,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             if arguments.queue_command is None:
                 raise ValueError(
                     "queue requires create, enqueue, status, run, cancel, "
-                    "export-intent, import-intent, or bind-intent"
+                    "export-intent, import-intent, bind-intent, "
+                    "activate-intent, or retry"
                 )
             if arguments.queue_command == "import-intent":
                 import_result = import_portable_queue_intent(
@@ -643,6 +672,28 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
                 print(json.dumps(binding_result.as_dict(), sort_keys=True))
                 return 0
+            if arguments.queue_command == "activate-intent":
+                activation = activate_portable_queue_binding(
+                    arguments.binding_record, arguments.queue_directory
+                )
+                print(
+                    json.dumps(
+                        {
+                            "activation_sha256": hashlib.sha256(
+                                (
+                                    arguments.queue_directory
+                                    / PORTABLE_QUEUE_ACTIVATION_FILE
+                                ).read_bytes()
+                            ).hexdigest(),
+                            "item_count": len(activation.items),
+                            "queue_directory": str(
+                                arguments.queue_directory.absolute()
+                            ),
+                        },
+                        sort_keys=True,
+                    )
+                )
+                return 0
             queue = LocalQueueService(arguments.queue_directory)
             if arguments.queue_command == "enqueue":
                 queue_item = queue.enqueue(
@@ -661,6 +712,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return 1 if queue_result.failed else 0
             if arguments.queue_command == "cancel":
                 queue_item = queue.cancel(arguments.queue_id)
+                print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
+                return 0
+            if arguments.queue_command == "retry":
+                queue_item = queue.retry(arguments.queue_id)
                 print(json.dumps(queue_item.model_dump(mode="json"), sort_keys=True))
                 return 0
             if arguments.queue_command == "export-intent":

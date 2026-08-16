@@ -966,7 +966,7 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 | --- | --- | --- |
 | P6-WP01 | Portable queue-intent schema | COMPLETE |
 | P6-WP02 | Explicit import and local rebinding | COMPLETE |
-| P6-WP03 | Resume, retry, and recovery across hosts | INCOMPLETE |
+| P6-WP03 | Resume, retry, and recovery across hosts | COMPLETE |
 | P6-WP04 | Operational documentation and migration | INCOMPLETE |
 | P6A | Phase 6 Audit | INCOMPLETE |
 
@@ -999,7 +999,8 @@ P6-WP02 validation evidence:
   per source project plus a new validated local CPU/memory policy. It holds all
   project locks, verifies exact definition/state/campaign/fixture/execution/
   parameter/archive identities, detects input drift, and atomically publishes
-  only `BOUND_NONRUNNABLE` state. P6-WP03 activation remains required.
+  only `BOUND_NONRUNNABLE` state. P6-WP03 activation was the next required
+  boundary and is now recorded below.
 - Source archive status stays provenance only. Destination archive/plugin/
   registry trust and authorization remain `NOT_GRANTED`; calibration remains
   `CALIBRATION_REQUIRED`. Partial, duplicate, unsafe, missing, drifted,
@@ -1008,9 +1009,36 @@ P6-WP02 validation evidence:
 - Python 3.14.4 passed 8 focused P6-WP02 tests, the 49-test P6/P4 queue/project/
   archive collection, the complete suite with 368 tests and no failures or
   skips, Ruff, strict mypy over 69 source files, module help, and
-  `git diff --check` on 2026-08-16. P6-WP03 through P6A remain incomplete; no
+  `git diff --check` on 2026-08-16. P6-WP04 and P6A remain incomplete; no
   execution, retry, recovery, migration/UI, remote/cloud scheduler, credential,
   trust/calibration promotion, science, or acceleration behavior is included.
+
+P6-WP03 validation evidence:
+
+- Schema-version 1 activation records bind the exact canonical P6-WP02 record
+  to a fresh local P4 queue identity and verified destination resource policy.
+  Activation revalidates the complete bound project set under deterministic
+  project locks, stages queue state and both existing P4 locks with immutable
+  activation provenance, and publishes the destination queue atomically.
+  Existing completed artifacts remain outside activation publication and are
+  never copied, rewritten, or rerun.
+- Activated queues reject unbound enqueue and target reuse, preserve project
+  separation, and keep all P4 worker/resource/lock boundaries. Existing
+  campaign resume, stale-worker recovery, cancellation, and failed-run retry
+  produce deterministic explicit transitions. Completed queue items cannot be
+  retried; retry schedules only retained failed campaign runs.
+- New destination run requests and completion receipts retain portable
+  manifest/item, project/archive, campaign/fixture, model/parameter/plugin,
+  and run identities. Optional reports expose the same portable traceability
+  separately from destination environment metadata. Source binding, project,
+  queue, and completed-artifact bytes remain unchanged on validation or
+  publication failure.
+- Python 3.14.4 passed 4 focused P6-WP03 tests and the complete suite with 372
+  passed, 0 failed, 0 skipped, or 0 errors; Ruff, strict mypy over 71 source
+  files, module help, and `git diff --check` also passed on 2026-08-16. P6-WP04
+  and P6A remain incomplete; no migration/UI, cloud/remote scheduler,
+  credential, trust/calibration promotion, science, or acceleration behavior
+  is included.
 
 ## P7 – Phase 7 – Calibration and Validation
 
@@ -1057,10 +1085,9 @@ Source: `docs/10_PRE_V1_ROADMAP.md`.
 
 ## Next Work Package
 
-`P6-WP03 – Resume, retry, and recovery across hosts` is the first incomplete
+`P6-WP04 – Operational documentation and migration` is the first incomplete
 pre-v1 work package. It may begin only in a fresh subsequent task in strict
-phase order; P6-WP02 does not authorize or implement execution/retry/recovery
-or later P6 behavior.
+phase order; P6-WP03 does not authorize P6A or later P6 behavior.
 
 ## Remaining Issues
 
