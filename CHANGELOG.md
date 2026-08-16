@@ -6,6 +6,109 @@ All notable repository changes are documented here.
 
 ### Added
 
+- Pre-v1 governance roadmap – Strict P5-P9 work-package ordering with canonical
+  implementation/audit branches and tags, threat-derived security hardening,
+  portable operations, evidence-gated biological calibration and validation,
+  separately audited 3D/acceleration, and a blocking version 1 release audit.
+  This planning change adds no implementation or post-v1 authority.
+- P5-WP01 – Versioned the P4A-derived threat model for build provenance,
+  archive authenticity/confidentiality, plugin isolation, installer lifecycle,
+  and local execution. It defines assets, actors, entry points, trust
+  boundaries, assumptions, abuse cases, owners, open mitigation status,
+  residual risks, and 49 fail-closed misuse tests required before P5-WP02
+  through P5-WP05 implementation. No security control or algorithm was added.
+- P5-WP02 – Added deterministic whole-set building and fail-closed verification
+  for BioMesh 0.5.0 wheels, sdists, and Linux installers. Canonical embedded
+  records bind the exact clean Git commit, SHA-256 source-tree identity, and
+  Python/Git/Hatchling/BioMesh builder versions; the publication manifest binds
+  final artifact SHA-256 values and sizes. Installed execution exposes the
+  embedded identity without Git and records the exact commit instead of an
+  unavailable placeholder. Focused MT-BP-01 through MT-BP-08 tests cover dirty,
+  missing, changed, tampered, malformed, duplicate, repeated-build, and
+  clean-install behavior without adding authenticity, signing, lifecycle, or
+  scientific claims.
+- P5-WP03 – Resolved AS-05 with versioned algorithm policy 1.0.0 and added an
+  algorithm-agile secure envelope around exact deterministic P4 archive bytes.
+  The production profile uses Ed25519 signing and separately requested RFC 9180
+  X25519/HKDF-SHA-256/AES-256-GCM HPKE confidentiality, binds signer/key,
+  recipient/key, suite, encoding, payload, HPKE context, and replay metadata,
+  and verifies host-owned trust before P4 validation/import. Unknown, mismatched,
+  revoked, expired, tampered, replayed, wrong-recipient, malformed, duplicated,
+  unsupported, and property-confused inputs fail without partial publication.
+  Legacy raw P4 archives now require explicit caller opt-in and retain durable
+  `UNAUTHENTICATED`/`PLAINTEXT` status. Private key markers and secret-bearing
+  archive/installer paths are rejected; keys remain external. Focused
+  MT-AR-01 through MT-AR-14 tests preserve inner archive and completed-run
+  bytes and keep authenticity, confidentiality, trust, authorization,
+  provenance, sandboxing, and scientific validity distinct.
+- P5-WP04 – Moved every reviewed non-empty plugin operation behind Linux
+  Bubblewrap policy 1.0.0 with read-only declared runtime mounts, a cleared
+  environment, network/PID isolation, dropped capabilities, libseccomp syscall
+  denial, explicit wall/CPU/address-space/message limits, and no in-process
+  fallback. Versioned messages and secret-free receipts bind exact selection,
+  policy, request/result identities, outcomes, SI/provenance, and
+  `CALIBRATION_REQUIRED`; invalid or failed operations publish no result. The
+  canonical empty-plugin path starts no process and remains unchanged.
+- P5-WP05 – Added supply-verified, manifest-bound Linux install, upgrade,
+  rollback, recovery, and ownership-safe uninstall. Versions publish side by
+  side under a manifest-hash identity; installed CLI help and offscreen GUI
+  smoke pass before one atomic current pointer changes. Exact modified-path
+  acknowledgement never expands ownership, and changed uninstall trees are
+  quarantined rather than deleted. MT-IN-01 through MT-IN-14 cover altered
+  supply/ownership inputs, unsafe paths, every transaction boundary, smoke
+  failure, modified/missing/extra files, rollback ambiguity, launcher mismatch,
+  and byte-identical preservation of projects, completed artifacts, and all
+  other user/research data. Pyqtgraph is also bound explicitly to BioMesh's
+  supported PySide6 runtime so unrelated installed Qt bindings cannot mix ABIs
+  during required GUI smoke verification.
+- P5A remediation – Closed the reported nested `PREFIX/lib`/`PREFIX/bin`
+  symlink write redirection and lifecycle-journal stage traversal classes with
+  complete prefix-component preflight, derived safe child paths, and strict
+  operation/phase/version/stage journal validation. Plugin execution now
+  inventories and rechecks only the selected entry-point module/package and
+  mounts only that payload plus individual declared dependency package roots;
+  sibling distribution files and broad site-package roots are not mounted.
+  Source-run metadata now records the exact commit, source-tree identity, and
+  clean/modified working-state label, while run dependency metadata centralizes
+  the complete declared direct runtime dependency inventory. The existing
+  PySide6 backend pin has a competing-binding regression test. P5A remains
+  incomplete and requires a new independent audit.
+- P5A remediation validation – From exact pushed tip
+  `d41c7cbbadbe0ed1af9c5547dcb1429da3f99a8f`, Python 3.14.4 passed the
+  explicit BP/AR/PL/IN evidence collection (85 tests), the complete suite
+  (319 tests), `ruff check .`, `mypy src`, `python -m biomesh --help`, and
+  `git diff --check`. P5A remains `INCOMPLETE`; Phase 6 remains blocked pending
+  a fresh independent audit.
+- P5A installer recovery/provenance remediation – Uninstall recovery now binds
+  the exact canonical owned-file manifest, manifest version/hash, wheel and
+  provenance identities, and complete tree state to its journal before any
+  restore. Current-version recovery reruns installed CLI/offscreen-GUI smoke
+  before launcher or `current` activation, including the target-to-retired
+  rename crash window; rejection leaves activation state unchanged and retains
+  the journal. Modified working-tree identity uses a versioned, typed,
+  length-delimited v2 encoding that includes untracked regular-file permission
+  mode, path, and bytes while preserving clean build identity behavior.
+- P5A installer recovery/provenance remediation validation – From exact start
+  `afea7c11a148cbbdd52df2f2534bd187074dcdb6`, Python 3.14.4 passed 49 focused
+  installer/provenance tests, the 103-test BP/AR/PL/IN collection, the complete
+  suite with 337 tests, `python -m biomesh --help`, Ruff, strict mypy over 65
+  source files, and `git diff --check`. P5A remains `INCOMPLETE`; this defensive
+  remediation is not an acceptance audit and does not unblock Phase 6.
+- P5A containment and recovery identity remediation - Starting from rejected
+  audit revision `0d266186c73a209053c0d3f42a975ac5c46f35e3`, installed plugin
+  execution now mounts the exact BioMesh package and metadata roots instead of
+  their containing site-packages, and built-in and external payload inventories
+  must match before every operation. Transaction journal schema 2 binds exact
+  source and target version, manifest, wheel, and provenance identities before
+  smoke or recovery mutation; rollback rejects any unrecorded third state, and
+  every mismatch preserves activation state and the journal.
+- P5A accepted - A distinct 2026-08-15 audit rerun independently reproduced
+  both rejected findings against synthetic fixtures and confirmed their
+  fail-closed remediation. The eight-file BP/AR/PL/IN collection passed 118
+  tests; the complete suite passed 352 tests with no failures or skips; module
+  help, Ruff, strict mypy over 65 source files, and `git diff --check` passed.
+  No acceptance-blocking finding remains. P5A is `COMPLETE`; no merge, tag,
+  `main` mutation, or P6 work is included in this task.
 - M0 – Repository Bootstrap package shell, development tooling, tests, CI
   workflow, and documentation contracts.
 - Standards alignment: Python 3.14 compatibility policy, canonical phase

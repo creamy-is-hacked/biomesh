@@ -11,6 +11,10 @@ The latest accepted phase is **P4 – Phase 4 – Research Platform**. Its
 independent 2026-08-11 audit rerun passed with recorded limitations and is
 represented by the `v0.4.1-audit` tag. The rerun closed the three findings from
 the first P4A attempt without expanding the scientific or platform scope.
+P5-WP01 through P5-WP04 are complete on the in-progress P5 implementation
+branch: threat-derived requirements now have deterministic installed-build
+provenance, authenticated and optionally confidential archives, and isolated
+reviewed-plugin execution. Phase 5 is not accepted.
 
 The current desktop GUI has menus, docks, status, recent project references, an
 error console, separate UI preferences, a snapshot-only simulation viewer, a
@@ -65,6 +69,9 @@ The repository currently provides:
   exporters, with whole-set compatibility/trust preflight, deterministic
   provenance manifests, zero-plugin operation, and a packaged uncalibrated
   species/kinetics example; and
+- the P5 least-privilege Linux plugin runtime with out-of-process Bubblewrap/
+  libseccomp isolation, versioned bounded immutable messages, explicit resource
+  limits and receipts, atomic failure, and a no-process zero-plugin path; and
 - the P4 named/versioned model and parameter registry with hash-bound immutable
   audited presets, explicit provenance categories, citations and uncertainty,
   deterministic import/export, SI compatibility checks, and exact reviewed
@@ -121,6 +128,10 @@ python -m pip install -e ".[dev]"
 The project uses the newest stable Python version fully supported by all
 required dependencies. Do not silently substitute another Python version if a
 dependency compatibility problem appears.
+
+Reviewed non-empty plugin execution additionally requires Linux Bubblewrap
+0.8.0 or newer, util-linux `prlimit`, and libseccomp. Missing or mismatched
+sandbox enforcement fails before plugin code runs.
 
 ## Quick start
 
@@ -256,9 +267,10 @@ Exchange a project without depending on its original fixture location:
 ```bash
 python -m biomesh project export PROJECT_DIRECTORY \
   --output NEW_PROJECT_ARCHIVE.biomesh
-python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh
+python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh \
+  --allow-unauthenticated
 python -m biomesh project import PROJECT_ARCHIVE.biomesh \
-  NEW_PROJECT_DIRECTORY
+  NEW_PROJECT_DIRECTORY --allow-unauthenticated
 ```
 
 The archive carries strict self-description, embedded hash-verified fixture
@@ -272,21 +284,61 @@ canonical empty plugin-set identity before execution and in their completion
 receipts. Legacy completed runs remain readable and are never backfilled.
 See [the P4-WP06 portability and packaging contract](docs/P4_WP06_PORTABLE_PROJECTS_PACKAGING.md).
 
-Build the documented Linux application installer bundle after creating the
-wheel and sdist:
+P5-WP03 adds authenticity and separately requested confidentiality around the
+unchanged archive bytes. Keys and host trust policy are external files; never
+place private keys in a project, archive, repository, fixture, log, or bundle.
 
 ```bash
-python -m hatchling build --clean -d dist
-python -m biomesh package linux --wheel dist/*.whl \
-  --output dist/linux-installer
-tar -xzf dist/linux-installer/biomesh-*-linux-*.tar.gz
-cd biomesh-*-linux-*
-./install.sh
+python -m biomesh project secure-archive PROJECT_ARCHIVE.biomesh \
+  --output PROJECT_ARCHIVE.secure.biomesh \
+  --signer-id SIGNER_ID --signing-private-key ED25519_RAW_PRIVATE_KEY
+
+# Add both options only when confidentiality is explicitly requested:
+# --recipient-id RECIPIENT_ID --recipient-public-key X25519_RAW_PUBLIC_KEY
+
+python -m biomesh project verify-secure-archive \
+  PROJECT_ARCHIVE.secure.biomesh --trust-policy HOST_TRUST_POLICY.json
+python -m biomesh project import-secure-archive \
+  PROJECT_ARCHIVE.secure.biomesh NEW_PROJECT_DIRECTORY \
+  --trust-policy HOST_TRUST_POLICY.json
 ```
 
-The bundle contains the wheel, installer documentation, and checksums. It
-requires Linux and Python 3.14, and deliberately excludes generated projects,
-archives, queues, reports, raw runs, and research results.
+Confidential verification/import additionally requires `--recipient-id` and
+`--recipient-private-key`; `--require-confidentiality` rejects signed plaintext
+input. Trust, revocation, validity, and prohibited replay bindings come only
+from the strict host policy. Signing and decryption do not grant plugin or
+registry trust, execution authorization, calibration, sandboxing, or
+scientific validity. See [the P5-WP03 algorithm and envelope policy](docs/P5_WP03_ARCHIVE_SECURITY_POLICY.md).
+
+Build the exact clean-source P5 publication set and verify its wheel, sdist,
+Linux installer, and canonical provenance manifest:
+
+```bash
+python -m biomesh provenance build --source . --output dist
+python -m biomesh provenance verify dist/biomesh-0.5.0-provenance.json
+tar -xzf dist/biomesh-*-linux-*.tar.gz
+cd biomesh-*-linux-*
+./install.sh --install
+```
+
+The bundle requires Linux and Python 3.14. It verifies the exact wheel and
+build/artifact provenance before prefix mutation, manifests every installed
+file, publishes versions side by side, and passes installed CLI help plus
+offscreen GUI smoke before atomically changing the current version.
+
+```bash
+./install.sh --upgrade
+./install.sh --rollback PREVIOUS_VERSION
+./install.sh --uninstall VERSION
+./install.sh --recover
+```
+
+Modified, missing, extra, ambiguous, or ownership-mismatched paths block by
+default. Exact `--acknowledge-path STATE:PATH` options and
+`--quarantine-modified` retain a changed uninstall tree rather than deleting
+unowned bytes. Projects, archives, queues, reports, parameters, configuration,
+raw runs, and research results are never installer-owned. See
+[the P5-WP05 lifecycle policy](docs/P5_WP05_INSTALLER_LIFECYCLE.md).
 
 Run the isolated benchmark reference, or explicitly enable the CPU-only
 feasibility candidate, with:
@@ -362,8 +414,13 @@ boundaries.
 
 ## Roadmap
 
-P4 is accepted. No later phase or work package is authorized by the current
-repository plans. BioMesh is not called v1.
+P4 is accepted. The [pre-v1 roadmap](docs/10_PRE_V1_ROADMAP.md) authorizes five
+strictly ordered, audit-blocked phases: security and
+distribution hardening, portable operations, calibration and validation, 3D
+and accelerated computing, and the final version 1 release. The next package
+is `P5-WP03 – Signed and optionally confidential archives`, which must begin in
+a fresh task. BioMesh is not called v1, and no post-v1 or new UI work is
+authorized.
 
 ## License
 

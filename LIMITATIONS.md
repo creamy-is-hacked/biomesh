@@ -1,5 +1,150 @@
 # Limitations
 
+## Pre-v1 roadmap
+
+- `docs/10_PRE_V1_ROADMAP.md` plans security/distribution hardening, portable
+  operations, calibration/validation, 3D/acceleration, and v1 release gates.
+  Planning does not close any P4A limitation; each remains in force until its
+  implementation phase passes an independent audit.
+- P7 cannot be completed by software work alone. It requires suitable licensed
+  source data, predeclared methods, and qualified independent domain review.
+- No new UI, cloud, clinical, automatic-parameter, post-v1, calibrated-science,
+  GPU, 3D, or performance claim is authorized by the roadmap itself.
+
+## P5-WP01 – Threat model and security requirements
+
+- `docs/P5_WP01_THREAT_MODEL.md` version 1.0.0 maps the P4A installed-build
+  provenance, archive authenticity/confidentiality, plugin sandboxing, and
+  installer lifecycle limitations to explicit controls, owners, verification,
+  and residual risk. At the P5-WP01 baseline it defined requirements only; the
+  owning P5 work packages and the 2026-08-15 P5A acceptance have since closed
+  those mapped limitations within their documented residual-risk boundaries.
+- P5-WP01 adds no installed provenance, signature, encryption, key material,
+  sandbox, lifecycle behavior, incident evidence, or security guarantee.
+  Checksums remain integrity evidence rather than signatures; provenance,
+  authenticity, confidentiality, authorization, trust, and sandboxing remain
+  separate properties.
+- Residual risks include trusted-host/kernel compromise, unauthenticated legacy
+  archive origin under explicit compatibility policy, deceptive but
+  schema-valid sandboxed plugin output, bounded denial of service, and the
+  inability of build provenance or archive signatures to establish scientific
+  validity or calibration. Queue portability, biological validation, and
+  3D/acceleration limitations remain assigned to P6-P8.
+
+## P5-WP02 – Installed-build provenance
+
+- A publishable P5 build now requires one complete wheel/sdist/Linux-installer
+  publication directory and canonical manifest. The manifest and embedded
+  records identify exact clean source and final artifact bytes, but SHA-256
+  provenance is integrity evidence, not distributor authenticity,
+  authorization, or trust. A consistently repackaged self-asserted set still
+  requires an external release/authenticity policy.
+- Build identity depends on the declared trusted Git, Python 3.14, Hatchling,
+  and BioMesh builder toolchain. Root, host, runtime, or build-tool compromise
+  is outside the control boundary.
+- The embedded record is generated distribution metadata and therefore is not
+  part of the committed source-tree identity. The external publication
+  manifest carries each final raw artifact hash because an artifact cannot
+  embed its own final raw hash without changing those bytes.
+- Source-run metadata additionally records the exact commit, a domain-separated
+  source/working-tree identity, and whether the source is clean or modified.
+  The commit alone therefore is not treated as a complete identity for a
+  modified source run. Dependency metadata is the complete declared direct
+  runtime inventory from `pyproject.toml`; transitive host dependencies remain
+  outside that labeled inventory.
+- P5-WP02 adds no signature, key, confidentiality, archive envelope, plugin
+  sandbox, upgrade, rollback, uninstall, automatic update, or broader
+  installer supply-chain policy. Those remain P5-WP03 through P5-WP05 and must
+  pass P5A before Phase 5 is accepted.
+
+## P5-WP03 – Signed and optionally confidential archives
+
+- Policy 1.0.0 selects only `BMAS-SIG-1-ED25519` and the optional
+  `BMAS-ENC-1-HPKE-X25519-HKDF-SHA256-AES256GCM` suite. Schema or algorithm
+  transitions require explicit new policy/code and host opt-in; there is no
+  negotiation, fallback, guessing, downgrade, or transparent replacement.
+- A verified signature authenticates exact archive/security bytes to one
+  signer/key binding only after explicit out-of-band host trust. It does not
+  authorize execution, grant plugin or registry trust, establish sandboxing,
+  validate science, or promote `CALIBRATION_REQUIRED`. P5A still independently
+  determines whether the Phase 5 controls are accepted.
+- Confidentiality is separately requested and ends after authorized
+  decryption. It protects only the declared archive envelope and does not
+  protect plaintext from the authorized recipient, a compromised host, root,
+  memory inspection, or later copying. Private-key custody remains outside
+  BioMesh.
+- Replay decisions are host-owned. BioMesh supplies an authenticated stable
+  replay binding, a prohibited-binding set, and a pre-import policy hook; it
+  does not invent a global replay store or retention policy. Replay-store
+  unavailability and host-policy compromise remain residual risks.
+- Legacy raw P4 archives remain readable only with explicit
+  `--allow-unauthenticated` policy and receive durable `UNAUTHENTICATED` and
+  `PLAINTEXT` status. Their historical origin cannot be proven or backfilled.
+- Processing retains the accepted P4 100,000-member and 64 GiB expanded-size
+  ceilings. These bounds do not guarantee availability under host-wide
+  resource exhaustion. Python 3.14, `cryptography`, OpenSSL, the OS CSPRNG, and
+  the supported local host remain in the trusted computing base.
+
+## P5-WP04 – Isolated plugin execution
+
+- Reviewed non-empty plugins now execute only through Linux Bubblewrap policy
+  1.0.0, util-linux `prlimit`, and libseccomp. Linux, those enforcement tools,
+  Python, the kernel, and explicitly mounted read-only runtime dependencies
+  remain trusted; root, kernel, runtime, or same-account host compromise is
+  outside the boundary.
+- The sandbox denies project/host files, caller environment secrets, host
+  network, mutable engine/completed state, and undeclared process capabilities.
+  It does not make reviewed code benign or prevent deceptive but schema-valid
+  output. Review, authorization, containment, calibration, and scientific
+  validity remain separate.
+- Wall, CPU, address-space, message/output, file-descriptor, and process limits
+  bound one operation but cannot guarantee availability under host-wide
+  exhaustion. A bounded plugin failure remains possible and explicit.
+- Empty plugin selection starts no process and retains the accepted zero-plugin
+  identity/path. No plugin is embedded in or trusted by project archives, and
+  no UI was added. P5A accepted this boundary on 2026-08-15.
+- The reviewed distribution root is content-bound: the selected entry-point
+  module/package's regular-file inventory is rechecked before each operation
+  for built-in and external plugins. Only the exact BioMesh package and its
+  metadata, the selected plugin payload, and individual package roots from the
+  declared runtime dependency inventory are mounted. The containing
+  site-packages/environment/prefix and arbitrary distribution siblings are not
+  mounted. This does not make reviewed code benign or remove the trusted
+  runtime/kernel boundary.
+
+## P5-WP05 – Installer lifecycle and supply-chain verification
+
+- The lifecycle verifies exact P5-WP02 wheel/build/artifact-binding identities
+  and owned installed bytes. SHA-256 provenance remains integrity evidence, not
+  distributor authenticity. A consistently substituted self-asserted bundle,
+  compromised host/root account, Python/pip compromise, or compromised build
+  tool remains outside this control.
+- Installation targets Linux x86_64/aarch64 and Python 3.14. Declared dependency
+  availability and compatibility remain external; automatic update, system
+  package integration, remote distribution, and cloud behavior are absent.
+- Versions install side by side and one manifest-bound symlink activates them.
+  Rollback can select only a retained exact verified version. Normal uninstall
+  refuses modified/missing/extra state; explicit path acknowledgement retains
+  the complete changed tree in a recovery quarantine and does not silently
+  reclaim disk space or make that tree executable.
+- Projects, archives, parameter files, queues, reports, configuration,
+  completed artifacts, research data, and source datasets remain user-owned and
+  outside removal. The lifecycle does not migrate or reinterpret any of them.
+- Prefix preflight now rejects symlinks in `PREFIX`, `PREFIX/lib`,
+  `PREFIX/bin`, and all lifecycle roots before writes. Recovery validates the
+  journal's operation, phase, version/manifest identity, and derived stage
+  names before constructing or deleting any path; recovery deletion remains
+  limited to validated children of the transaction root.
+- Transaction journal schema 2 binds exact source and target version,
+  manifest, wheel, and provenance identities before smoke or any recovery side
+  effect. Rollback recognizes only exact recorded source/target states. A
+  mismatched or legacy schema-1 interrupted journal fails closed and remains
+  available for explicit operator diagnosis.
+- P5-WP05 adds no scientific validation, calibration, archive/plugin trust,
+  queue portability, new UI behavior, release acceptance, or guarantee against
+  storage exhaustion and interruption below filesystem atomicity. P5A accepted
+  Phase 5 on 2026-08-15 without changing those boundaries.
+
 ## P4A – Phase 4 Audit
 
 - The independent 2026-08-11 rerun accepted Phase 4 with recorded limitations
@@ -10,11 +155,10 @@
   three-fixed-seed software-validation project. Its SI/provenance records and
   deterministic completion do not make it a biological experiment, calibration
   result, benchmark, or scientific conclusion.
-- Installed distributions cannot discover a source Git checkout and therefore
-  record `commit_hash` as `UNKNOWN`; the audit separately binds the exact wheel
-  SHA-256 and package/dependency/environment versions. In-clone runs record the
-  exact prerequisite commit. Scientific/request bytes matched across both
-  environments; only this metadata and its checksum receipt differed.
+- P4A recorded that installed distributions reported `commit_hash` as
+  `UNKNOWN`. P5-WP02 closes that prospective installed-provenance limitation
+  for verified BioMesh 0.5.0 publication sets by embedding the exact commit;
+  historical P4 artifacts remain unchanged and are not backfilled.
 
 ## P4-WP07 – Experimental acceleration boundary
 
@@ -58,9 +202,11 @@
   projects remain verifiable but cannot resume unfinished work or acquire
   backfilled provenance.
 - The documented Linux bundle targets x86_64 or aarch64 Linux with Python 3.14.
-  Its installer resolves declared dependencies with pip and has no automatic
-  update, system-package integration, rollback, or uninstaller. It deliberately
-  excludes generated projects, archives, reports, queues, and research data.
+  P4-WP06 originally supplied only a fresh installer. P5-WP05 supersedes that
+  lifecycle limitation with verified upgrade, rollback, recovery, and
+  ownership-safe uninstall while retaining the absence of automatic update and
+  system-package integration. Generated projects, archives, reports, queues,
+  and research data remain excluded.
 - P4-WP06 adds no GUI archive action, cloud exchange, archive signing,
   acceleration, new biological value, calibration behavior, or P4-WP07/P4A
   result.

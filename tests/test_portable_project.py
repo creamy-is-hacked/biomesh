@@ -15,6 +15,7 @@ import pytest
 
 from biomesh import __version__
 from biomesh.__main__ import main
+from biomesh.build_identity import SOURCE_IDENTITY_POLICY, BuildIdentity, BuildTool
 from biomesh.portable_project import (
     export_project_archive,
     import_project_archive,
@@ -151,10 +152,17 @@ def test_archive_is_deterministic_self_describing_and_importable(
     }.issubset(names)
     assert not any("queue_state.json" in name for name in names)
 
-    verified = verify_project_archive(first)
+    verified = verify_project_archive(first, allow_unauthenticated=True)
     assert verified.archive_sha256 == first_result.archive_sha256
     imported = tmp_path / "imported"
-    import_result = import_project_archive(first, imported)
+    import_result = import_project_archive(first, imported, allow_unauthenticated=True)
+    assert import_result.authenticity_status == "UNAUTHENTICATED"
+    assert (
+        json.loads((imported / ".biomesh-archive-security.json").read_bytes())[
+            "authenticity_status"
+        ]
+        == "UNAUTHENTICATED"
+    )
     assert import_result.completed_run_count == 1
     assert CampaignService(imported).status("completed-campaign").completed == 1
     assert CampaignService(imported).status("pending-campaign").pending == 1
@@ -190,7 +198,7 @@ def test_checksums_detect_repacked_member_corruption(tmp_path: Path) -> None:
             archive.writestr(name, contents)
 
     with pytest.raises(PortableArchiveError, match="size mismatch|checksum mismatch"):
-        verify_project_archive(corrupt)
+        verify_project_archive(corrupt, allow_unauthenticated=True)
 
 
 def test_archive_cross_checks_results_against_campaign_state(tmp_path: Path) -> None:
@@ -215,7 +223,7 @@ def test_archive_cross_checks_results_against_campaign_state(tmp_path: Path) -> 
         for name, contents in members.items():
             archive.writestr(name, contents)
     with pytest.raises(PortableArchiveError, match="artifact identity mismatch"):
-        verify_project_archive(altered)
+        verify_project_archive(altered, allow_unauthenticated=True)
 
 
 def test_archive_rejects_unsafe_members_and_existing_import_target(
@@ -225,19 +233,20 @@ def test_archive_rejects_unsafe_members_and_existing_import_target(
     archive_path = tmp_path / "project.biomesh"
     export_project_archive(project, archive_path)
     unsafe = tmp_path / "unsafe.biomesh"
-    with zipfile.ZipFile(archive_path) as source, zipfile.ZipFile(
-        unsafe, mode="w", compression=zipfile.ZIP_STORED
-    ) as target:
+    with (
+        zipfile.ZipFile(archive_path) as source,
+        zipfile.ZipFile(unsafe, mode="w", compression=zipfile.ZIP_STORED) as target,
+    ):
         for name in source.namelist():
             target.writestr(name, source.read(name))
         target.writestr("../escaped", b"unsafe")
     with pytest.raises(PortableArchiveError, match="contained under project"):
-        verify_project_archive(unsafe)
+        verify_project_archive(unsafe, allow_unauthenticated=True)
 
     existing = tmp_path / "existing"
     existing.mkdir()
     with pytest.raises(PortableArchiveError, match="already exists"):
-        import_project_archive(archive_path, existing)
+        import_project_archive(archive_path, existing, allow_unauthenticated=True)
 
 
 def test_project_archive_cli_paths(
@@ -245,14 +254,33 @@ def test_project_archive_cli_paths(
 ) -> None:
     project = _project(tmp_path)
     archive_path = tmp_path / "cli.biomesh"
-    assert main(
-        ["project", "export", str(project), "--output", str(archive_path)]
-    ) == 0
+    assert main(["project", "export", str(project), "--output", str(archive_path)]) == 0
     assert json.loads(capsys.readouterr().out)["completed_run_count"] == 1
-    assert main(["project", "verify-archive", str(archive_path)]) == 0
+    assert (
+        main(
+            [
+                "project",
+                "verify-archive",
+                str(archive_path),
+                "--allow-unauthenticated",
+            ]
+        )
+        == 0
+    )
     assert json.loads(capsys.readouterr().out)["file_count"] >= 5
     imported = tmp_path / "cli-imported"
-    assert main(["project", "import", str(archive_path), str(imported)]) == 0
+    assert (
+        main(
+            [
+                "project",
+                "import",
+                str(archive_path),
+                str(imported),
+                "--allow-unauthenticated",
+            ]
+        )
+        == 0
+    )
     assert json.loads(capsys.readouterr().out)["project_id"] == "portable-project"
 
 
@@ -270,6 +298,26 @@ def test_clean_install_style_completes_imported_pending_multicondition_campaign(
         Path("src/biomesh"),
         installed_package,
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    synthetic_build = BuildIdentity(
+        package_name="biomesh",
+        package_version=__version__,
+        source_commit="a" * 40,
+        source_tree_sha256="b" * 64,
+        source_identity_policy=SOURCE_IDENTITY_POLICY,
+        build_tools=tuple(
+            sorted(
+                (
+                    BuildTool("biomesh-provenance-builder", __version__),
+                    BuildTool("git", "test"),
+                    BuildTool("hatchling", "test"),
+                    BuildTool("python", "3.14.0"),
+                )
+            )
+        ),
+    )
+    (installed_package / "_build_provenance.json").write_bytes(
+        synthetic_build.to_bytes()
     )
     resources = installed_package / "resources"
     shutil.copytree(Path("experiments"), resources / "experiments")
@@ -310,11 +358,15 @@ def test_clean_install_style_completes_imported_pending_multicondition_campaign(
     assert location.returncode == 0, location.stderr
     assert str(installed_root.resolve()) in location.stdout
 
-    imported_result = installed_cli("project", "import", str(archive), str(imported))
-    assert imported_result.returncode == 0, imported_result.stderr
-    resumed = installed_cli(
-        "campaign", "resume", str(imported), "platform-reference"
+    imported_result = installed_cli(
+        "project",
+        "import",
+        str(archive),
+        str(imported),
+        "--allow-unauthenticated",
     )
+    assert imported_result.returncode == 0, imported_result.stderr
+    resumed = installed_cli("campaign", "resume", str(imported), "platform-reference")
     assert resumed.returncode == 0, resumed.stderr
     status = json.loads(resumed.stdout)
     assert status == {

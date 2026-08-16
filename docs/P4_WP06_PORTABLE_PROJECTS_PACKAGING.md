@@ -39,9 +39,10 @@ Use new targets for all operations:
 ```bash
 python -m biomesh project export PROJECT_DIRECTORY \
   --output NEW_PROJECT_ARCHIVE.biomesh
-python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh
+python -m biomesh project verify-archive PROJECT_ARCHIVE.biomesh \
+  --allow-unauthenticated
 python -m biomesh project import PROJECT_ARCHIVE.biomesh \
-  NEW_PROJECT_DIRECTORY
+  NEW_PROJECT_DIRECTORY --allow-unauthenticated
 ```
 
 Verification rejects duplicate, encrypted, compressed, non-regular,
@@ -75,8 +76,9 @@ python -m biomesh project create experiments/platform_reference.yaml SOURCE_PROJ
 python -m biomesh project export SOURCE_PROJECT --output project.biomesh
 
 # Run these commands outside the clone with an installed BioMesh package.
-biomesh project verify-archive /path/to/project.biomesh
-biomesh project import /path/to/project.biomesh IMPORTED_PROJECT
+biomesh project verify-archive /path/to/project.biomesh --allow-unauthenticated
+biomesh project import /path/to/project.biomesh IMPORTED_PROJECT \
+  --allow-unauthenticated
 biomesh campaign resume IMPORTED_PROJECT platform-reference
 biomesh campaign status IMPORTED_PROJECT platform-reference
 ```
@@ -91,8 +93,9 @@ validity.
 
 The Linux build consumes exactly one BioMesh wheel and publishes a new
 architecture-labelled `.tar.gz` containing the wheel, `install.sh`,
-`INSTALL.md`, and `SHA256SUMS`. Tar and gzip timestamps, ownership, permissions,
-and member order are fixed for reproducible bundle bytes.
+`INSTALL.md`, `PROVENANCE.json`, and `SHA256SUMS`. Tar and gzip timestamps,
+ownership, permissions, and member order are fixed for reproducible bundle
+bytes.
 
 Build with Python 3.14 from a clean clone:
 
@@ -101,27 +104,42 @@ python3.14 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]" hatchling
-python -m hatchling build --clean -d dist
-python -m biomesh package linux --wheel dist/*.whl \
-  --output dist/linux-installer
+python -m biomesh provenance build --source . --output dist
+python -m biomesh provenance verify dist/biomesh-0.5.0-provenance.json
 ```
 
 Extract and install for the current user:
 
 ```bash
-tar -xzf dist/linux-installer/biomesh-*-linux-*.tar.gz
+tar -xzf dist/biomesh-*-linux-*.tar.gz
 cd biomesh-*-linux-*
-./install.sh
+./install.sh --install
 biomesh --version
 QT_QPA_PLATFORM=offscreen biomesh-gui --smoke-test
 ```
 
 The installer requires Linux and Python 3.14, verifies `SHA256SUMS`, installs
 the wheel plus declared dependencies under a new `${HOME}/.local` versioned
-directory, and creates CLI/GUI launchers. `--prefix ABSOLUTE_PATH` and
-`--python PYTHON3.14` select an alternate new location/interpreter. The
-`--no-deps` option is only for controlled verification where the exact runtime
-dependencies already exist.
+directory, and creates CLI/GUI launchers. P5-WP05 now supersedes the one-shot
+P4 lifecycle with supply-verified side-by-side install, upgrade, rollback,
+recovery, and ownership-safe uninstall; see
+`docs/P5_WP05_INSTALLER_LIFECYCLE.md`. `--prefix ABSOLUTE_PATH` and
+`--python PYTHON3.14` select an alternate location/interpreter. The `--no-deps`
+option is only for controlled verification where the exact runtime dependencies
+already exist.
+
+P5-WP02 supersedes the former direct Hatchling/`package linux` publication
+path with the provenance-bound whole-set command above. The accepted P4-WP06
+archive and installer behavior is unchanged; publishable P5 artifacts now
+require the additional exact clean-source and cross-artifact verification in
+`docs/P5_WP02_INSTALLED_BUILD_PROVENANCE.md`.
+
+P5-WP03 supersedes the raw archive trust entry point: the raw P4 format is
+legacy unsigned input and therefore requires the explicit options shown above,
+with durable `UNAUTHENTICATED` status. Prefer the signed and optionally
+confidential commands and host-owned trust policy documented in
+`docs/P5_WP03_ARCHIVE_SECURITY_POLICY.md`; the inner P4 bytes and all validation
+in this document remain unchanged.
 
 The bundle builder fails if the wheel contains generated project, queue,
 report, raw-run, archive, CSV, Parquet, or NumPy-result data. Packaged

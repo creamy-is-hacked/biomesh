@@ -4,21 +4,23 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-11 after the independent P4A rerun accepted Phase 4
-from exact pushed prerequisite
-`b5bb3cf8ce12e67f6d80048aab2545e89bfcabe4`. The canonical accepted-audit
-workflow publishes tag `v0.4.1-audit`. The Python 3.14 full gate passes 244
-tests.
+Snapshot verified: 2026-08-16 for the canonical P5A governance closeout. The
+fresh security/acceptance audit closed both defects reported against
+`0d266186c73a209053c0d3f42a975ac5c46f35e3` and accepted exact pushed revision
+`e5998ea2508677b010c1ce9abfea22a562a2a62c`. The closeout records that history
+on `audit-phase-5`, merges it into `main` with `--no-ff`, and publishes
+`v0.5.1-audit`. Python 3.14.4 passes the 118-test focused P5 collection and the
+352-test full gate. P6 remains untouched.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P4 – Phase 4 – Research Platform (accepted) |
-| Current work package | P4A is `COMPLETE`; the independent rerun passed with recorded limitations |
-| Current branch | `main` after the canonical accepted-audit merge |
-| Latest accepted phase | P4 – Phase 4 – Research Platform, accepted by P4A on 2026-08-11 as `PASS WITH RECORDED LIMITATIONS` |
-| Latest version tag | `v0.4.1-audit` (P4A release, 2026-08-11) |
-| Current test count | 244 passed (`pytest -q`, 2026-08-11) |
-| Next planned work package | None; no later phase or work package is authorized by the current plans |
+| Current phase | P5 – Phase 5 – Security and Distribution Hardening (accepted); P6 not begun |
+| Current work package | P6-WP01 – Portable queue-intent schema (`INCOMPLETE`; next only) |
+| Current branch | `main` after the canonical P5A accepted-audit merge |
+| Latest accepted phase | P5 – Phase 5 – Security and Distribution Hardening, accepted by P5A on 2026-08-15 |
+| Latest version tag | `v0.5.1-audit` (P5A accepted-audit tag, 2026-08-16) |
+| Current test count | 352 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
+| Next planned work package | P6-WP01 in a fresh subsequent task; no later P6 work is authorized |
 
 ## Outstanding technical debt
 
@@ -131,6 +133,80 @@ tests.
   archive from an external wheel, preserved a 111-file completed project tree,
   and reproduced wheel, sdist, and installer bytes without a Critical or Major
   finding.
+- P5-WP02 implements deterministic whole-set provenance for BioMesh 0.5.0
+  wheel, sdist, and Linux-installer artifacts. A canonical external manifest
+  binds final artifact hashes/sizes while embedded records expose the exact
+  clean commit, SHA-256 source-tree identity, package version, and declared
+  tool versions without Git. In-clone and installed reference bytes remain
+  equal, and installed run metadata uses the embedded exact commit. This
+  provides integrity/provenance only: archive authenticity/confidentiality,
+  plugin isolation, installer lifecycle, and P5 acceptance remained open at
+  that work-package boundary. No trust, signing algorithm, key, calibration
+  status, scientific behavior, queue portability, or 3D/acceleration status
+  changes.
+- P5-WP03 policy 1.0.0 and envelope schema 1 authenticate exact P4 payload
+  bytes with Ed25519 under explicit host-owned signer/key, validity, revocation,
+  and replay policy. Optional RFC 9180 X25519/HKDF-SHA-256/AES-256-GCM HPKE
+  confidentiality separately binds recipient/key and all visible security
+  metadata. Legacy raw
+  archives require explicit caller opt-in and persist `UNAUTHENTICATED` status.
+  The inner archive, checksum inventory, execution identity, completed
+  artifacts/receipts, SI/provenance and `CALIBRATION_REQUIRED` boundaries,
+  zero-plugin identity, queue exclusion, and atomic P4 validation remain
+  unchanged. A signature or successful decryption grants no execution,
+  plugin/registry trust, sandboxing, calibration, or scientific validity.
+  Private keys remain externally owned and are neither serialized nor logged.
+  Host/runtime compromise, post-decryption disclosure, key custody, replay-store
+  policy, and bounded resource exhaustion remain residual risks. Queue
+  portability, validation, and 3D/acceleration remain P6-P8; plugin isolation
+  and installer lifecycle are addressed below.
+- P5-WP04 sandbox policy 1.0.0 moves every reviewed non-empty plugin operation
+  behind a fresh Bubblewrap/libseccomp Linux boundary. Whole-set review and
+  compatibility preflight precede code startup; read-only declared runtime
+  mounts, a cleared environment, network/PID isolation, dropped capabilities,
+  syscall denial, and explicit wall/CPU/address-space/message/process limits
+  contain plugin code. The runtime mounts only the exact BioMesh package and
+  metadata roots plus selected payload and declared dependency roots; it never
+  mounts their containing site-packages. Built-in and external payload
+  inventories are rechecked before each operation. Versioned request/result
+  messages bind exact identities,
+  validate units/provenance/shape/path/calibration boundaries, and produce
+  secret-free outcome receipts before result publication. Empty selection
+  starts no process and preserves the P4A core path. This does not establish
+  plugin scientific validity or close host/kernel and bounded-denial-of-service
+  residual risks. Queue portability, validation, and 3D/acceleration remain
+  P6-P8; the installer lifecycle is addressed below.
+- P5-WP05 policy/manifest schema 1 verifies exact P5-WP02 supply inputs before
+  prefix mutation, inventories every candidate application, dependency,
+  metadata, and launcher file, and publishes version roots side by side under
+  a manifest-hash identity. Installed CLI help and offscreen GUI smoke precede
+  the atomic `current` switch. Journalling recovers install, upgrade, rollback,
+  and uninstall boundaries; modified state blocks unless every reported path
+  is explicitly acknowledged, and changed uninstall trees are quarantined
+  rather than deleted. Projects, archives, parameters, queues, reports,
+  configuration, completed artifacts, research data, and source datasets
+  remain outside ownership and byte-preserved. This adds no automatic updater,
+  system-package integration, remote/cloud execution, queue portability, new
+  UI/science, calibration, or trust grant. Host/root compromise, dependency
+  availability, and distributor authenticity remain residual risks. Journal
+  schema 2 binds exact source and target version, manifest, wheel, and
+  provenance identities before every recovery side effect; rollback accepts
+  only exact recorded states. P5A independently reproduced the rejected
+  containment and recovery cases, passed the 118-test P5 collection and
+  352-test complete suite, and accepted Phase 5 on 2026-08-15.
+
+## Pre-v1 roadmap boundary
+
+- `docs/10_PRE_V1_ROADMAP.md` authorizes P5 through P9 in strict order with a
+  blocking independent audit after every phase. Only the first `INCOMPLETE`
+  package in `docs/PHASE_STATUS.md` may execute.
+- P5 addresses security and distribution hardening; P6 addresses portable
+  queue intent; P7 is an evidence-gated calibration and validation program; P8
+  provides separately audited 3D and acceleration work; and P9 freezes and
+  audits the v1 release candidate.
+- The roadmap itself adds no code, security guarantee, calibrated value,
+  dataset, scientific behavior, 3D/GPU implementation, UI feature, release,
+  or post-v1 authority.
 
 ## Update policy
 

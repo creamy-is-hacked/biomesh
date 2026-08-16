@@ -8,11 +8,10 @@ is loaded.
 from __future__ import annotations
 
 import hashlib
-import importlib
 import json
 import os
 import tempfile
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib.metadata import EntryPoint, entry_points
 from pathlib import Path
@@ -47,6 +46,17 @@ from biomesh.plugin_components import (
     SpeciesPlugin,
     VersionText,
 )
+from biomesh.plugin_sandbox import (
+    PluginDistribution,
+    PluginExecutionReceipt,
+    PluginSandboxError,
+    PluginSandboxPolicy,
+    SandboxPluginRuntime,
+    default_plugin_sandbox_policy,
+    inspect_plugin_distribution,
+    preflight_denied_error,
+    request_payload,
+)
 
 PLUGIN_ENTRY_POINT_GROUP = "biomesh.plugins"
 PLUGIN_MANIFEST_FILE = "plugin_manifest.json"
@@ -68,16 +78,19 @@ __all__ = [
     "MetricRequest",
     "MetricResult",
     "PluginError",
+    "PluginExecutionReceipt",
     "PluginMetadata",
     "PluginProvenance",
     "PluginSelection",
     "PluginSelfCheck",
+    "PluginSandboxPolicy",
     "PluginSetManifest",
     "PluginTrustPolicy",
     "PluginVerificationReport",
     "SpeciesDefinition",
     "SpeciesPlugin",
     "builtin_plugin_trust_policy",
+    "default_plugin_sandbox_policy",
     "example_plugin_manifest",
     "example_plugin_metadata",
     "load_plugins",
@@ -154,6 +167,8 @@ class PluginProvenance(BaseModel):
     entry_point_value: NonBlankText
     review_reference: NonBlankText
     self_check: PluginSelfCheck
+    sandbox_policy_version: NonBlankText
+    sandbox_executions: list[PluginExecutionReceipt] = Field(min_length=3)
 
 
 class PluginVerificationReport(BaseModel):
@@ -181,19 +196,13 @@ class _EntryPointLike(Protocol):
     @property
     def distribution_version(self) -> str: ...
 
-    def load(self) -> object: ...
-
-
 @dataclass(frozen=True, slots=True)
 class _BuiltinEntryPoint:
     name: str
     value: str
     distribution_name: str
     distribution_version: str
-
-    def load(self) -> object:
-        module_name, attribute = self.value.split(":", maxsplit=1)
-        return getattr(importlib.import_module(module_name), attribute)
+    distribution_root: Path
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,9 +212,7 @@ class _InstalledEntryPoint:
     value: str
     distribution_name: str
     distribution_version: str
-
-    def load(self) -> object:
-        return self.entry_point.load()
+    distribution_root: Path
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +221,87 @@ class LoadedPlugin:
 
     selection: PluginSelection
     instance: BasePlugin
+
+
+class _SandboxedPluginProxy:
+    """Protocol-compatible proxy that never imports plugin code in the host."""
+
+    def __init__(
+        self,
+        selection: PluginSelection,
+        runtime: SandboxPluginRuntime,
+        initialization_receipt: PluginExecutionReceipt,
+    ) -> None:
+        self._selection = selection
+        self._runtime = runtime
+        self._receipts = [initialization_receipt]
+
+    @property
+    def sandbox_executions(self) -> tuple[PluginExecutionReceipt, ...]:
+        return tuple(self._receipts)
+
+    def metadata(self) -> PluginMetadata:
+        return self._selection.metadata
+
+    def self_check(self) -> PluginSelfCheck:
+        return cast(PluginSelfCheck, self._call("self_check"))
+
+    def species_definition(self) -> SpeciesDefinition:
+        self._require_component("species")
+        return cast(SpeciesDefinition, self._call("species_definition"))
+
+    def evaluate_kinetics(self, request: KineticsRequest) -> KineticsResult:
+        self._require_component("kinetics")
+        return cast(
+            KineticsResult,
+            self._call("evaluate_kinetics", request_payload(request)),
+        )
+
+    def advance_field(self, request: FieldStepRequest) -> FieldStepResult:
+        self._require_component("field")
+        return cast(
+            FieldStepResult,
+            self._call("advance_field", request_payload(request)),
+        )
+
+    def evaluate_metric(self, request: MetricRequest) -> MetricResult:
+        self._require_component("metric")
+        return cast(
+            MetricResult,
+            self._call("evaluate_metric", request_payload(request)),
+        )
+
+    def export(self, request: ExportRequest) -> ExportResult:
+        self._require_component("exporter")
+        operation = self._runtime.execute(
+            "export",
+            request_payload(request),
+            export_output=request.output_directory,
+        )
+        self._receipts.append(operation.receipt)
+        return cast(ExportResult, operation.value)
+
+    def _call(
+        self,
+        operation: Literal[
+            "self_check",
+            "species_definition",
+            "evaluate_kinetics",
+            "advance_field",
+            "evaluate_metric",
+        ],
+        payload: dict[str, object] | None = None,
+    ) -> object:
+        result = self._runtime.execute(operation, payload)
+        self._receipts.append(result.receipt)
+        return result.value
+
+    def _require_component(self, component: PluginComponentKind) -> None:
+        if component not in self._selection.metadata.components:
+            raise PluginError(
+                f"plugin does not declare {component}: "
+                f"{self._selection.metadata.plugin_id}"
+            )
 
 
 def plugin_metadata_sha256(metadata: PluginMetadata) -> str:
@@ -287,40 +375,116 @@ def load_plugins(
     trust_policy: PluginTrustPolicy,
     *,
     available_entry_points: Sequence[_EntryPointLike] | None = None,
+    sandbox_policy: PluginSandboxPolicy | None = None,
 ) -> tuple[LoadedPlugin, ...]:
-    """Preflight the complete set, then load only exact reviewed entry points."""
-    _preflight_manifest(manifest, trust_policy)
+    """Preflight the complete set, then create isolated runtime proxies."""
+    policy = sandbox_policy or default_plugin_sandbox_policy()
+    set_hash = plugin_set_sha256(manifest)
+    for selection in manifest.plugins:
+        try:
+            _preflight_selection(selection, trust_policy)
+        except PluginError as error:
+            raise preflight_denied_error(
+                plugin_set_sha256=set_hash,
+                plugin_id=selection.metadata.plugin_id,
+                plugin_version=selection.metadata.plugin_version,
+                selection_sha256=plugin_selection_sha256(selection),
+                entry_point_value=selection.entry_point_value,
+                policy=policy,
+                details=str(error),
+            ) from error
     candidates = (
         tuple(available_entry_points)
         if available_entry_points is not None
         else _installed_entry_points()
     )
-    resolved = tuple(
-        _resolve_entry_point(item, candidates) for item in manifest.plugins
-    )
-
-    loaded: list[LoadedPlugin] = []
+    resolved_list: list[_EntryPointLike] = []
+    for selection in manifest.plugins:
+        try:
+            resolved_list.append(_resolve_entry_point(selection, candidates))
+        except PluginError as error:
+            raise preflight_denied_error(
+                plugin_set_sha256=set_hash,
+                plugin_id=selection.metadata.plugin_id,
+                plugin_version=selection.metadata.plugin_version,
+                selection_sha256=plugin_selection_sha256(selection),
+                entry_point_value=selection.entry_point_value,
+                policy=policy,
+                details=str(error),
+            ) from error
+    resolved = tuple(resolved_list)
+    roots: list[PluginDistribution] = []
     for selection, entry_point in zip(manifest.plugins, resolved, strict=True):
-        loaded_object = entry_point.load()
-        if not callable(loaded_object):
-            raise PluginError(
-                f"plugin entry point is not callable: {selection.entry_point_name}"
+        try:
+            roots.append(
+                _entry_point_root(entry_point, selection.entry_point_value)
             )
-        factory = cast(Callable[[], object], loaded_object)
-        instance = factory()
-        if not isinstance(instance, BasePlugin):
-            raise PluginError(
-                f"plugin does not implement the base interface: "
-                f"{selection.metadata.plugin_id}"
-            )
-        runtime_metadata = instance.metadata()
+        except PluginError as error:
+            raise preflight_denied_error(
+                plugin_set_sha256=set_hash,
+                plugin_id=selection.metadata.plugin_id,
+                plugin_version=selection.metadata.plugin_version,
+                selection_sha256=plugin_selection_sha256(selection),
+                entry_point_value=selection.entry_point_value,
+                policy=policy,
+                details=str(error),
+            ) from error
+    loaded: list[LoadedPlugin] = []
+    for selection, distribution in zip(
+        manifest.plugins,
+        roots,
+        strict=True,
+    ):
+        runtime = SandboxPluginRuntime(
+            plugin_set_sha256=set_hash,
+            plugin_id=selection.metadata.plugin_id,
+            plugin_version=selection.metadata.plugin_version,
+            selection_sha256=plugin_selection_sha256(selection),
+            entry_point_value=selection.entry_point_value,
+            distribution_root=distribution.root,
+            policy=policy,
+            distribution=distribution,
+        )
+        initialization = runtime.execute("initialize")
+        runtime_metadata, runtime_components = cast(
+            tuple[PluginMetadata, tuple[str, ...]], initialization.value
+        )
         if runtime_metadata != selection.metadata:
-            raise PluginError(
-                f"runtime metadata differs from reviewed metadata: "
+            details = (
+                "runtime metadata differs from reviewed metadata: "
                 f"{selection.metadata.plugin_id}"
             )
-        _validate_component_interfaces(instance, runtime_metadata)
-        loaded.append(LoadedPlugin(selection=selection, instance=instance))
+            raise PluginSandboxError(
+                details,
+                initialization.receipt.model_copy(
+                    update={
+                        "outcome": "malformed_output",
+                        "result_sha256": None,
+                        "details": details,
+                    }
+                ),
+            )
+        if runtime_components != tuple(selection.metadata.components):
+            details = (
+                "runtime interfaces differ from reviewed metadata: "
+                f"{selection.metadata.plugin_id}"
+            )
+            raise PluginSandboxError(
+                details,
+                initialization.receipt.model_copy(
+                    update={
+                        "outcome": "malformed_output",
+                        "result_sha256": None,
+                        "details": details,
+                    }
+                ),
+            )
+        proxy = _SandboxedPluginProxy(
+            selection,
+            runtime,
+            initialization.receipt,
+        )
+        loaded.append(LoadedPlugin(selection=selection, instance=proxy))
     return tuple(loaded)
 
 
@@ -359,6 +523,14 @@ def verify_plugins(
                 entry_point_value=item.selection.entry_point_value,
                 review_reference=item.selection.review_reference,
                 self_check=first,
+                sandbox_policy_version=cast(
+                    _SandboxedPluginProxy, item.instance
+                ).sandbox_executions[0].sandbox_policy_version,
+                sandbox_executions=list(
+                    cast(
+                        _SandboxedPluginProxy, item.instance
+                    ).sandbox_executions
+                ),
             )
         )
     return PluginVerificationReport(
@@ -392,24 +564,23 @@ def publish_plugin_verification(output_directory: Path) -> PluginVerificationRep
     return report
 
 
-def _preflight_manifest(
-    manifest: PluginSetManifest, trust_policy: PluginTrustPolicy
+def _preflight_selection(
+    selection: PluginSelection, trust_policy: PluginTrustPolicy
 ) -> None:
-    for selection in manifest.plugins:
-        metadata = selection.metadata
-        if metadata.plugin_api_version != PLUGIN_API_VERSION:
-            raise PluginError(
-                f"incompatible plugin API {metadata.plugin_api_version} for "
-                f"{metadata.plugin_id}; core supports {PLUGIN_API_VERSION}"
-            )
-        if (
-            plugin_selection_sha256(selection)
-            not in trust_policy.approved_selection_sha256
-        ):
-            raise PluginError(
-                f"plugin is not present in the explicit review policy: "
-                f"{metadata.plugin_id}"
-            )
+    metadata = selection.metadata
+    if metadata.plugin_api_version != PLUGIN_API_VERSION:
+        raise PluginError(
+            f"incompatible plugin API {metadata.plugin_api_version} for "
+            f"{metadata.plugin_id}; core supports {PLUGIN_API_VERSION}"
+        )
+    if (
+        plugin_selection_sha256(selection)
+        not in trust_policy.approved_selection_sha256
+    ):
+        raise PluginError(
+            f"plugin is not present in the explicit review policy: "
+            f"{metadata.plugin_id}"
+        )
 
 
 def _installed_entry_points() -> tuple[_EntryPointLike, ...]:
@@ -423,6 +594,15 @@ def _installed_entry_points() -> tuple[_EntryPointLike, ...]:
             distribution_version=(
                 item.dist.version if item.dist is not None else ""
             ),
+            distribution_root=(
+                Path(__file__).resolve().parent.parent
+                if item.dist is not None and item.dist.name == "biomesh"
+                else (
+                    Path(str(item.dist.locate_file(""))).resolve()
+                    if item.dist is not None
+                    else Path(__file__).resolve().parent.parent
+                )
+            ),
         )
         for item in discovered
     )
@@ -433,6 +613,7 @@ def _installed_entry_points() -> tuple[_EntryPointLike, ...]:
         value="biomesh.example_species_kinetics:create_plugin",
         distribution_name="biomesh",
         distribution_version=__version__,
+        distribution_root=Path(__file__).resolve().parent.parent,
     )
     return installed + (fallback,)
 
@@ -456,22 +637,16 @@ def _resolve_entry_point(
     return matching[0]
 
 
-def _validate_component_interfaces(
-    instance: BasePlugin, metadata: PluginMetadata
-) -> None:
-    interfaces: Mapping[PluginComponentKind, type[object]] = {
-        "exporter": ExporterPlugin,
-        "field": FieldPlugin,
-        "kinetics": KineticsPlugin,
-        "metric": MetricPlugin,
-        "species": SpeciesPlugin,
-    }
-    for component in metadata.components:
-        if not isinstance(instance, interfaces[component]):
-            raise PluginError(
-                f"plugin declares {component} but does not implement its interface: "
-                f"{metadata.plugin_id}"
-            )
+def _entry_point_root(
+    entry_point: _EntryPointLike,
+    entry_point_value: str,
+) -> PluginDistribution:
+    root = getattr(
+        entry_point,
+        "distribution_root",
+        Path(__file__).resolve().parent.parent,
+    )
+    return inspect_plugin_distribution(Path(root), entry_point_value)
 
 
 def _model_bytes(model: BaseModel) -> bytes:

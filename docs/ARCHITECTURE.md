@@ -1,6 +1,6 @@
 # Architecture
 
-## Current architecture through P4-WP07
+## Current architecture through P5-WP04
 
 The typed P1 components are composed by a deterministic simulation layer. The
 CLI exposes the numerical validators, calibration-placeholder reference run,
@@ -73,6 +73,22 @@ dimensionless 2D stencil. An explicit flag enables a NumPy CPU candidate and
 records pointwise divergence; optional raw timings carry limitations and no
 performance comparison. Neither backend can be selected by the simulation,
 campaign, queue, plugin, registry, archive, package, or GUI.
+P5-WP02 adds deterministic clean-source and installed-build provenance without
+changing runtime science. P5-WP03 wraps exact P4 archive bytes in separately
+requested authenticity and confidentiality policy. P5-WP04 replaces host
+plugin imports with proxies whose complete reviewed-set preflight precedes a
+fresh least-privilege Linux sandbox for every non-empty operation. Versioned,
+bounded JSON messages carry only immutable interface values; validated results
+and explicit execution receipts return to the host. Empty selection starts no
+process, so accepted project/campaign execution remains the P4A zero-plugin
+path.
+P5-WP05 verifies the exact P5-WP02 wheel/build binding, inventories every
+candidate file, and publishes side-by-side version roots whose names bind the
+owned-file manifest hash. Version-specific CLI/GUI smoke completes before the
+single atomic `current` pointer changes. A canonical transaction journal owns
+recovery boundaries; uninstall removes only a verified version tree or retains
+an explicitly acknowledged changed tree in quarantine. User research data is
+never installer-owned.
 
 Dependency direction is intentionally simple:
 
@@ -106,6 +122,8 @@ project state    -> atomic JSON + process lock + append-only audit sequence
 project reports  -> verified project state + immutable raw Parquet artifacts
 plugin verifier  -> reviewed manifest + trust policy + exact entry points
 plugin component -> immutable versioned SI/provenance requests and results
+plugin proxy     -> versioned bounded messages + Linux sandbox runtime
+plugin worker    -> declared read-only runtime + immutable component values
 registry types    -> immutable model/parameter/provenance/hash records
 registry catalog  -> accepted parameter schemas + code-owned preset hashes
 registry service  -> registry catalog + controlled plugin loader
@@ -118,7 +136,8 @@ queue CLI          -> local create/enqueue/status/run/cancel operations
 portable project   -> lock-held verified project + embedded fixture/artifact bytes
 portable resources -> contained fixture-relative parameter documents + checksums
 archive import     -> strict inventory/checksums + existing CampaignService verifier
-Linux packager     -> release wheel + data-exclusion gate + installer checksums
+Linux packager     -> release wheel + provenance/data gate + lifecycle bundle
+installer lifecycle -> owned manifest + side-by-side roots + atomic current
 benchmark types    -> strict case/backend/observation/divergence records
 benchmark runner   -> synthetic CPU reference + explicitly enabled CPU candidate
 benchmark CLI      -> stdout or atomic JSON artifact; no model execution

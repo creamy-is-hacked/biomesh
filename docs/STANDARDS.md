@@ -51,6 +51,16 @@ Always use these exact names.
 | P3A | Phase 3 Audit               |
 | P4  | Phase 4 – Research Platform |
 | P4A | Phase 4 Audit               |
+| P5  | Phase 5 – Security and Distribution Hardening |
+| P5A | Phase 5 Audit               |
+| P6  | Phase 6 – Portable Operations |
+| P6A | Phase 6 Audit               |
+| P7  | Phase 7 – Calibration and Validation |
+| P7A | Phase 7 Audit               |
+| P8  | Phase 8 – 3D and Accelerated Computing |
+| P8A | Phase 8 Audit               |
+| P9  | Phase 9 – Version 1 Release |
+| P9A | Version 1 Release Audit     |
 
 Never invent alternate names.
 
@@ -69,6 +79,16 @@ Never invent alternate names.
 | P3A   | audit-phase-3             |
 | P4    | phase-4-research-platform |
 | P4A   | audit-phase-4             |
+| P5    | phase-5-security-distribution |
+| P5A   | audit-phase-5             |
+| P6    | phase-6-portable-operations |
+| P6A   | audit-phase-6             |
+| P7    | phase-7-calibration-validation |
+| P7A   | audit-phase-7             |
+| P8    | phase-8-3d-acceleration   |
+| P8A   | audit-phase-8             |
+| P9    | phase-9-version-1-release |
+| P9A   | audit-version-1           |
 
 ---
 
@@ -85,6 +105,23 @@ Never invent alternate names.
 | P3A   | v0.3.1-audit |
 | P4    | v0.4.0       |
 | P4A   | v0.4.1-audit |
+| P5    | v0.5.0       |
+| P5A   | v0.5.1-audit |
+| P6    | v0.6.0       |
+| P6A   | v0.6.1-audit |
+| P7    | v0.7.0       |
+| P7A   | v0.7.1-audit |
+| P8    | v0.8.0       |
+| P8A   | v0.8.1-audit |
+| P9    | v1.0.0-rc.1  |
+| P9A   | v1.0.0       |
+
+For P5-P8, the runtime package version and generated manifests must equal the
+implementation tag version without the leading `v`; the matching audit tag
+does not silently change runtime behavior or package version. P9 uses PEP 440
+package version `1.0.0rc1` for its release candidate. P9A may perform only the
+explicitly authorized release-metadata promotion to package version `1.0.0`,
+then must rerun the complete final artifact and version checks before tagging.
 
 ---
 
@@ -101,6 +138,16 @@ Use:
 * P3A:
 * P4:
 * P4A:
+* P5:
+* P5A:
+* P6:
+* P6A:
+* P7:
+* P7A:
+* P8:
+* P8A:
+* P9:
+* P9A:
 
 ---
 
@@ -195,6 +242,22 @@ If every command passes:
 If any required verification command fails, do not commit or push. Report the
 failure and preserve the working tree for repair.
 
+## 11.1a Pre-audit phase handoff for P5-P9
+
+After every implementation work package in one P5-P9 phase is complete and the
+phase-wide regression gate passes:
+
+1. Confirm the phase tracker, project state, changelog, limitations, and phase
+   evidence are current.
+2. Review and stage only any remaining phase-handoff documentation changes.
+3. Commit those changes with the canonical implementation prefix, if needed.
+4. Push the implementation branch.
+5. Create and push the implementation tag from Section 5.
+6. Report the branch tip, tag, checks, evidence, and known limitations.
+
+An implementation tag is a frozen audit prerequisite, not phase acceptance or
+a release. The next permitted work is the matching independent audit.
+
 ## 11.2 Accepted phase-audit completion
 
 Only when the phase audit is accepted:
@@ -256,8 +319,10 @@ Read in this order:
 
 1. STANDARDS.md
 2. AGENTS.md
-3. Current phase document
-4. Current audit document (if applicable)
+3. PHASE_STATUS.md
+4. PROJECT_STATE.md
+5. Current roadmap or phase document
+6. Current audit document (if applicable)
 
 Ignore later phase documents unless explicitly instructed.
 

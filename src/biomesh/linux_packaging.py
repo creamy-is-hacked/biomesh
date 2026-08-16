@@ -15,6 +15,14 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 from biomesh import __version__
+from biomesh.build_identity import (
+    BUILD_PROVENANCE_RESOURCE,
+    ArtifactIdentity,
+    BuildIdentity,
+    BuildProvenanceError,
+    canonical_json_bytes,
+    strict_json_loads,
+)
 
 _FORBIDDEN_DATA_DIRECTORIES = frozenset(
     {"artifacts", "outputs", "projects", "queues", "reports", "raw"}
@@ -29,9 +37,8 @@ _FORBIDDEN_DATA_NAMES = frozenset(
         "run_metadata.json",
     }
 )
-_FORBIDDEN_DATA_SUFFIXES = frozenset(
-    {".biomesh", ".csv", ".npy", ".npz", ".parquet"}
-)
+_FORBIDDEN_DATA_SUFFIXES = frozenset({".biomesh", ".csv", ".npy", ".npz", ".parquet"})
+_FORBIDDEN_SECRET_SUFFIXES = frozenset({".key", ".p8", ".p12", ".pem", ".pk8"})
 
 
 class LinuxPackagingError(ValueError):
@@ -46,6 +53,7 @@ class LinuxPackageResult:
     bundle_sha256: str
     size_bytes: int
     wheel_sha256: str
+    provenance_sha256: str
 
     def as_dict(self) -> dict[str, int | str]:
         return {
@@ -53,10 +61,26 @@ class LinuxPackageResult:
             "bundle_sha256": self.bundle_sha256,
             "size_bytes": self.size_bytes,
             "wheel_sha256": self.wheel_sha256,
+            "provenance_sha256": self.provenance_sha256,
         }
 
 
-def build_linux_installer(wheel: Path, output_directory: Path) -> LinuxPackageResult:
+@dataclass(frozen=True, slots=True)
+class InstallerSupplyIdentity:
+    """Verified wheel and provenance identities accepted before prefix mutation."""
+
+    package_version: str
+    wheel_sha256: str
+    provenance_sha256: str
+
+
+def build_linux_installer(
+    wheel: Path,
+    output_directory: Path,
+    *,
+    build_provenance: bytes,
+    artifact_binding: bytes,
+) -> LinuxPackageResult:
     """Build a deterministic Linux installer tarball around one verified wheel."""
     if not platform.system().lower() == "linux":
         raise LinuxPackagingError("the documented application package targets Linux")
@@ -66,13 +90,20 @@ def build_linux_installer(wheel: Path, output_directory: Path) -> LinuxPackageRe
         )
     if not output_directory.parent.is_dir():
         raise LinuxPackagingError("Linux package output parent must exist")
-    wheel_bytes = _validated_wheel(wheel)
+    supply = verify_installer_supply(
+        wheel,
+        build_provenance=build_provenance,
+        artifact_binding=artifact_binding,
+    )
+    wheel_bytes = wheel.read_bytes()
     architecture = _linux_architecture(platform.machine())
     root = f"biomesh-{__version__}-linux-{architecture}"
     installer = _installer_script(__version__)
     install_document = _install_document(__version__)
     members = {
         f"{root}/INSTALL.md": install_document,
+        f"{root}/BUILD_PROVENANCE.json": build_provenance,
+        f"{root}/PROVENANCE.json": artifact_binding,
         f"{root}/install.sh": installer,
         f"{root}/packages/{wheel.name}": wheel_bytes,
     }
@@ -101,7 +132,76 @@ def build_linux_installer(wheel: Path, output_directory: Path) -> LinuxPackageRe
         bundle=str(published),
         bundle_sha256=_sha256(contents),
         size_bytes=len(contents),
+        wheel_sha256=supply.wheel_sha256,
+        provenance_sha256=supply.provenance_sha256,
+    )
+
+
+def verify_installer_supply(
+    wheel: Path,
+    *,
+    build_provenance: bytes,
+    artifact_binding: bytes,
+) -> InstallerSupplyIdentity:
+    """Verify the exact candidate wheel and its P5-WP02 provenance binding."""
+    wheel_bytes = _validated_wheel(wheel)
+    try:
+        build = BuildIdentity.from_bytes(build_provenance)
+        if build.package_version != __version__:
+            raise LinuxPackagingError("installer package version is inconsistent")
+        value = strict_json_loads(artifact_binding)
+        if not isinstance(value, dict) or set(value) != {
+            "artifacts",
+            "build",
+            "schema_version",
+        }:
+            raise LinuxPackagingError("installer provenance fields are inconsistent")
+        if value["schema_version"] != 1:
+            raise LinuxPackagingError("installer provenance schema is unsupported")
+        if BuildIdentity.from_dict(value["build"]) != build:
+            raise LinuxPackagingError("installer build provenance is inconsistent")
+        artifacts_value = value["artifacts"]
+        if not isinstance(artifacts_value, list) or len(artifacts_value) != 2:
+            raise LinuxPackagingError("installer artifact bindings are incomplete")
+        artifacts = tuple(ArtifactIdentity.from_dict(item) for item in artifacts_value)
+        if (
+            tuple(sorted(artifacts, key=lambda item: item.kind)) != artifacts
+            or {item.kind for item in artifacts} != {"wheel", "sdist"}
+            or canonical_json_bytes(value) != artifact_binding
+        ):
+            raise LinuxPackagingError("installer artifact bindings are inconsistent")
+        wheel_records = [item for item in artifacts if item.kind == "wheel"]
+        if len(wheel_records) != 1:
+            raise LinuxPackagingError(
+                "installer wheel binding is missing or duplicated"
+            )
+        wheel_record = wheel_records[0]
+        if (
+            wheel_record.filename != wheel.name
+            or wheel_record.sha256 != _sha256(wheel_bytes)
+            or wheel_record.size_bytes != len(wheel_bytes)
+        ):
+            raise LinuxPackagingError("installer wheel binding is inconsistent")
+        with zipfile.ZipFile(io.BytesIO(wheel_bytes), mode="r") as archive:
+            embedded = [
+                info
+                for info in archive.infolist()
+                if info.filename == f"biomesh/{BUILD_PROVENANCE_RESOURCE}"
+            ]
+            if len(embedded) != 1:
+                raise LinuxPackagingError(
+                    "installer wheel build provenance is missing or duplicated"
+                )
+            if BuildIdentity.from_bytes(archive.read(embedded[0])) != build:
+                raise LinuxPackagingError(
+                    "installer wheel build provenance is inconsistent"
+                )
+    except BuildProvenanceError as error:
+        raise LinuxPackagingError(f"invalid installer provenance: {error}") from error
+    return InstallerSupplyIdentity(
+        package_version=build.package_version,
         wheel_sha256=_sha256(wheel_bytes),
+        provenance_sha256=_sha256(artifact_binding),
     )
 
 
@@ -112,9 +212,7 @@ def _validated_wheel(path: Path) -> bytes:
         or path.suffix != ".whl"
         or not path.name.startswith(f"biomesh-{__version__}-")
     ):
-        raise LinuxPackagingError(
-            f"expected a BioMesh {__version__} wheel: {path}"
-        )
+        raise LinuxPackagingError(f"expected a BioMesh {__version__} wheel: {path}")
     contents = path.read_bytes()
     try:
         with zipfile.ZipFile(io.BytesIO(contents), mode="r") as archive:
@@ -151,6 +249,10 @@ def _validate_wheel_member(info: zipfile.ZipInfo) -> None:
     ):
         raise LinuxPackagingError(
             f"installer wheel contains generated research data: {info.filename}"
+        )
+    if path.suffix.lower() in _FORBIDDEN_SECRET_SUFFIXES:
+        raise LinuxPackagingError(
+            "installer wheel contains a prohibited secret-bearing path"
         )
 
 
@@ -196,23 +298,38 @@ def _linux_architecture(value: str) -> str:
 
 
 def _installer_script(version: str) -> bytes:
-    return fr'''#!/usr/bin/env bash
+    return rf"""#!/usr/bin/env bash
 set -euo pipefail
 
 prefix="${{HOME}}/.local"
 python_command="python3.14"
 no_dependencies=0
+operation="install"
+target_version=""
+quarantine_modified=0
+acknowledge_paths=()
 
 usage() {{
   printf '%s\n' \
-    "usage: install.sh [--prefix PATH] [--python PYTHON3.14] [--no-deps]"
+    "usage: install.sh LIFECYCLE [OPTIONS]" \
+    "  LIFECYCLE: --install | --upgrade | --rollback VERSION" \
+    "             --uninstall VERSION | --recover" \
+    "                  [--prefix PATH] [--python PYTHON3.14] [--no-deps]" \
+    "                  [--acknowledge-path STATE] [--quarantine-modified]"
 }}
 
 while (($#)); do
   case "$1" in
+    --install) operation="install"; shift ;;
+    --upgrade) operation="upgrade"; shift ;;
+    --rollback) operation="rollback"; target_version="$2"; shift 2 ;;
+    --uninstall) operation="uninstall"; target_version="$2"; shift 2 ;;
+    --recover) operation="recover"; shift ;;
     --prefix) prefix="$2"; shift 2 ;;
     --python) python_command="$2"; shift 2 ;;
     --no-deps) no_dependencies=1; shift ;;
+    --acknowledge-path) acknowledge_paths+=("$2"); shift 2 ;;
+    --quarantine-modified) quarantine_modified=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
   esac
@@ -241,17 +358,41 @@ test -n "$wheel" && test "$(printf '%s\n' "$wheel" | wc -l)" -eq 1 || {{
   exit 2
 }}
 
-install_root="$prefix/lib/biomesh/{version}"
-if test -e "$install_root"; then
-  printf '%s\n' "installation already exists: $install_root" >&2
-  exit 2
+common_supply=(
+  --wheel "$wheel"
+  --build-provenance "$bundle_root/BUILD_PROVENANCE.json"
+  --artifact-binding "$bundle_root/PROVENANCE.json"
+)
+lifecycle=(
+  env "PYTHONPATH=$wheel"
+  "$python_command" -m biomesh.installer_lifecycle
+)
+
+if test "$operation" = "recover"; then
+  "${{lifecycle[@]}}" recover --prefix "$prefix"
+  exit
 fi
-test ! -e "$prefix/bin/biomesh" && test ! -e "$prefix/bin/biomesh-gui" || {{
-  printf '%s\n' "BioMesh launcher already exists under $prefix/bin" >&2
-  exit 2
-}}
-mkdir -p "$prefix/lib/biomesh" "$prefix/bin"
-stage="$(mktemp -d "$prefix/lib/biomesh/.install-{version}.XXXXXX")"
+if test "$operation" = "rollback"; then
+  test -n "$target_version" || {{ usage >&2; exit 2; }}
+  "${{lifecycle[@]}}" rollback --prefix "$prefix" --version "$target_version" \
+    "${{common_supply[@]}}"
+  exit
+fi
+if test "$operation" = "uninstall"; then
+  test -n "$target_version" || {{ usage >&2; exit 2; }}
+  recovery_arguments=()
+  for path in "${{acknowledge_paths[@]}}"; do
+    recovery_arguments+=(--acknowledge-path "$path")
+  done
+  if ((quarantine_modified)); then
+    recovery_arguments+=(--quarantine-modified)
+  fi
+  "${{lifecycle[@]}}" uninstall --prefix "$prefix" --version "$target_version" \
+    "${{common_supply[@]}}" "${{recovery_arguments[@]}}"
+  exit
+fi
+
+stage="$(mktemp -d "${{TMPDIR:-/tmp}}/biomesh-{version}.XXXXXX")"
 trap 'rm -rf -- "$stage"' EXIT
 mkdir -p "$stage/app" "$stage/bin"
 pip_arguments=(--disable-pip-version-check --target "$stage/app")
@@ -273,12 +414,20 @@ for command in biomesh biomesh-gui; do
   chmod 755 "$stage/bin/$command"
 done
 
-mv "$stage" "$install_root"
+recovery_arguments=()
+for path in "${{acknowledge_paths[@]}}"; do
+  recovery_arguments+=(--acknowledge-path "$path")
+done
+"${{lifecycle[@]}}" apply "$operation" \
+  --prefix "$prefix" \
+  --candidate "$stage" \
+  --version "{version}" \
+  "${{common_supply[@]}}" \
+  "${{recovery_arguments[@]}}"
 trap - EXIT
-ln -s "../lib/biomesh/{version}/bin/biomesh" "$prefix/bin/biomesh"
-ln -s "../lib/biomesh/{version}/bin/biomesh-gui" "$prefix/bin/biomesh-gui"
-printf '%s\n' "installed BioMesh {version} under $prefix"
-'''.encode()
+rm -rf -- "$stage"
+printf '%s\n' "$operation completed for BioMesh {version} under $prefix"
+""".encode()
 
 
 def _install_document(version: str) -> bytes:
@@ -292,7 +441,7 @@ resources remain clearly labelled software-validation configuration.
 Install for the current user with Python 3.14:
 
 ```bash
-./install.sh
+./install.sh --install
 ```
 
 Use `--prefix /absolute/path` for a different new installation prefix and
@@ -300,6 +449,23 @@ Use `--prefix /absolute/path` for a different new installation prefix and
 resolves the wheel's declared runtime dependencies through pip. `--no-deps` is
 reserved for controlled validation where those exact dependencies are already
 available to the selected interpreter.
+
+Lifecycle operations verify the exact wheel/build provenance before prefix
+mutation, install versions side by side, and run installed CLI help plus an
+offscreen GUI smoke test before activation:
+
+```bash
+./install.sh --upgrade
+./install.sh --rollback PREVIOUS_VERSION
+./install.sh --uninstall VERSION
+./install.sh --recover
+```
+
+Modified, missing, extra, ambiguous, or ownership-mismatched application paths
+block automatic changes. Exact `--acknowledge-path STATE:PATH` options identify
+every affected path; changed uninstall trees also require
+`--quarantine-modified` and are retained instead of deleted. There is no
+automatic update or system-package integration.
 
 Portable project archives are user research data and remain separate from this
 installer. Import them explicitly with `biomesh project import` after install.
