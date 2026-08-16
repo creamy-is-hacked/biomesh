@@ -4,22 +4,23 @@ This file is the canonical snapshot of the repository's current development
 state. Read it immediately after `docs/STANDARDS.md` before selecting work.
 `docs/PHASE_STATUS.md` remains the authoritative ordered work-package tracker.
 
-Snapshot verified: 2026-08-15 after the fresh P5A security/acceptance audit
-rerun closed both defects reported against
-`0d266186c73a209053c0d3f42a975ac5c46f35e3`. P5A accepted the remediated
-`codex/p5a-installer-recovery-provenance` tree. The latest verified Python 3.14
-full gate passes 352 tests. This task did not merge, tag, modify `main`, or
-begin P6.
+Snapshot verified: 2026-08-16 for the canonical P5A governance closeout. The
+fresh security/acceptance audit closed both defects reported against
+`0d266186c73a209053c0d3f42a975ac5c46f35e3` and accepted exact pushed revision
+`e5998ea2508677b010c1ce9abfea22a562a2a62c`. The closeout records that history
+on `audit-phase-5`, merges it into `main` with `--no-ff`, and publishes
+`v0.5.1-audit`. Python 3.14.4 passes the 118-test focused P5 collection and the
+352-test full gate. P6 remains untouched.
 
 | Field | Current state |
 | --- | --- |
-| Current phase | P5 – Phase 5 – Security and Distribution Hardening (accepted) |
-| Current work package | P5A – Phase 5 Audit (`COMPLETE`) |
-| Current branch | `codex/p5a-installer-recovery-provenance` |
+| Current phase | P5 – Phase 5 – Security and Distribution Hardening (accepted); P6 not begun |
+| Current work package | P6-WP01 – Portable queue-intent schema (`INCOMPLETE`; next only) |
+| Current branch | `main` after the canonical P5A accepted-audit merge |
 | Latest accepted phase | P5 – Phase 5 – Security and Distribution Hardening, accepted by P5A on 2026-08-15 |
-| Latest version tag | `v0.5.0` (P5 implementation audit prerequisite, not phase acceptance, 2026-08-14) |
-| Current test count | 352 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-15) |
-| Next planned work package | P6-WP01 in a fresh subsequent task; P6 remains untouched here |
+| Latest version tag | `v0.5.1-audit` (P5A accepted-audit tag, 2026-08-16) |
+| Current test count | 352 passed, 0 failed, 0 skipped (`pytest -q`, 2026-08-16) |
+| Next planned work package | P6-WP01 in a fresh subsequent task; no later P6 work is authorized |
 
 ## Outstanding technical debt
 

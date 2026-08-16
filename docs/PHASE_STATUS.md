@@ -950,6 +950,13 @@ P5A final containment/recovery remediation and fresh audit evidence
   both original blockers are closed, and no new acceptance-blocking defect was
   found. P5A is `COMPLETE`. Per this audit task's explicit boundary, no merge,
   tag, `main` mutation, or P6 implementation occurred.
+- The governance-only closeout on 2026-08-16 independently reproduced the
+  118-test P5 collection and 352-test complete suite, with module help, Ruff,
+  strict mypy over 65 source files, and `git diff --check` also passing. It
+  records accepted revision `e5998ea2508677b010c1ce9abfea22a562a2a62c` on the
+  canonical `audit-phase-5` history and completes the Section 11.2 `--no-ff`
+  merge and `v0.5.1-audit` tag workflow. No P5 functionality or P6 behavior
+  changes in this closeout.
 
 ## P6 – Phase 6 – Portable Operations
 

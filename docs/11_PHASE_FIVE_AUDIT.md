@@ -9,9 +9,13 @@ P5A ACCEPTED
 The fresh acceptance rerun on 2026-08-15 found no remaining acceptance-blocking
 defect. It evaluated the remediated tree based on rejected audit revision
 `0d266186c73a209053c0d3f42a975ac5c46f35e3` on
-`codex/p5a-installer-recovery-provenance`. The remediation commit containing
-this record is the accepted revision. This task does not merge, tag, modify
-`main`, or begin P6.
+`codex/p5a-installer-recovery-provenance`. Exact pushed commit
+`e5998ea2508677b010c1ce9abfea22a562a2a62c`, which contains the remediation and
+this audit record, is the accepted revision. The original acceptance task did
+not merge, tag, modify `main`, or begin P6. The subsequent governance-only
+closeout records that accepted history on `audit-phase-5` and completes the
+Section 11.2 merge and `v0.5.1-audit` tag workflow without changing P5
+functionality or beginning P6.
 
 ## Scope and method
 
@@ -171,5 +175,6 @@ defect was identified.
 
 ```text
 P5A COMPLETE
+Canonical closeout: audit-phase-5 -> main (--no-ff); v0.5.1-audit
 P6 remains untouched and may proceed only in a separate subsequent task.
 ```
